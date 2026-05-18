@@ -1,0 +1,81 @@
+// android/app/build.gradle
+
+plugins {
+    id 'com.android.application'
+    id 'com.google.gms.google-services' // Firebase 설정
+    id 'kotlin-android'
+    id 'dev.flutter.flutter-gradle-plugin'
+}
+
+android {
+    namespace 'com.yusung.routefinding'
+    compileSdk 35
+    ndkVersion '27.0.12077973'
+
+    defaultConfig {
+        applicationId 'com.yusung.routefinding'
+        minSdk 23
+        targetSdk 35
+        versionCode 39
+        versionName '1.2.3'
+        multiDexEnabled true
+
+        // ✅ 64-bit(arm64-v8a) 를 반드시 포함
+        ndk {
+            abiFilters "arm64-v8a", "armeabi-v7a"
+        }
+    }
+
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+        coreLibraryDesugaringEnabled true
+    }
+
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('routefinding-release.keystore')
+            storePassword 'kym1256yys5703!'
+            keyAlias 'routefindingkey'
+            keyPassword 'kym1256yys5703!'
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+}
+
+dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+
+    // Play Integrity API (SafetyNet 대체)
+    implementation 'com.google.android.play:integrity:1.4.0'
+
+    // Firebase App Check Play Integrity provider
+    // 올바른 아티팩트 ID: firebase-appcheck-playintegrity
+    // 최신 권장 버전: 18.0.0
+    implementation 'com.google.firebase:firebase-appcheck-playintegrity:18.0.0'  // :contentReference[oaicite:0]{index=0}
+
+    // (선택) Firebase App Check Debug provider
+    // implementation 'com.google.firebase:firebase-appcheck-debug:16.0.0'
+}
+
+flutter {
+    source '../..'
+}

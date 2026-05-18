@@ -1,0 +1,103 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# ===========================================
+# 🚨 보안 - 절대 커밋 금지 (Firebase/인증 키)
+# ===========================================
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+google-services.json
+GoogleService-Info.plist
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# 환경변수
+.env
+.env.*
+!.env.example
+
+# Android 서명키
+*.keystore
+*.jks
+key.properties
+android/key.properties
+android/app/upload-keystore.jks
+
+# ===========================================
+# Node.js (Cloud Functions / 스크립트)
+# ===========================================
+node_modules/
+functions/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# ===========================================
+# 빌드 산출물 (대용량)
+# ===========================================
+*.apk
+*.aab
+*.ipa
+app-release.aab
+
+# ===========================================
+# 기타
+# ===========================================
+*.bak
+*.tmp
+.cache/
+
+# ===========================================
+# 데이터 - 원본/중간 산출물 제외 (최종본만 추적)
+# ===========================================
+볼더링 원본 데이터.csv
+final_merged*.csv
+failures.csv
+image_folder_structure.txt
+*_backup.csv
+*_temp.csv
+*_old.csv

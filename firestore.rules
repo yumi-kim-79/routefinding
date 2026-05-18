@@ -1,0 +1,145 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────
+    // 1) users/{userId}
+    match /users/{userId} {
+      allow read:  if true;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 1-1) users/{userId}/my_routes/{routeId}
+    match /users/{userId}/my_routes/{routeId} {
+      allow read:   if request.auth != null
+                     && request.auth.uid == userId;
+      allow create, delete:
+        if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 2) posts/{postId}
+    match /posts/{postId} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+      allow update, delete:
+        if request.auth != null
+        && (
+          resource.data.userId == request.auth.uid
+          || request.auth.token.email == 'yusung790926@gmail.com'
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 3) 게시판 댓글 (posts 하위)
+    //    • 읽기(read), 생성(create), 수정·삭제(update, delete)
+    match /posts/{postId}/comments/{commentId} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+      allow update, delete:
+        if request.auth != null
+        && resource.data.userId == request.auth.uid;
+
+      // ─── 3-1) 대댓글 (replies) 하위 컬렉션
+      match /replies/{replyId} {
+        allow read:   if request.auth != null;
+        allow create: if request.auth != null
+                      && request.resource.data.userId == request.auth.uid;
+        allow update, delete:
+          if request.auth != null
+          && resource.data.userId == request.auth.uid;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 4) 내댓글 탭(collectionGroup('comments') 쿼리)용 읽기 전용 권한
+    //    • posts 외에 다른 컬렉션에 comments 서브컬렉션이 있어도 모두 읽기 허용
+    match /{path=**}/comments/{commentId} {
+      allow read: if request.auth != null;
+    }
+    //    그리고 그 하위 대댓글도 읽기만 허용
+    match /{path=**}/comments/{commentId}/replies/{replyId} {
+      allow read: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 5) route_reports/{reportId}
+    match /route_reports/{reportId} {
+      allow read:
+        if request.auth != null
+        && (
+          resource.data.status == 'approved'
+          || resource.data.authorUid == request.auth.uid
+          || request.auth.token.email == 'yusung790926@gmail.com'
+        );
+      allow create:
+        if request.auth != null
+        && request.resource.data.authorUid == request.auth.uid;
+      allow update, delete:
+        if request.auth != null
+        && (
+          (resource.data.authorUid == request.auth.uid
+           && resource.data.status != 'approved')
+          || request.auth.token.email == 'yusung790926@gmail.com'
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 6) route_reports/{reportId}/pitches/{pitchId}
+    match /route_reports/{reportId}/pitches/{pitchId} {
+      allow read:
+        if request.auth != null
+        && (
+          // 루트 작성자
+          get(/databases/$(database)/documents/route_reports/$(reportId))
+            .data.authorUid == request.auth.uid
+          // 피치 작성자
+          || resource.data.authorUid == request.auth.uid
+          // 승인된 루트
+          || get(/databases/$(database)/documents/route_reports/$(reportId))
+               .data.status == 'approved'
+          // 관리자
+          || request.auth.token.email == 'yusung790926@gmail.com'
+        );
+      allow create:
+        if request.auth != null
+        && request.resource.data.authorUid == request.auth.uid;
+      allow update, delete:
+        if request.auth != null
+        && (
+          resource.data.authorUid == request.auth.uid
+          || get(/databases/$(database)/documents/route_reports/$(reportId))
+               .data.authorUid == request.auth.uid
+          || request.auth.token.email == 'yusung790926@gmail.com'
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 7) concepts/{mountain}/routes/{routeId}
+    match /concepts/{mountain}/routes/{routeId} {
+      allow read:   if true;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 8) notifications/{notificationId}
+    match /notifications/{notificationId} {
+      allow read, update, delete:
+        if request.auth != null
+        && request.auth.uid == resource.data.receiverId;
+      allow create: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 9) 그 외 모든 경로 완전 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
