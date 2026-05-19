@@ -77,14 +77,23 @@ RN 앱이 실행되고, Firebase 연결되고, 로그인이 작동하는 최소 
 - [x] iOS/Android 번들 ID 설정 (기존 v1 ID 유지: Android `com.yusung.routefinding` / iOS `com.yusungyun.RouteFinding`)
 - [ ] iOS Podfile `pod install` — CocoaPods 환경에서 별도 실행 (1-2 Firebase 연동 시)
 
-#### 1-2. Firebase 연결
-- [ ] Firebase 콘솔에서 iOS/Android 앱 등록 (v2.0 패키지명)
-  - [QUESTION] 동일 패키지명? 신규 패키지명? (예: `com.yusung.routefinding` vs `com.yusung.routefinding.v2`)
-- [ ] `google-services.json` (Android) 추가
-- [ ] `GoogleService-Info.plist` (iOS) 추가
-- [ ] `@react-native-firebase/*` 패키지 설치
-- [ ] Firebase 초기화 확인 (`services/firebase.ts`)
-- [ ] App Check 설정
+#### 1-2. Firebase 연결 — Android ✅ 완료 (2026-05-19)
+- [x] Firebase 콘솔 앱 — 기존 v1 앱 재사용 ([QUESTION] 해결: 동일 패키지명 `com.yusung.routefinding` / `com.yusungyun.RouteFinding`)
+- [x] `google-services.json` (Android) 추가 + Gradle 연동
+- [x] `GoogleService-Info.plist` (iOS) 배치 + Xcode 프로젝트 등록(`xcodeproj` gem)
+- [x] `@react-native-firebase/*` 6개 설치 (v24.0.0)
+- [x] Firebase 초기화 (`src/services/firebase.ts`) + `AppDelegate.mm` `[FIRApp configure]`
+- [x] App Check 설정 (`initAppCheck`, Play Integrity/DeviceCheck + dev debug)
+- [x] **Android 빌드 검증 성공** (`assembleDebug`)
+- [x] iOS `pod install` 해결(`use_modular_headers!`)
+→ Phase 1-2는 **Android 기준 완료**로 간주. 나머지 Phase 1은 Android로 진행.
+
+#### 1-2.5. iOS 빌드 (⏸️ 보류 — 별도 트랙)
+- 상태: ❌ 빌드 미통과. 상세 시도/에러/다음 옵션 → **`docs/06_iOS_BUILD_NOTES.md`**
+- 근본 원인 추정: Xcode 26.3 (17C529) / Sim 26.2 SDK가 bleeding-edge ↔ firebase-ios-sdk 12.10.0 / gRPC 미추격
+- 보류 사유: 에러 양파 패턴, Phase 1 나머지는 OS 무관, 시간 효율(생태계 추격 대기)
+- 🔔 **재검증 트리거**: `@react-native-firebase/*` 또는 `firebase-ios-sdk`(gRPC) 새 버전 출시 / Xcode 26.x 호환 픽스 공지 시
+- [ ] iOS 빌드 검증 (트리거 충족 후 `06_iOS_BUILD_NOTES.md` 체크리스트대로 재시도)
 
 #### 1-3. 네비게이션
 - [ ] React Navigation 설치 & 셋업
@@ -307,7 +316,7 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 | Phase | 진행률 | 시작일 | 종료일 |
 |---|---|---|---|
 | Phase 0 | 95% | 2026-05-19 | (거의 완료, 일부 [TBD] 잔존) |
-| Phase 1 | 25% | 2026-05-19 | (진행 중 — 1-1 거의 완료, pod install·앱 의존성은 1-2와 함께) |
+| Phase 1 | 45% | 2026-05-19 | (진행 중 — 1-1·1-2(Android) 완료, iOS 1-2.5 보류, 1-3 준비) |
 | Phase 2 | 0% | TBD | TBD |
 | Phase 3 | 0% | TBD | TBD |
 | Phase 4 | 0% | TBD | TBD |

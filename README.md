@@ -34,6 +34,7 @@
 | `docs/03_TECH_STACK.md` | RN 기술 스택 및 프로젝트 구조 | ✅ 3단계 |
 | `docs/04_WIREFRAMES.md` | 화면 와이어프레임 (기존 화면 매핑) | ⏳ 4단계 |
 | `docs/05_ROADMAP.md` | 마이그레이션 단계별 로드맵 | ✅ 5단계 |
+| `docs/06_iOS_BUILD_NOTES.md` | iOS 빌드 별도 트랙 (Xcode 26.x 호환 이슈, 재시도 체크리스트) | ⏸️ 보류 |
 | `CHANGELOG.md` | 모든 문서·코드 변경 이력 | 항상 |
 | `CLAUDE.md` | Claude Code 작업 컨벤션 | 항상 |
 | `GETTING_STARTED.md` | 개발 환경 셋업 가이드 | 셋업 시 |

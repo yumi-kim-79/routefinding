@@ -1,11 +1,17 @@
 #import "AppDelegate.h"
 
 #import <React/RCTBundleURLProvider.h>
+#import <Firebase.h>
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+  // React Native Firebase: 기본 앱 초기화 (GoogleService-Info.plist 기반)
+  if ([FIRApp defaultApp] == nil) {
+    [FIRApp configure];
+  }
+
   self.moduleName = @"RouteFinding";
   // You can add your custom initial props in the dictionary below.
   // They will be passed down to the ViewController used by React Native.

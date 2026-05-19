@@ -5,7 +5,8 @@
  * @format
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
+import {initAppCheck} from './services/firebase';
 import type {PropsWithChildren} from 'react';
 import {
   SafeAreaView,
@@ -57,6 +58,11 @@ function Section({children, title}: SectionProps): React.JSX.Element {
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
+
+  // Firebase App Check 부팅 시 1회 활성화
+  useEffect(() => {
+    initAppCheck();
+  }, []);
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,

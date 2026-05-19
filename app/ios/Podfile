@@ -14,6 +14,10 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
+# React Native Firebase: Swift pod이 static library로 통합되려면 모듈 맵 필요
+# (RNFB 공식 권장 — FirebaseAuth/Firestore/Storage 등 Swift pod 의존성 해결)
+use_modular_headers!
+
 target 'RouteFinding' do
   config = use_native_modules!
 
@@ -36,5 +40,18 @@ target 'RouteFinding' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # React Native Firebase(Firestore) iOS 빌드 패치 (최소화):
+    # 최신 Xcode의 C++20 explicit modules와 gRPC-C++ pod의 ScanDependencies 단계가
+    # 충돌해 빌드 실패 → gRPC 계열 타깃에서 *explicit* modules만 비활성화한다.
+    # 주의: CLANG_ENABLE_MODULES=NO 까지 끄면 시스템 SDK 헤더(_stdio.h)
+    #       파싱이 깨진다(2차 실패 원인). EXPLICIT_MODULES만 끄는 것으로 충분.
+    installer.pods_project.targets.each do |target|
+      if %w[gRPC-C++ gRPC-Core BoringSSL-GRPC].include?(target.name)
+        target.build_configurations.each do |bc|
+          bc.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
+        end
+      end
+    end
   end
 end

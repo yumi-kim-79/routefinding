@@ -33,6 +33,26 @@
 
 > ⚠️ Android `namespace`/Java 패키지도 `com.yusung.routefinding`로 전체 리네임 완료 (applicationId와 일치). iOS 테스트 타깃 번들 ID는 `com.yusungyun.RouteFinding.tests`.
 
+### ⚠️ iOS 빌드 환경 이슈 (Phase 1-2, 미해결 — 보류)
+
+> 상세 시도 기록·재시도 체크리스트는 **`docs/06_iOS_BUILD_NOTES.md`** 참조.
+
+| 항목 | 값 |
+|---|---|
+| Xcode | 26.3 (Build 17C529) — **bleeding-edge** |
+| iOS Simulator SDK | 26.2 |
+| RNFB | 24.0.0 |
+| firebase-ios-sdk | 12.10.0 (Firestore가 gRPC-C++/Core 의존) |
+
+- **증상**: Android는 정상 빌드. iOS는 Firestore의 gRPC pod이 최신 Xcode 툴체인과 충돌해 빌드 실패(에러가 단계적으로 전이: gRPC ScanDependencies → `_stdio.h` → `gRPC-Core.modulemap not found`).
+- **현재 적용된 패치**: `ios/Podfile`에 `use_modular_headers!`, `post_install`에서 gRPC 계열 타깃 `CLANG_ENABLE_EXPLICIT_MODULES=NO`.
+- **결정**: iOS 보류, Android 우선 (`05_ROADMAP.md` 1-2.5). 생태계가 Xcode 26.x를 따라올 때까지 대기가 시간 효율적.
+- **향후 iOS 재시도 시 시도 순서(메모)**:
+  1. RNFB / firebase-ios-sdk 최신 버전으로 업그레이드 후 패치 제거하고 재빌드 (생태계 추격됐는지 우선 확인)
+  2. (안 되면) gRPC modulemap 보정 — gRPC 계열 일관 처리(`:modular_headers` 일관 적용 또는 HEADER_SEARCH_PATHS/modulemap 생성)
+  3. (안 되면) `$FirebaseSDKVersion` 핀 다운(Xcode 26.x 검증된 gRPC 포함 구버전)
+  4. (최후) Firestore만 분리하거나 Xcode 버전 조정 검토
+
 ---
 
 ## 📚 핵심 라이브러리 (잠정)

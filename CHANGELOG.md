@@ -41,6 +41,34 @@
   - 루트 `package.json`, `package-lock.json` — RN 앱은 `app/`로 이동되어 루트 툴링 불필요
   - 판별 결과 NFC 원천 파일 없음 → `docs/data-archive/` 보존 불필요
 
+### 🔥 Firebase 연결 (Phase 1-2 — 2026-05-19)
+
+#### Added
+- `@react-native-firebase/{app,auth,firestore,storage,messaging,app-check}` **v24.0.0** 설치
+- `google-services.json`(Android) / `GoogleService-Info.plist`(iOS) 배치 (`.gitignore`로 추적 제외 확인)
+- Android Gradle 연동: `android/build.gradle`에 `com.google.gms:google-services:4.4.2` classpath, `android/app/build.gradle`에 플러그인 적용
+- iOS `AppDelegate.mm`에 `[FIRApp configure]` 추가 (기본 앱 초기화)
+- `app/src/services/firebase.ts` 작성 — 모듈러 인스턴스(auth/db/storage/messaging) export + `initAppCheck()`
+  - App Check provider: Android=Play Integrity / iOS=DeviceCheck (배포), 개발 빌드는 debug provider (docs/02_DATA_MODEL.md 명세 준수)
+- `App.tsx`에서 부팅 시 `initAppCheck()` 호출
+- ✅ **Android 빌드 검증 성공** (`./gradlew :app:assembleDebug` — RNFB 6개 모듈 컴파일, APK 생성)
+
+#### iOS 후속
+- [x] iOS `pod install` 해결 — Podfile에 `use_modular_headers!` 추가 (사용자 결정, 72 deps/97 pods 설치 완료)
+- [x] `GoogleService-Info.plist` Xcode 프로젝트 등록 — `xcodeproj` gem으로 RouteFinding 타깃 Resources에 추가
+- [x] iOS 빌드 1차 실패(`gRPC-C++` ScanDependencies) → Podfile post_install 패치(gRPC explicit modules off, 사용자 결정 A) 적용 → gRPC 에러 해소
+- [x] 2차 실패(`_stdio.h`) → 패치 최소화(Option 1: `CLANG_ENABLE_MODULES=NO` 제거, `CLANG_ENABLE_EXPLICIT_MODULES=NO`만 유지) → `_stdio.h` 에러 완전 해소(원인 검증됨)
+- [x] 3차 실패 — `fatal error: module map file '.../grpc/gRPC-Core.modulemap' not found`
+
+#### 결정: iOS 빌드 보류, Android 우선 진행 (2026-05-19)
+- **사유**:
+  - 에러가 양파 까기 패턴(gRPC ScanDependencies → `_stdio.h` → modulemap → …) — 근본 원인은 **Xcode 26.3 (Build 17C529) / iPhoneSimulator 26.2 SDK가 bleeding-edge**, firebase-ios-sdk 12.10.0 / gRPC 생태계 미추격
+  - Phase 1 나머지(네비게이션·상태관리·인증 화면·디자인 시스템)는 **OS 무관** → Android로 검증·코드 작성 가능
+  - 시간 효율: 지금 1~2시간 디버깅 vs 1~2주 후 RNFB/firebase-ios-sdk 새 버전 + 재시도 5분
+- **재검증 트리거**: `@react-native-firebase/*` 또는 `firebase-ios-sdk`(gRPC 포함) 새 메이저/마이너 출시 시, 또는 Xcode 26.x 호환 픽스 공지 시
+- iOS 빌드 별도 트랙 문서화 → `docs/06_iOS_BUILD_NOTES.md`
+- 현 시점 Android는 빌드 검증 ✅ 완료, Phase 1-2는 **Android 기준 완료**로 간주
+
 #### Changed
 - **번들 ID를 기존 v1 그대로 유지하도록 네이티브 프로젝트 수정**
   - Android: `namespace`/`applicationId`/Java 패키지 → `com.yusung.routefinding` (전체 리네임)
