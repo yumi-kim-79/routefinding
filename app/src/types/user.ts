@@ -1,6 +1,11 @@
 /**
  * 사용자 타입 — docs/02_DATA_MODEL.md의 `users/{userId}` 스키마 기반.
- * Firestore 구조 변경 금지(기존 50명 유저 데이터 보호) → 이 타입은 기존 스키마 반영.
+ * Firestore 구조 변경 금지(기존 50명 유저 데이터 보호) → 이 타입은 **실제 v1 필드명**에 맞춤.
+ *
+ * Phase 2-1 정정: v1 `mypage_screen.dart`/`my_profile_tab.dart` 실측 결과
+ *   - 사진 필드명 = `photoUrl` (이전 추정 `profileImageUrl` 오류)
+ *   - `level` = 등반등급 **문자열**("5.15"~"5.6"), 숫자 아님
+ *   - `intro`(한 줄 소개) 필드 존재
  */
 import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 
@@ -9,13 +14,14 @@ export interface UserProfile {
   uid: string; // FirebaseAuth UID (= 문서 ID)
   email: string;
   nickname: string;
-  profileImageUrl?: string;
+  photoUrl?: string; // 프로필 사진 (v1 실제 필드명)
+  intro?: string; // 한 줄 소개 (v1 my_profile_tab)
 
   // FCM
   fcmToken?: string;
 
-  // 등급 시스템 (왕관 표시용)
-  level?: number;
+  // 등급 시스템 — 등반등급 문자열 ("5.15".."5.6"). ProfileWithCrown 색상 매핑에 사용.
+  level?: string;
 
   // 통계
   postCount?: number;
@@ -29,5 +35,5 @@ export interface UserProfile {
 
 /** updateProfile에서 허용하는 수정 가능 필드(식별/메타 제외) */
 export type UserProfileUpdate = Partial<
-  Pick<UserProfile, 'nickname' | 'profileImageUrl' | 'fcmToken'>
+  Pick<UserProfile, 'nickname' | 'photoUrl' | 'intro' | 'fcmToken'>
 >;

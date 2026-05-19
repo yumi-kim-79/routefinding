@@ -29,8 +29,10 @@ firestore/
 │   └── comments/{commentId}                ← 댓글
 │       └── replies/{replyId}               ← 대댓글
 │
-├── route_reports/{reportId}                ← 루트 리포트 (승인제)
+├── route_reports/{reportId}                ← 자연암벽 루트 리포트 (승인제)
 │   └── pitches/{pitchId}                   ← 멀티피치 구간
+│
+├── bouldering_reports/{reportId}           ← 인공벽/볼더링 제보 (Phase 2-1 발견, 문서화)
 │
 ├── concepts/{mountain}/                    ← 산별 개념도
 │   └── routes/{routeId}                    ← 토포상의 루트
@@ -52,14 +54,16 @@ interface User {
   uid: string;                  // FirebaseAuth UID (= 문서 ID)
   email: string;
   nickname: string;
-  profileImageUrl?: string;
+  photoUrl?: string;            // 프로필 사진 (v1 실제 필드명, ⚠️ profileImageUrl 아님)
+  intro?: string;               // 한 줄 소개 (v1 my_profile_tab.dart)
 
   // FCM
   fcmToken?: string;            // FCM 푸시 토큰
 
-  // 등급 시스템
-  level?: number;               // 사용자 등급 (왕관 표시용)
-  // [QUESTION] 등급 계산 로직 확인 필요
+  // 등급 시스템 — ✅ [QUESTION] 해소 (Phase 2-1, 2026-05-19)
+  level?: string;               // 등반등급 문자열 "5.15"~"5.6" (숫자 아님!)
+  //   ProfileWithCrown가 등급→왕관/테두리색 매핑 (5.15 gold/5.14 silver/5.13 bronze…)
+  //   관리자(adminEmails)는 constants/level.dart에서 "5.15" 취급
 
   // 통계
   postCount?: number;
@@ -84,7 +88,7 @@ allow write: if request.auth.uid == userId;
 
 **v2 (개선안)**:
 ```
-// 공개 필드만 조회 가능 (nickname, profileImageUrl, level)
+// 공개 필드만 조회 가능 (nickname, photoUrl, level)
 // FCM 토큰, 이메일 등 민감 정보는 본인만 조회
 allow read: if request.auth != null;
 allow write: if request.auth.uid == userId;
@@ -322,6 +326,28 @@ interface Pitch {
   updatedAt?: Timestamp;
 }
 ```
+
+---
+
+## 5-1. 🧗‍♂️ bouldering_reports/{reportId}
+
+> Phase 2-1에서 발견·문서화 (v1 `mypage_screen.dart`/`concept_list_screen.dart`/
+> `map_input_screen.dart`/`map_screen.dart`에서 사용 중이나 기존 문서 누락).
+> **인공벽/볼더링 제보** 컬렉션 (자연암벽 `route_reports`와 분리 운영).
+
+```typescript
+interface BoulderingReport {
+  // [TBD] 실제 필드 스키마 — v1 코드/실데이터 1건 확인 후 확정.
+  // 현재까지 확인: 마이페이지 "내 제보 관리"에서 route_reports와 함께
+  //   authorUid == 본인 조건으로 조회, 삭제/반려(사유) 액션 대상.
+  reportId: string;
+  authorUid: string;
+  // mountain/지역/등급/위치/사진/status 등은 route_reports와 유사 추정 (확인 필요)
+}
+```
+
+> ⚠️ 스키마 변경 금지. 실제 필드는 작업 시 `git show main:lib/map_input_screen.dart` 등으로
+> 확정 후 이 섹션 갱신. 인공벽 시스템 정립은 v2.1+ (`01_MVP_SPEC.md` P3).
 
 ---
 

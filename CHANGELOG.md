@@ -166,6 +166,14 @@
 - HomeScreen 부가기능 분리 계획 명시: 출석보상(Phase 2-1 별도 P1) / 업데이트체크(Phase 3+) / AdMob(Phase 4) / `_tabHistory`·`initialIndex`(1:1 TODO)
 - ✅ typecheck, ✅ Android `assembleDebug`
 
+### 🗄️ Phase 2-1 ② 스키마 타입/문서 정정 (2026-05-19)
+
+#### Fixed
+- `types/user.ts` 실제 v1 필드명에 맞춤 (Firestore 구조 불변): `profileImageUrl`→**`photoUrl`**, `level: number`→**`level: string`**(등반등급 "5.15"~"5.6"), **`intro`** 추가. `UserProfileUpdate`도 동기화
+- `02_DATA_MODEL.md`: User 스키마 정정 + **`[QUESTION] level` 해소**(등반등급 문자열 확정) + 컬렉션 트리/규칙 주석 `photoUrl` 반영
+- `02_DATA_MODEL.md`에 **`bouldering_reports`** 컬렉션 신규 문서화(§5-1, 인공벽/볼더링 제보 — v1에서 사용 중이나 기존 문서 누락분, 실 스키마는 [TBD])
+- ✅ typecheck, ✅ Android `assembleDebug` (영향: types 전용, userStore 호환)
+
 ### 🌿 브랜치
 
 #### Added
