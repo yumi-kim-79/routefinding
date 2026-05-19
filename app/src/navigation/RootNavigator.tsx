@@ -8,11 +8,17 @@ import type { RootStackParamList } from './types';
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
 import { useAuthGate } from './useAuthGate';
+import { SplashScreen } from '../screens/auth/SplashScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator: React.FC = () => {
-  const { isAuthenticated } = useAuthGate();
+  const { isLoading, isAuthenticated } = useAuthGate();
+
+  // 첫 onAuthStateChanged 수신 전 = 세션 복원 중 → 스플래시 유지
+  if (isLoading) {
+    return <SplashScreen />;
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

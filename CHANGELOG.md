@@ -94,6 +94,25 @@
 #### Fixed
 - `react-native-screens@4.25.1`(yarn add 기본 최신) ↔ RN 0.76.9 codegen 불일치(`Unknown prop type "accessibilityContainerViewIsModal"`) → 4.4.0 핀으로 해결 (RNav7 peer `>=4.0.0` 충족). safe-area-context도 4.14.1로 정렬
 
+### 🗃️ 상태관리 (Phase 1-4 — 2026-05-19)
+
+#### Added
+- **Zustand 5.0.x** 설치·확정 (`[TBD] 상태관리` 해소 — 단독개발+50명 규모 적합, 보일러플레이트 적음)
+- `src/stores/authStore.ts` — Firebase Auth 연동(modular). `initialize()`=`onAuthStateChanged` 구독, `signIn/signUp/signOut`. **persist 없음**(결정 A: Firebase 네이티브 세션이 단일 출처, v1 자동로그인 동등)
+- `src/stores/userStore.ts` — `users/{uid}` 프로필 `fetchProfile/updateProfile/clear` (modular Firestore)
+- `src/types/user.ts`(02_DATA_MODEL User 스키마), `src/types/auth.ts`(AuthUser)
+- `src/constants/firestoreFields.ts` — COLLECTIONS/SUBCOLLECTIONS 상수 (P0, 02_DATA_MODEL 명명규칙)
+- `useAuthGate`를 스텁 → authStore 실연동, `RootNavigator`가 `isInitializing` 동안 Splash 표시
+- `App.tsx`에서 `initialize()` 1회 호출(+언마운트 해제)
+- ✅ typecheck 통과, ✅ Android `assembleDebug` 성공
+
+#### 변경 사유 / 메모
+- `initialize()` 호출 위치: 요청은 "Splash에서"였으나 Splash는 **인증 시 마운트되지 않아** 자동로그인이 깨짐 → 앱 전역(`App.tsx`)에서 호출하도록 정정(정확성). Splash는 `isInitializing` 동안 표시되는 역할 유지
+- `signUp`의 프로필 문서(`users/{uid}`) 생성은 Phase 2 SignUp 화면 + userStore에서 (현재 범위는 인증 골격)
+
+#### Removed
+- `@react-native-async-storage/async-storage` 제거 — **Phase 1-4 결정 A(persist 안 함)에 따라 미사용**. 설치된 3.0.2가 RN 0.76 셋업에서 `storage-android:1.0.0` 미해소로 Android 빌드 실패시킴. userStore 캐시 등 향후 필요 시 **RN 0.76 호환 2.x로 재도입 예정**
+
 ### 🌿 브랜치
 
 #### Added

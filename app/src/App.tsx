@@ -16,6 +16,7 @@ import {
 } from '@react-navigation/native';
 import { RootNavigator } from './navigation/RootNavigator';
 import { initAppCheck } from './services/firebase';
+import { useAuthStore } from './stores/authStore';
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -23,6 +24,13 @@ function App(): React.JSX.Element {
   // Firebase App Check 부팅 시 1회 활성화
   useEffect(() => {
     initAppCheck();
+  }, []);
+
+  // 인증 상태 구독 시작 (앱 전역 1회 — Splash는 인증 시 마운트되지 않으므로
+  // 여기서 호출해야 자동 로그인/세션 복원이 동작한다). 언마운트 시 해제.
+  useEffect(() => {
+    const unsub = useAuthStore.getState().initialize();
+    return unsub;
   }, []);
 
   return (

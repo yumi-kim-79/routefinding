@@ -104,10 +104,15 @@ RN 앱이 실행되고, Firebase 연결되고, 로그인이 작동하는 최소 
 - [x] typecheck 통과 + Android `assembleDebug` 성공
 - 비고: 화면은 플레이스홀더(Phase 2 교체), iOS 빌드는 1-2.5 보류 트랙
 
-#### 1-4. 상태관리
-- [ ] [TBD: Zustand 등] 설치
-- [ ] `authStore` 구현
-- [ ] `userStore` 구현
+#### 1-4. 상태관리 ✅ 완료 (Android 기준 — 2026-05-19)
+- [x] **Zustand 5.0.x** 설치·확정 ([TBD] 해소)
+- [x] `authStore` 구현 (Firebase Auth modular, onAuthStateChanged, persist 없음=결정 A)
+- [x] `userStore` 구현 (Firestore `users/{uid}` fetch/update)
+- [x] `useAuthGate`→authStore 실연동, `App.tsx`에서 `initialize()` 호출
+- [x] 타입(`types/user.ts`,`types/auth.ts`) + 상수(`constants/firestoreFields.ts`)
+- [x] typecheck + Android `assembleDebug` 성공
+- [x] `@react-native-async-storage/async-storage` 제거 (미사용, 결정 A)
+- 비고: 런타임 흐름(로그인→메인) 검증은 에뮬레이터+Firebase 자격 필요 → 사용자 환경에서 `yarn android`로 확인. iOS는 1-2.5 보류 유지
 
 #### 1-5. 인증 화면 (P0)
 - [ ] **Splash 화면**
@@ -318,7 +323,7 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 | Phase | 진행률 | 시작일 | 종료일 |
 |---|---|---|---|
 | Phase 0 | 95% | 2026-05-19 | (거의 완료, 일부 [TBD] 잔존) |
-| Phase 1 | 60% | 2026-05-19 | (진행 중 — 1-1·1-2(Android)·1-3 완료, iOS 1-2.5 보류, 1-4 다음) |
+| Phase 1 | 72% | 2026-05-19 | (진행 중 — 1-1·1-2(Android)·1-3·1-4 완료, iOS 1-2.5 보류, 1-5/1-6 다음) |
 | Phase 2 | 0% | TBD | TBD |
 | Phase 3 | 0% | TBD | TBD |
 | Phase 4 | 0% | TBD | TBD |

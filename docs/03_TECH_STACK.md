@@ -87,7 +87,8 @@
 
 | 카테고리 | 패키지 (잠정) | 비고 |
 |---|---|---|
-| 상태관리 | **[TBD: Zustand 또는 Redux Toolkit]** | RideTalk 패턴 확인 후 결정 |
+| 상태관리 | ✅ **Zustand 5.0.x** (2026-05-19 확정) | 단독개발+50명 규모 적합, 보일러플레이트 적음, RN/TS 친화. RTK는 과함 |
+| 영속(persist) | ❌ authStore 미적용 (Phase 1-4 결정 A) | Firebase Auth 네이티브 세션이 단일 출처. `@react-native-async-storage/async-storage`는 미사용이라 제거 — userStore 캐시 등 필요 시 **RN 0.76 호환 2.x**로 재도입 |
 | 디자인 시스템 | 자체 구축 (`src/theme/`) | RideTalk과 동일한 토큰 사용 가능성 |
 | 아이콘 | `react-native-vector-icons` 또는 `lucide-react-native` | [TBD] |
 | 알림 | `notifee/react-native` | 로컬 알림 (FCM 표시) |
@@ -334,7 +335,7 @@ routefinding/                          ← 저장소 루트 (v2 브랜치)
 
 다음 항목은 RideTalk의 실제 `package.json`과 코드 패턴 확인 후 확정:
 
-1. **[TBD] 상태관리**: Zustand vs Redux Toolkit vs Context+useReducer
+1. ~~**[TBD] 상태관리**~~ → ✅ **Zustand 확정** (2026-05-19, Phase 1-4)
 2. **[TBD] 지도 SDK**: react-native-maps (Google) vs react-native-kakao-maps
 3. **[TBD] 디자인 토큰**: 색상/폰트 체계 (RideTalk 것 그대로 vs 새로 설계)
 4. **[TBD] 아이콘**: react-native-vector-icons vs lucide-react-native vs SVG 직접

@@ -318,15 +318,29 @@ RootNavigator (인증 분기 — Phase 1-4 authStore 연동 예정)
 
 > 각 흐름은 작업 시 와이어프레임과 함께 추가.
 
-### 1. 첫 진입 흐름 [TBD]
+### 1. 첫 진입 흐름 ✅ (Phase 1-3/1-4 store 연동 반영)
 
 ```
-앱 실행 → Splash (영상)
-       ↓
-  로그인 상태?
-       ├── No → Login → SignUp (필요시) → Home
-       └── Yes → Home
+앱 실행 → App.tsx
+       ├─ initAppCheck()                         (App Check 1회)
+       └─ useAuthStore.initialize()              (onAuthStateChanged 구독 시작)
+                 ↓
+        RootNavigator (useAuthGate ← authStore)
+                 ↓
+        isInitializing == true ? → SplashScreen 표시 (세션 복원 대기)
+                 ↓ (첫 onAuthStateChanged 수신)
+          isAuthenticated ?
+            ├── false → AuthStack (Splash→Login→SignUp)
+            └── true  → MainStack (4탭: 게시판/개념도/지도/마이페이지)
+
+로그인 성공: authStore.signIn() → Firebase → onAuthStateChanged →
+            store 갱신 → RootNavigator 자동으로 MainStack 전환
+재시작:     RNFB 네이티브 세션 복원 → onAuthStateChanged → 자동 로그인
+            (별도 persist 없음 = 단일 출처, v1 FirebaseAuth.currentUser 동등)
 ```
+
+> store 매핑: `authStore`(인증 세션·액션) / `userStore`(`users/{uid}` 프로필).
+> 영상 스플래시(react-native-video)·실제 Login UI는 Phase 2에서 교체.
 
 ### 2. 루트 검색 흐름 [TBD]
 

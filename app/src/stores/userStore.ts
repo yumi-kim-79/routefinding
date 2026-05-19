@@ -1,0 +1,73 @@
+/**
+ * userStore — Firestore 사용자 프로필 (Zustand).
+ *
+ * `users/{uid}` 문서를 읽고/수정한다 (docs/02_DATA_MODEL.md User 스키마).
+ * 기존 Firestore 구조 변경 금지 — 읽기/부분 수정만.
+ */
+import { create } from 'zustand';
+import {
+  doc,
+  getDoc,
+  serverTimestamp,
+  updateDoc,
+} from '@react-native-firebase/firestore';
+import { db } from '../services/firebase';
+import { COLLECTIONS } from '../constants/firestoreFields';
+import type { UserProfile, UserProfileUpdate } from '../types/user';
+
+interface UserState {
+  profile: UserProfile | null;
+  isLoading: boolean;
+  error: string | null;
+
+  fetchProfile: (uid: string) => Promise<void>;
+  updateProfile: (uid: string, patch: UserProfileUpdate) => Promise<void>;
+  clear: () => void;
+}
+
+export const useUserStore = create<UserState>((set) => ({
+  profile: null,
+  isLoading: false,
+  error: null,
+
+  fetchProfile: async (uid) => {
+    set({ isLoading: true, error: null });
+    try {
+      const snap = await getDoc(doc(db, COLLECTIONS.USERS, uid));
+      if (snap.exists()) {
+        set({
+          profile: { uid, ...snap.data() } as UserProfile,
+          isLoading: false,
+        });
+      } else {
+        set({ profile: null, isLoading: false });
+      }
+    } catch (e) {
+      set({
+        isLoading: false,
+        error: e instanceof Error ? e.message : '프로필 조회 실패',
+      });
+      throw e;
+    }
+  },
+
+  updateProfile: async (uid, patch) => {
+    set({ error: null });
+    try {
+      await updateDoc(doc(db, COLLECTIONS.USERS, uid), {
+        ...patch,
+        updatedAt: serverTimestamp(),
+      });
+      set((s) =>
+        s.profile && s.profile.uid === uid
+          ? { profile: { ...s.profile, ...patch } }
+          : {},
+      );
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : '프로필 수정 실패' });
+      throw e;
+    }
+  },
+
+  clear: () => set({ profile: null, error: null }),
+}));
