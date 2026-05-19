@@ -22,9 +22,9 @@
 
 | Flutter (v1) | RN (v2) | 라인 수 | 상태 |
 |---|---|---|---|
-| `lib/splash_screen.dart` | `app/src/screens/auth/SplashScreen.tsx` | - | ⏳ |
-| `lib/login_screen.dart` | `app/src/screens/auth/LoginScreen.tsx` | 305 | ⏳ |
-| `lib/sign_up_screen.dart` | `app/src/screens/auth/SignUpScreen.tsx` | 305 | ⏳ |
+| `lib/splash_screen.dart` | `app/src/screens/auth/SplashScreen.tsx` | 127 | ✅ Android (정적, 영상 v2.1+) |
+| `lib/login_screen.dart` | `app/src/screens/auth/LoginScreen.tsx` | 242 | ✅ Android (인증 게이트 1:1) |
+| `lib/sign_up_screen.dart` | `app/src/screens/auth/SignUpScreen.tsx` | 305 | ✅ Android (닉네임 중복확인 1:1) |
 
 ### 2. 메인
 
@@ -167,6 +167,28 @@ theme.spacing.md                    // 16
 
 > 각 화면 작업 시작 시 이 섹션에 와이어프레임 추가.
 > 처음엔 비어있고, 화면을 다룰 때마다 하나씩 추가한다.
+
+### 인증 (Phase 1-5 ✅ Android)
+
+```
+[Splash]                 [Login]                  [SignUp]
+┌───────────────┐       ┌───────────────┐        ┌──────────────────────┐
+│               │       │ RouteFinding  │        │ ┌닉네임─────┐ [중복확인]│
+│ RouteFinding  │       │   로그인       │        │ (사용 가능/중복 메시지) │
+│ 클라이밍 루트  │       │ ┌이메일──────┐ │        │ ┌이메일──────────────┐ │
+│   & 커뮤니티   │       │ ┌비밀번호[표시]│ │        │ ┌비밀번호────[표시]──┐ │
+│   (스피너)     │       │ (에러 메시지)  │        │ (에러 메시지)          │
+│               │       │ [   로그인   ] │        │ [     회원가입      ]  │
+│               │       │ [   회원가입  ]│        │                       │
+└───────────────┘       └───────────────┘        └──────────────────────┘
+isInitializing 중        signIn→게이트            중복확인 필수→signUp
+RootNavigator가 표시      미인증=Alert(재발송)      →인증메일 안내→Login
+```
+
+- 인증 게이트(v1 1:1): `!emailVerified && !isOldUser && !isAdmin` → 차단+재발송.
+  `isOldUser`=`createdAt < 2025-05-01 05:00 UTC`(없으면 true), `isAdmin`=ADMIN_EMAILS.
+- 흐름: Splash(복원 대기) → 미인증 Login ↔ SignUp → signIn 성공+gatePassed → MainTabs.
+- 컴포넌트: `Screen`/`Text`/`Input`/`Button`(디자인 토큰). 다이얼로그=RN `Alert`.
 
 ### 예시 템플릿
 

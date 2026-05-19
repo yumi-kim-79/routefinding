@@ -20,3 +20,17 @@ export function toAuthUser(user: FirebaseAuthTypes.User): AuthUser {
     emailVerified: user.emailVerified,
   };
 }
+
+/**
+ * 이메일 미인증으로 로그인 차단(v1 게이트). LoginScreen이 잡아
+ * "이메일 인증 필요" 다이얼로그 + 재발송 버튼을 띄운다.
+ */
+export class EmailNotVerifiedError extends Error {
+  /** v1: 차단 후 사용자 요청 시 인증메일 재발송 */
+  resend: () => Promise<void>;
+  constructor(resend: () => Promise<void>) {
+    super('email-not-verified');
+    this.name = 'EmailNotVerifiedError';
+    this.resend = resend;
+  }
+}

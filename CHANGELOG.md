@@ -128,6 +128,25 @@
 - 폰트: 시스템 기본(v1 동일, 별도 폰트 미도입). 다크모드: 구조만(placeholder), 실제 토글은 Phase 5
 - 등급 메달·트래킹 속도색은 별도 의미 슬롯으로 v1 UX 정확 보존
 
+### 🔐 인증 화면 (Phase 1-5 — 2026-05-19)
+
+#### Added
+- `SplashScreen` 정적 구현 (로고/태그라인/인디케이터). 자동로그인 체크는 `authStore.initialize()`가 담당. 영상 스플래시는 v2.1+
+- `LoginScreen` — 이메일/비밀번호 + `authStore.signIn`, v1 에러 코드 매핑, **이메일 인증 게이트** 차단 시 재발송 다이얼로그(RN Alert)
+- `SignUpScreen` — 닉네임 **중복확인 버튼**(v1 방식) + 이메일/비밀번호 → `authStore.signUp`
+- `authStore`: **Option A 게이트 패턴** — `gatePassed` + `signingIn` 가드. v1 1:1: `!emailVerified && !isOldUser && !isAdmin` 차단, `isOldUser`=createdAt<2025-05-01 05:00 UTC(없으면 true), `signUp`=계정+displayName+`users/{uid}` 문서+인증메일+signOut(자동로그인 안 함)
+- `userStore`: `isNicknameAvailable`(nickname 쿼리), `createProfile`(v1 동일 필드 `nickname/email/createdAt`)
+- `constants/admin.ts`: `ADMIN_EMAILS=['yusung790926@gmail.com']` + `EMAIL_VERIFICATION_CUTOFF` (TODO Phase 2-5 Custom Claims 이전)
+- `types/auth.ts`: `EmailNotVerifiedError`(resend 클로저)
+- `AuthNavigator` Login↔SignUp 정리(Splash는 RootNavigator가 isInitializing 중 렌더), `useAuthGate`=`isAuthenticated && gatePassed`
+- ✅ typecheck 통과, ✅ Android `assembleDebug` 성공
+
+#### 의도적 이탈 (사용자 승인, v1과 다름)
+- `last_email` 자동입력 생략 (결정 A·async-storage 미사용, userStore 캐시 도입 시 재검토)
+- 로그인/스플래시 FCM 토큰 저장 → Phase 3 (messaging 미설치)
+- 영상 스플래시·이미지 피커 제외 (MVP)
+- 인증 다이얼로그: v1 `AlertDialog`(상시·로딩) → RN `Alert`(재발송 후 결과 Alert) — 기능 동등, 커스텀 모달/추가 의존성 회피
+
 ### 🌿 브랜치
 
 #### Added

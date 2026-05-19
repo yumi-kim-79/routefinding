@@ -10,9 +10,8 @@
  */
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
-/** 미인증 스택 */
+/** 미인증 스택 (Splash는 RootNavigator가 isInitializing 중 직접 렌더) */
 export type AuthStackParamList = {
-  Splash: undefined;
   Login: undefined;
   SignUp: undefined;
 };

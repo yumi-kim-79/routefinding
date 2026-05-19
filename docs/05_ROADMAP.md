@@ -114,19 +114,14 @@ RN 앱이 실행되고, Firebase 연결되고, 로그인이 작동하는 최소 
 - [x] `@react-native-async-storage/async-storage` 제거 (미사용, 결정 A)
 - 비고: 런타임 흐름(로그인→메인) 검증은 에뮬레이터+Firebase 자격 필요 → 사용자 환경에서 `yarn android`로 확인. iOS는 1-2.5 보류 유지
 
-#### 1-5. 인증 화면 (P0)
-- [ ] **Splash 화면**
-  - [ ] 영상 재생 (react-native-video)
-  - [ ] 자동 로그인 체크
-  - [ ] 화면 분기
-- [ ] **Login 화면**
-  - [ ] UI 구성
-  - [ ] Firebase Auth 연동
-  - [ ] 에러 처리
-- [ ] **SignUp 화면**
-  - [ ] UI 구성
-  - [ ] 회원가입 로직
-  - [ ] 프로필 이미지 업로드
+#### 1-5. 인증 화면 (P0) ✅ 완료 (Android 기준 — 2026-05-19)
+- [x] **Splash** — 정적(로고/태그라인/인디케이터). 자동로그인=authStore.initialize. 화면분기=RootNavigator. (영상=v2.1+)
+- [x] **Login** — UI(공통 컴포넌트) + authStore.signIn + 이메일 인증 게이트 + 에러 매핑 + 재발송 다이얼로그
+- [x] **SignUp** — UI + 닉네임 중복확인(v1 버튼식) + signUp(계정/displayName/프로필문서/인증메일/signOut)
+- [x] Option A 게이트 패턴(gatePassed/signingIn), v1 1:1(예전유저/관리자 예외, 2025-05-01 컷)
+- [x] typecheck + Android `assembleDebug` 성공
+- [~] 프로필 이미지 업로드 → 마이페이지(Phase 2-1)로 이관 (사용자 결정②)
+- 비고: 런타임(로그인→메인/재발송) 검증은 에뮬레이터+Firebase 자격 필요 → `yarn android`로 확인. iOS 1-2.5 보류
 
 #### 1-6. 디자인 시스템 ✅ 완료 (Android 기준 — 2026-05-19)
 - [x] `theme/colors.ts` (v1 색상 보존 + M3 슬롯, light + dark placeholder)
@@ -325,7 +320,7 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 | Phase | 진행률 | 시작일 | 종료일 |
 |---|---|---|---|
 | Phase 0 | 95% | 2026-05-19 | (거의 완료, 일부 [TBD] 잔존) |
-| Phase 1 | 88% | 2026-05-19 | (진행 중 — 1-1~1-4·1-6 완료, iOS 1-2.5 보류, 1-5 인증 화면만 남음) |
+| Phase 1 | 95% | 2026-05-19 | (1-1~1-6 Android 완료. 잔여: iOS 1-2.5 보류 + 런타임 검증. DoD의 "iOS 빌드"는 1-2.5 해소 시) |
 | Phase 2 | 0% | TBD | TBD |
 | Phase 3 | 0% | TBD | TBD |
 | Phase 4 | 0% | TBD | TBD |

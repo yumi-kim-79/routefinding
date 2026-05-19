@@ -1,8 +1,9 @@
 /**
  * 인증 게이트 — authStore(Zustand) 반영.
  *
- * 인증 세션의 단일 출처는 Firebase Auth 네이티브. `initialize()`(App.tsx에서 1회 호출)의
- * `onAuthStateChanged`가 store를 동기화하면 RootNavigator가 자동 분기한다.
+ * Main 진입 조건 = isAuthenticated && gatePassed (Option A, v1 이메일 인증 게이트).
+ * 세션 복원/자동로그인은 게이트 면제(gatePassed 자동 true), 명시적 로그인은
+ * authStore.signIn이 게이트 판정 후 gatePassed 설정.
  */
 import { useAuthStore } from '../stores/authStore';
 
@@ -14,5 +15,6 @@ export interface AuthGateState {
 export function useAuthGate(): AuthGateState {
   const isInitializing = useAuthStore((s) => s.isInitializing);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  return { isLoading: isInitializing, isAuthenticated };
+  const gatePassed = useAuthStore((s) => s.gatePassed);
+  return { isLoading: isInitializing, isAuthenticated: isAuthenticated && gatePassed };
 }
