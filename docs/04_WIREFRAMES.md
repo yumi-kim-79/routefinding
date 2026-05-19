@@ -30,9 +30,9 @@
 
 | Flutter | RN | 라인 수 | 상태 |
 |---|---|---|---|
-| `lib/main.dart` | `app/src/App.tsx` + `app/src/navigation/RootNavigator.tsx` | - | ⏳ |
-| `lib/home_screen.dart` | `app/src/screens/home/HomeScreen.tsx` | - | ⏳ |
-| `lib/bottom_nav_bar.dart` | `app/src/navigation/MainTabNavigator.tsx` | - | ⏳ |
+| `lib/main.dart` | `app/src/App.tsx` + `app/src/navigation/RootNavigator.tsx` | - | 🚧 골격(인증분기 스텁, Phase 1-4 authStore 연동 예정) |
+| `lib/home_screen.dart` | `app/src/screens/home/HomeScreen.tsx` | - | ⏳ (v1에서 탭 아님) |
+| `lib/bottom_nav_bar.dart` | `app/src/navigation/MainTabNavigator.tsx` | 50 | 🚧 4탭 골격 완료, 탭 화면은 플레이스홀더 |
 
 ### 3. 지도 / 루트
 
@@ -275,46 +275,42 @@ CrewDetailScreen.tsx               ← 메인 (200~300줄)
 
 ## 🗺️ 네비게이션 구조
 
+> ✅ Phase 1-3에서 골격 구현·Android 빌드 검증 완료 (화면은 플레이스홀더, Phase 2에서 교체).
+> ⚠️ **정정**: 기존 문서는 5탭(Home/Map/Board/Crew/MyPage)으로 가정했으나,
+> Flutter v1(`git show main:lib/bottom_nav_bar.dart`) 실측 결과 **4탭**이다.
+> CLAUDE.md 1:1 보존 원칙에 따라 v1 4탭을 그대로 재현한다.
+
+### v1 하단 탭 실측 (lib/bottom_nav_bar.dart)
+
+| idx | 라벨 | v1 라우트 | v2 탭 화면 |
+|---|---|---|---|
+| 0 | 게시판 | `/board` | `screens/board/BoardScreen.tsx` (NoticeBoardScreen) |
+| 1 | 개념도 | `/` | `screens/route/ConceptListScreen.tsx` |
+| 2 | 지도 | `/reports` | `screens/report/ReportListScreen.tsx` (⚠️ 라벨=지도, 실제=리포트목록) |
+| 3 | 마이페이지 | `/mypage` | `screens/profile/MyPageScreen.tsx` |
+
+> Home 탭·Crew 탭은 v1 하단바에 **없음**. HomeScreen은 존재하나 탭 아님. 크루는 비탭 경로(push)로 진입.
+
 ```
-RootNavigator
-├── AuthStack (인증 안 됨)
-│   ├── Splash
-│   ├── Login
-│   └── SignUp
+RootNavigator (인증 분기 — Phase 1-4 authStore 연동 예정)
+├── AuthStack (미인증)        Splash → Login → SignUp
 │
 └── MainStack (인증됨)
-    ├── MainTabs
-    │   ├── HomeTab → HomeScreen
-    │   ├── MapTab → MapScreen
-    │   ├── BoardTab → BoardScreen
-    │   ├── CrewTab → CrewMainScreen
-    │   └── MyPageTab → MyPageScreen
+    ├── MainTabs (v1 4탭)
+    │   ├── BoardTab   → BoardScreen      (게시판)
+    │   ├── ConceptTab → ConceptListScreen (개념도)
+    │   ├── MapTab     → ReportListScreen  (지도=리포트목록)
+    │   └── MyPageTab  → MyPageScreen      (마이페이지)
     │
-    ├── Modal Stack
-    │   ├── RouteDetail
-    │   ├── PitchDetail
-    │   ├── PostDetail
-    │   ├── CommentDetail
-    │   ├── UserProfile
-    │   ├── CrewDetail
-    │   ├── CrewChat
-    │   ├── WritePost
-    │   ├── EditPost
-    │   ├── MapInput
-    │   ├── Tracking
-    │   ├── ApproachTracking
-    │   ├── ImageEditor
-    │   ├── NotificationList
-    │   ├── ReportList
-    │   ├── ReportDetail
-    │   └── ReportAdmin (관리자 전용)
-    │
-    └── FullScreen Modals
-        ├── FullImage
-        └── FullscreenPhotoViewer
+    └── Push/Modal (비탭 진입 — 딥링크 대비 param 타입화, FCM 연동은 Phase 3)
+        ├── RouteDetail/ReportDetail/PitchDetail/ReportAdmin
+        ├── PostDetail/CommentDetail/WritePost/EditPost
+        ├── CrewMain/CrewDetail/CrewChat   (크루 진입)
+        └── UserProfile/Tracking/ApproachTracking/MapInput/ImageEditor/NotificationList
 ```
 
-> ⚠️ 네비게이션 구조는 v1 라우팅 + 사용자 흐름 확인 후 확정.
+> 딥링크: `src/navigation/types.ts`의 param에 식별자(id) 타입화로 구조만 대비.
+> 실제 React Navigation `linking` config + FCM 연동은 Phase 3.
 
 ---
 

@@ -78,6 +78,22 @@
   - 사유: 시스템 환경이 이미 Berry로 통일됨(다른 Vue/Firebase 프로젝트), classic yarn deprecated, 매번 `YARN_IGNORE_PATH=1` 우회 부담 제거, 모던 기준
   - 관련 docs(`03_TECH_STACK.md`, `GETTING_STARTED.md`)를 yarn 3.x(Berry) 기준으로 갱신
 
+### 🧭 네비게이션 (Phase 1-3 — 2026-05-19)
+
+#### Added
+- React Navigation **v7** 설치 (`@react-navigation/native` 7.2.4, `native-stack` 7.15.1, `bottom-tabs` 7.16.1) + `react-native-screens` 4.4.0(핀), `react-native-safe-area-context` 4.14.1(핀)
+- `src/navigation/` 골격: `types.ts`(타입 안전 param, 딥링크 대비 id), `AuthNavigator`, `MainTabNavigator`(v1 4탭), `MainNavigator`(push/modal), `RootNavigator`(인증 분기), `useAuthGate`(스텁)
+- 플레이스홀더 화면: auth 3종 + 탭 4종(Board/Concept/ReportList/MyPage) + 공통 `PlaceholderScreen`
+- `App.tsx` → NavigationContainer + SafeAreaProvider + RootNavigator (RN 템플릿 화면 제거)
+- ✅ typecheck 통과, ✅ **Android `assembleDebug` 빌드 성공**
+
+#### Changed
+- 하단 탭 **5탭 가정 → v1 실측 4탭으로 정정** (게시판/개념도/지도/마이페이지). `git show main:lib/bottom_nav_bar.dart` 근거. `docs/04_WIREFRAMES.md` 네비게이션 섹션·매핑표 정정 (CLAUDE.md 1:1 보존)
+- 딥링크: param 타입만 대비(구조), 실제 linking·FCM은 Phase 3 (사용자 결정)
+
+#### Fixed
+- `react-native-screens@4.25.1`(yarn add 기본 최신) ↔ RN 0.76.9 codegen 불일치(`Unknown prop type "accessibilityContainerViewIsModal"`) → 4.4.0 핀으로 해결 (RNav7 peer `>=4.0.0` 충족). safe-area-context도 4.14.1로 정렬
+
 ### 🌿 브랜치
 
 #### Added

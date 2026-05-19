@@ -95,12 +95,14 @@ RN 앱이 실행되고, Firebase 연결되고, 로그인이 작동하는 최소 
 - 🔔 **재검증 트리거**: `@react-native-firebase/*` 또는 `firebase-ios-sdk`(gRPC) 새 버전 출시 / Xcode 26.x 호환 픽스 공지 시
 - [ ] iOS 빌드 검증 (트리거 충족 후 `06_iOS_BUILD_NOTES.md` 체크리스트대로 재시도)
 
-#### 1-3. 네비게이션
-- [ ] React Navigation 설치 & 셋업
-- [ ] `RootNavigator` (Auth vs Main 분기)
-- [ ] `AuthNavigator` (Splash → Login → SignUp)
-- [ ] `MainTabNavigator` (탭 구성)
-- [ ] 타입 정의 (`navigation.ts`)
+#### 1-3. 네비게이션 ✅ 완료 (Android 기준 — 2026-05-19)
+- [x] React Navigation v7 설치 (+ screens 4.4.0 / safe-area-context 4.14.1 핀)
+- [x] `RootNavigator` (Auth vs Main 분기, 인증=스텁 `useAuthGate` → 1-4 authStore 연동 예정)
+- [x] `AuthNavigator` (Splash → Login → SignUp, 플레이스홀더)
+- [x] `MainTabNavigator` (v1 동등 4탭: 게시판/개념도/지도/마이페이지)
+- [x] 타입 정의 (`src/navigation/types.ts`, 딥링크 대비 param)
+- [x] typecheck 통과 + Android `assembleDebug` 성공
+- 비고: 화면은 플레이스홀더(Phase 2 교체), iOS 빌드는 1-2.5 보류 트랙
 
 #### 1-4. 상태관리
 - [ ] [TBD: Zustand 등] 설치
@@ -316,7 +318,7 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 | Phase | 진행률 | 시작일 | 종료일 |
 |---|---|---|---|
 | Phase 0 | 95% | 2026-05-19 | (거의 완료, 일부 [TBD] 잔존) |
-| Phase 1 | 45% | 2026-05-19 | (진행 중 — 1-1·1-2(Android) 완료, iOS 1-2.5 보류, 1-3 준비) |
+| Phase 1 | 60% | 2026-05-19 | (진행 중 — 1-1·1-2(Android)·1-3 완료, iOS 1-2.5 보류, 1-4 다음) |
 | Phase 2 | 0% | TBD | TBD |
 | Phase 3 | 0% | TBD | TBD |
 | Phase 4 | 0% | TBD | TBD |
