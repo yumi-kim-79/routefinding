@@ -10,8 +10,8 @@
 
 | 도구 | 버전 | 설치 |
 |---|---|---|
-| Node.js | **20.x LTS** | https://nodejs.org/ 또는 `nvm install 20` |
-| yarn | 최신 | `npm install -g yarn` |
+| Node.js | **20.x LTS** | `nvm install 20 && nvm use 20` (시스템 기본 v24면 반드시 20으로 전환) |
+| yarn | **3.x (Berry)** | Node 20 동봉 **corepack** 사용. 별도 설치 불필요 — `app/`에서 `corepack yarn …` 실행 시 `packageManager: yarn@3.6.4` 자동 적용 |
 | Git | 최신 | 이미 설치됨 ✅ |
 | Firebase CLI | 최신 | `npm install -g firebase-tools` |
 | Watchman (macOS) | 최신 | `brew install watchman` |
@@ -57,8 +57,14 @@ git pull origin v2
 
 ```bash
 cd app
-yarn install
+yarn install        # = corepack yarn install (Berry 3.6.4 자동)
 ```
+
+> 💡 **Yarn Berry 안내**: 이 프로젝트는 yarn 3.x(Berry)를 사용한다 (`app/package.json`의 `packageManager` 필드로 고정).
+> - `nodeLinker: node-modules` 설정이라 일반 `node_modules/`가 생성된다 (PnP 아님).
+> - `yarn install`, `yarn start`, `yarn ios`, `yarn android`, `yarn lint`, `yarn test`, `yarn typecheck`, `yarn clean` 명령은 classic과 동일하게 동작한다.
+> - 패키지 추가는 `yarn add <pkg>` (classic의 `--save` 불필요, Berry 기본 동작).
+> - corepack은 Node 20에 동봉되어 별도 yarn 설치가 필요 없다.
 
 ### Step 2: iOS 의존성 (Mac만)
 

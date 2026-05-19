@@ -9,16 +9,29 @@
 
 | 항목 | 버전/요구사항 |
 |---|---|
-| Node.js | **20.x LTS** |
-| 패키지 매니저 | **yarn 권장** (npm도 가능) |
-| React Native | **0.74+** |
-| TypeScript | 최신 안정판 (5.x) |
+| Node.js | **20.x LTS** (Phase 1 검증: v20.20.2, nvm 전환) |
+| 패키지 매니저 | **yarn 3.x (Berry)** — corepack + `app/package.json`의 `packageManager: yarn@3.6.4`로 고정 |
+| React Native | **0.76.9** (핀 고정 — docs "0.74+" 조건 충족, 0.76 라인 최종 패치 = 안정) |
+| TypeScript | 5.0.4 (RN 0.76.9 템플릿 기본) |
 | Xcode (iOS) | **15+** |
 | Android Studio | **Hedgehog+** (2023.1+) |
 | Firebase CLI | 최신 |
 | Git | 최신 |
 
 자세한 셋업은 `GETTING_STARTED.md` 참조.
+
+### ✅ Phase 1 확정 결정 (2026-05-19)
+
+> Phase 1 RN 초기화 시 사용자 결정으로 확정. 이전 `[TBD]`/`[QUESTION]` 항목 해결분 반영.
+
+| 항목 | 결정 | 사유 |
+|---|---|---|
+| **패키지명 (번들 ID)** | Android `com.yusung.routefinding` / iOS `com.yusungyun.RouteFinding` — **기존 v1 그대로 유지** | 기존 Firebase 앱 재등록 불필요, 50명 유저 무중단 전환. v1에서 이미 양 플랫폼 불일치 → v2.x에서 점진 통일 검토 |
+| **RN 버전** | `0.76.9` 핀 고정 | "0.74+" 충족, 0.76 라인 최종 패치(안정), New Architecture 기본 |
+| **Node** | 20.x LTS (v20.20.2) | docs 명세 준수, RN 0.76 검증 조합. 시스템 기본은 v24 → nvm으로 전환 |
+| **패키지 매니저** | **yarn Berry 3.6.4** (당초 classic 1.22 계획에서 변경) | 시스템 환경이 이미 Berry로 통일됨(다른 Vue/Firebase 프로젝트), classic yarn은 deprecated, 매번 `YARN_IGNORE_PATH=1` 우회 부담 제거. 모던 기준 |
+
+> ⚠️ Android `namespace`/Java 패키지도 `com.yusung.routefinding`로 전체 리네임 완료 (applicationId와 일치). iOS 테스트 타깃 번들 ID는 `com.yusungyun.RouteFinding.tests`.
 
 ---
 

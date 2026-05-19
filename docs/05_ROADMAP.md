@@ -45,10 +45,12 @@
 - [ ] **0-10**: `CHANGELOG.md` 초기화
 - [ ] **0-11**: `GETTING_STARTED.md` 작성
 - [ ] **0-12**: `v2` 브랜치 생성 (Flutter 파일 제거 후)
-- [ ] **0-13**: RideTalk 실제 `package.json` 확인 및 [TBD] 결정
-  - 상태관리 라이브러리 확정
-  - 지도 SDK 확정
-  - 디자인 토큰 확정
+- [~] **0-13**: RideTalk 실제 `package.json` 확인 및 [TBD] 결정
+  - ⚠️ RideTalk은 private 저장소라 직접 확인 불가
+  - [x] RN 버전(0.76.9) / Node(20 LTS) / 패키지 매니저(yarn Berry 3.6.4) / 패키지명(기존 유지) 확정
+  - [ ] 상태관리 라이브러리 — **미결 [TBD]** (Phase 1-4 전 결정 필요)
+  - [ ] 지도 SDK — **미결 [TBD]**
+  - [ ] 디자인 토큰 — **미결 [TBD]**
 
 ### Definition of Done
 
@@ -66,13 +68,14 @@ RN 앱이 실행되고, Firebase 연결되고, 로그인이 작동하는 최소 
 
 ### 작업 목록
 
-#### 1-1. RN 프로젝트 초기화
-- [ ] `app/` 폴더에 RN 0.74+ 프로젝트 생성
-- [ ] TypeScript 설정 (`tsconfig.json`)
-- [ ] ESLint, Prettier 설정 (RideTalk 것 그대로)
-- [ ] 폴더 구조 생성 (`src/screens`, `src/components` 등)
-- [ ] `package.json` 의존성 추가
-- [ ] iOS Podfile, Android build.gradle 설정
+#### 1-1. RN 프로젝트 초기화 (🚧 진행 중 — 2026-05-19 시작)
+- [x] `app/` 폴더에 RN **0.76.9** 프로젝트 생성 (TypeScript 템플릿)
+- [x] TypeScript 설정 (`tsconfig.json` — 템플릿 기본)
+- [~] ESLint, Prettier 설정 — 템플릿 기본 적용됨. "RideTalk 것 그대로"는 RideTalk이 private이라 미적용 (추후 확인 시 동기화)
+- [x] 폴더 구조 생성 (`src/` 27개 디렉터리, 각 `.gitkeep`+`README.md`, `App.tsx`→`src/App.tsx`)
+- [~] `package.json` 의존성 — 기본 의존성 설치 완료. 앱 라이브러리(Firebase/네비 등)는 1-2 이후 추가
+- [x] iOS/Android 번들 ID 설정 (기존 v1 ID 유지: Android `com.yusung.routefinding` / iOS `com.yusungyun.RouteFinding`)
+- [ ] iOS Podfile `pod install` — CocoaPods 환경에서 별도 실행 (1-2 Firebase 연동 시)
 
 #### 1-2. Firebase 연결
 - [ ] Firebase 콘솔에서 iOS/Android 앱 등록 (v2.0 패키지명)
@@ -303,8 +306,8 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 
 | Phase | 진행률 | 시작일 | 종료일 |
 |---|---|---|---|
-| Phase 0 | 80% | 2026-05-19 | (진행 중) |
-| Phase 1 | 0% | TBD | TBD |
+| Phase 0 | 95% | 2026-05-19 | (거의 완료, 일부 [TBD] 잔존) |
+| Phase 1 | 25% | 2026-05-19 | (진행 중 — 1-1 거의 완료, pod install·앱 의존성은 1-2와 함께) |
 | Phase 2 | 0% | TBD | TBD |
 | Phase 3 | 0% | TBD | TBD |
 | Phase 4 | 0% | TBD | TBD |
