@@ -113,3 +113,28 @@ flutter/
 
 # Flutter 플랫폼 폴더 (RN 자체 생성과 다름)
 # RN 셋업 시 app/android, app/ios 로 생성 예정
+
+# ===========================================
+# Flutter 잔재 - 재진입 방지 (v2는 RN)
+# ===========================================
+# Flutter 빌드/캐시
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
+flutter/
+
+# Flutter 플랫폼 폴더는 RN의 app/ios, app/android와 충돌 방지를 위해 무시
+# (실제 RN 폴더는 app/ 아래 생성됨)
+/android/
+/ios/
+/linux/
+/macos/
+/windows/
+/web/
+/lib/
+/test/
+/assets/
+/build/
+
+# 마이그레이션 스크립트는 v2에서 사용 안 함
+# (필요 시 main 브랜치에서 참조)
