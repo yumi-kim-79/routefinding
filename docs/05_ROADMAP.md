@@ -131,13 +131,16 @@ RN 앱이 실행되고, Firebase 연결되고, 로그인이 작동하는 최소 
 - [x] 하이브리드 디자인 토큰 확정 ([TBD] 해소)
 - [x] typecheck + Android `assembleDebug` 성공
 
-### Definition of Done
+### Definition of Done (실측 기준 정정 — 2026-05-19)
 
-- ✅ iOS, Android 모두 빌드 성공
-- ✅ Splash → Login → 회원가입 → 자동 로그인 → 홈 진입 흐름 작동
-- ✅ Firebase Auth, Firestore 연결 확인
-- ✅ FCM 토큰 발급 & Firestore 저장 확인
-- ✅ 사용자 검증 OK
+- ⚠️ 빌드: **Android ✅ / iOS ❌ 보류**(1-2.5, `06_iOS_BUILD_NOTES.md`, 트리거 시 재시도)
+- ✅ Splash → Login → 회원가입 → 로그인 → MainTabs 흐름 작동(Android 런타임 검증)
+  - 단 "앱 완전 종료 후 자동로그인 복원"은 선택 항목으로 미확인(`07_RUNTIME_VERIFICATION.md` #9)
+- ✅ Firebase Auth/Firestore 연결 확인(회원가입·로그인·프로필 문서 동작)
+- ⏸️ FCM 토큰 발급/저장: **Phase 3로 연기**(messaging 미사용, 의도적 이탈 — 사용자 승인)
+- ✅ 사용자 검증 OK (런타임 체크리스트 통과)
+
+> Phase 1은 **Android 기준 완료**로 처리. iOS 빌드·FCM은 별도 트랙/Phase로 명확히 분리됨.
 
 ---
 
@@ -320,7 +323,8 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 | Phase | 진행률 | 시작일 | 종료일 |
 |---|---|---|---|
 | Phase 0 | 95% | 2026-05-19 | (거의 완료, 일부 [TBD] 잔존) |
-| Phase 1 | 95% | 2026-05-19 | (1-1~1-6 Android 완료. 잔여: iOS 1-2.5 보류 + 런타임 검증. DoD의 "iOS 빌드"는 1-2.5 해소 시) |
+| Phase 1 | ✅ 100% (Android) | 2026-05-19 | 1-1~1-6 기능+런타임 검증 완료(`07_RUNTIME_VERIFICATION.md`). iOS 빌드만 1-2.5 보류 트랙 |
+| Phase 2 | 0% | (다음) | 핵심 화면 마이그레이션 (Sprint 2-1~2-5) |
 | Phase 2 | 0% | TBD | TBD |
 | Phase 3 | 0% | TBD | TBD |
 | Phase 4 | 0% | TBD | TBD |

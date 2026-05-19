@@ -147,6 +147,13 @@
 - 영상 스플래시·이미지 피커 제외 (MVP)
 - 인증 다이얼로그: v1 `AlertDialog`(상시·로딩) → RN `Alert`(재발송 후 결과 Alert) — 기능 동등, 커스텀 모달/추가 의존성 회피
 
+### ✅ Phase 1 런타임 검증 (2026-05-19)
+
+- Android 에뮬레이터 런타임 검증 통과: Splash→Login, 회원가입+이메일인증 게이트, 로그인→MainTabs, 4탭, 디자인 토큰. (선택 항목 탭전환·자동로그인 복원은 추후 확인)
+- **Phase 1 (1-1~1-6) Android 기준 100% 완료** (기능+런타임). iOS 빌드는 `docs/06_iOS_BUILD_NOTES.md` 보류 트랙 유지
+- 검증 보고서·교훈 → `docs/07_RUNTIME_VERIFICATION.md` 신규
+- 🐞 교훈: Notifee "native module not found"는 **의존성 문제 아님**(notifee 트리에 부재) — 좀비 Metro(포트 8081)의 스테일 번들. 클린 절차 1순위 = `lsof -ti:8081 | xargs kill -9`
+
 ### 🌿 브랜치
 
 #### Added
