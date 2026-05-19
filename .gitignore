@@ -101,3 +101,15 @@ image_folder_structure.txt
 *_backup.csv
 *_temp.csv
 *_old.csv
+
+# ===========================================
+# Flutter 잔재 제거 후 재진입 방지
+# ===========================================
+# Flutter 빌드 폴더 (RN으로 전환 — 더이상 필요 없음)
+flutter/
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
+
+# Flutter 플랫폼 폴더 (RN 자체 생성과 다름)
+# RN 셋업 시 app/android, app/ios 로 생성 예정
