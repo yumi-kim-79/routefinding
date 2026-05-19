@@ -131,6 +131,38 @@
 
 ---
 
+## 🎨 디자인 토큰 사용 가이드 (Phase 1-6, 2026-05-19)
+
+> **원칙**: 화면 내 색상/폰트/간격 **하드코딩 금지** → 항상 `src/theme` 토큰 사용.
+> 하이브리드: v1 색상값 보존 + 모던 토큰 구조. 폰트=시스템 기본. 다크=placeholder(Phase 5).
+
+```tsx
+import { useTheme } from '../../theme';
+import { Screen } from '../../components/common/Screen';
+import { Text } from '../../components/common/Text';
+import { Button } from '../../components/common/Button';
+import { Input } from '../../components/common/Input';
+
+const theme = useTheme();           // { colors, typography, spacing, radius, scheme }
+theme.colors.primary                // #2196F3 (v1 blue)
+theme.colors.error                  // #F44336
+theme.colors.medal.gold             // 등급 왕관
+theme.spacing.md                    // 16
+```
+
+| 토큰 | 키(예) | v1 매핑 |
+|---|---|---|
+| 색상 | `colors.primary/secondary/error/...` | Material blue/blueAccent/red 등 보존 |
+| 등급 | `colors.medal.{gold,silver,bronze}` | `profile_with_crown` 보존 |
+| 트래킹 | `colors.track.{fast,mid,slow}` | `colored_polylines` 보존 |
+| 타이포 | `typography.{display,headline,title,body,label,caption}` | 시스템 폰트 |
+| 간격 | `spacing.{xs,sm,md,lg,xl,xxl}` | 4의 배수 |
+| 반경 | `radius.{sm,md,lg,full}` | — |
+
+**공통 컴포넌트**: `Screen`(SafeArea+배경), `Text`(variant/color), `Button`(primary/secondary/ghost × sm/md/lg), `Input`(label/error/비번토글). 새 화면은 이들 위에 구성.
+
+---
+
 ## 🎨 화면별 와이어프레임 (작업 진행 시 채워나감)
 
 > 각 화면 작업 시작 시 이 섹션에 와이어프레임 추가.

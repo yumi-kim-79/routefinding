@@ -89,7 +89,7 @@
 |---|---|---|
 | 상태관리 | ✅ **Zustand 5.0.x** (2026-05-19 확정) | 단독개발+50명 규모 적합, 보일러플레이트 적음, RN/TS 친화. RTK는 과함 |
 | 영속(persist) | ❌ authStore 미적용 (Phase 1-4 결정 A) | Firebase Auth 네이티브 세션이 단일 출처. `@react-native-async-storage/async-storage`는 미사용이라 제거 — userStore 캐시 등 필요 시 **RN 0.76 호환 2.x**로 재도입 |
-| 디자인 시스템 | 자체 구축 (`src/theme/`) | RideTalk과 동일한 토큰 사용 가능성 |
+| 디자인 시스템 | ✅ 자체 구축 (`src/theme/`) — **하이브리드** 확정 (2026-05-19) | v1 색상값 보존 + M3 스타일 토큰 구조. 폰트=시스템 기본. 다크=placeholder(Phase 5) |
 | 아이콘 | `react-native-vector-icons` 또는 `lucide-react-native` | [TBD] |
 | 알림 | `notifee/react-native` | 로컬 알림 (FCM 표시) |
 | 토스트 | `react-native-toast-message` | [TBD] |
@@ -337,7 +337,7 @@ routefinding/                          ← 저장소 루트 (v2 브랜치)
 
 1. ~~**[TBD] 상태관리**~~ → ✅ **Zustand 확정** (2026-05-19, Phase 1-4)
 2. **[TBD] 지도 SDK**: react-native-maps (Google) vs react-native-kakao-maps
-3. **[TBD] 디자인 토큰**: 색상/폰트 체계 (RideTalk 것 그대로 vs 새로 설계)
+3. ~~**[TBD] 디자인 토큰**~~ → ✅ **하이브리드 확정** (v1 색상 보존 + 모던 토큰, 2026-05-19)
 4. **[TBD] 아이콘**: react-native-vector-icons vs lucide-react-native vs SVG 직접
 5. **[TBD] 폼 관리**: react-hook-form vs formik vs 직접
 6. **[TBD] 날짜 라이브러리**: date-fns vs dayjs

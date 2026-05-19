@@ -113,6 +113,21 @@
 #### Removed
 - `@react-native-async-storage/async-storage` 제거 — **Phase 1-4 결정 A(persist 안 함)에 따라 미사용**. 설치된 3.0.2가 RN 0.76 셋업에서 `storage-android:1.0.0` 미해소로 Android 빌드 실패시킴. userStore 캐시 등 향후 필요 시 **RN 0.76 호환 2.x로 재도입 예정**
 
+### 🎨 디자인 시스템 (Phase 1-6 — 2026-05-19)
+
+#### Added
+- **하이브리드 디자인 시스템 확정** (`[TBD] 디자인 토큰` 해소): v1 색상값 보존 + M3 스타일 토큰 구조
+- v1 색상 분석 (`git grep main`): `ThemeData(primarySwatch: Colors.blue)` + Material 표준 + 등급 메달(gold/silver/bronze) 추출
+- `src/theme/`: `colors.ts`(light + dark placeholder, v1 실측값), `typography.ts`(시스템 폰트, M3 스케일), `spacing.ts`(4배수), `radius.ts`, `index.ts`(`useTheme` 훅 — useColorScheme 기반 light/dark 선택)
+- 공통 컴포넌트: `Text`(variant/color), `Button`(primary/secondary/ghost × sm/md/lg, loading/disabled), `Input`(label/error/비번토글), `Screen`(SafeArea+배경)
+- `PlaceholderScreen`을 토큰 사용 레퍼런스로 리팩터(하드코딩 제거)
+- ✅ typecheck 통과, ✅ Android `assembleDebug` 성공
+
+#### 결정 / 메모
+- secondary = `#448AFF`(blueAccent, 브랜드 파랑 일관성), purple은 `accent.purple`(#9C27B0) 별도 슬롯 (사용자 조정)
+- 폰트: 시스템 기본(v1 동일, 별도 폰트 미도입). 다크모드: 구조만(placeholder), 실제 토글은 Phase 5
+- 등급 메달·트래킹 속도색은 별도 의미 슬롯으로 v1 UX 정확 보존
+
 ### 🌿 브랜치
 
 #### Added

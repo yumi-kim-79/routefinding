@@ -128,11 +128,13 @@ RN 앱이 실행되고, Firebase 연결되고, 로그인이 작동하는 최소 
   - [ ] 회원가입 로직
   - [ ] 프로필 이미지 업로드
 
-#### 1-6. 디자인 시스템
-- [ ] `theme/colors.ts` (색상 토큰)
-- [ ] `theme/typography.ts` (폰트 시스템)
-- [ ] `theme/spacing.ts` (간격 토큰)
-- [ ] 공통 컴포넌트 (Button, Input, Text)
+#### 1-6. 디자인 시스템 ✅ 완료 (Android 기준 — 2026-05-19)
+- [x] `theme/colors.ts` (v1 색상 보존 + M3 슬롯, light + dark placeholder)
+- [x] `theme/typography.ts` (시스템 폰트, M3 스케일) + `spacing.ts`(4배수) + `radius.ts`
+- [x] `theme/index.ts` `useTheme` 훅 (다크 구조만, 토글은 Phase 5)
+- [x] 공통 컴포넌트 Button/Input/Text/Screen + PlaceholderScreen 토큰화
+- [x] 하이브리드 디자인 토큰 확정 ([TBD] 해소)
+- [x] typecheck + Android `assembleDebug` 성공
 
 ### Definition of Done
 
@@ -323,7 +325,7 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 | Phase | 진행률 | 시작일 | 종료일 |
 |---|---|---|---|
 | Phase 0 | 95% | 2026-05-19 | (거의 완료, 일부 [TBD] 잔존) |
-| Phase 1 | 72% | 2026-05-19 | (진행 중 — 1-1·1-2(Android)·1-3·1-4 완료, iOS 1-2.5 보류, 1-5/1-6 다음) |
+| Phase 1 | 88% | 2026-05-19 | (진행 중 — 1-1~1-4·1-6 완료, iOS 1-2.5 보류, 1-5 인증 화면만 남음) |
 | Phase 2 | 0% | TBD | TBD |
 | Phase 3 | 0% | TBD | TBD |
 | Phase 4 | 0% | TBD | TBD |
