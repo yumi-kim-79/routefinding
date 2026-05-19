@@ -376,4 +376,52 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 
 ---
 
+## 🚀 다음 세션 시작 가이드 v2 (2026-05-19 갱신)
+
+> 현재 위치: **Phase 1 (Android) 완료 + 검증 / Phase 2-1 진행 중**. 브랜치 `v2` HEAD = `8d837a9`.
+
+### 1) 다음 작업 우선순위 (Sprint 2-1 잔여)
+
+| 순위 | 작업 | 비고 |
+|---|---|---|
+| ① | **2-1-2 탭 본문** — MyReportsTab(route_reports+bouldering_reports)·MyPostsTab(posts userId==me)·MyCommentsTab(collectionGroup comments)·MyRouteTab(users/{uid}/my_routes) | `git show main:lib/mypage_screen.dart` 해당 `_build*` 참조, v1 1:1 |
+| ② | **MyProfileTab + `react-native-image-picker`** | ⚠️ **양파 가능 구간**: 설치 시 RN 0.76 호환 버전 핀 필요할 수 있음 → 착수 시 멈추고 보고 |
+| ③ | **HomeScreen 부가기능 분리** — 출석보상(P1)·`initialIndex`(라우트 param)·`_tabHistory` 백처리(1:1) | v1 home_screen.dart 47~75 참조 |
+| ④ | **UserProfileScreen** (+ UserPostsScreen 분리) | `git show main:lib/user_profile_screen.dart` (351줄) |
+
+### 2) 미해결 결정 (착수 시 사용자 확인)
+
+- **top-tab 라이브러리**: 현재 MyPage는 경량 커스텀 탭 스위처. `@react-navigation/material-top-tabs` 도입 여부 (도입 시 새 의존성 + 양파 가능).
+- **HomeScreen 부가기능 분리 위치**: 출석보상/업데이트체크/AdMob을 어느 모듈·Phase에 둘지 (현재 안: 출석=Phase 2-1 별도 P1, 업데이트=Phase 3+, AdMob=Phase 4).
+- 이미지 피커 = `react-native-image-picker`로 확정(미설치) — ②에서 설치.
+
+### 3) 미확인 검증 항목 (typecheck/빌드만 통과, 런타임 미확인)
+
+- [ ] 5탭 시각 확인 (게시판/개념도/루트 위치/크루/마이페이지)
+- [ ] MyPage 탭 스위처 작동(5탭 전환) + ProfileHeader 표시
+- [ ] ProfileWithCrown 등급별 색상/크라운(👑) 시각 확인
+- [ ] (Phase 1 잔여) 앱 완전 종료 후 자동 로그인 복원, 탭 클릭 전환
+
+### 4) 다음 세션 검증 절차 (필수 순서)
+
+```bash
+# ⚠️ 좀비 Metro 교훈(07_RUNTIME_VERIFICATION 참조) — 반드시 먼저
+lsof -ti:8081 | xargs kill -9 2>/dev/null
+adb uninstall com.yusung.routefinding 2>/dev/null
+watchman watch-del-all 2>/dev/null; rm -rf $TMPDIR/metro-* node_modules/.cache
+# 에뮬레이터 wipe(콜드부트) 권장 → 앱 실행
+export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; nvm use 20
+cd ~/StudioProjects/routefinding/app
+corepack yarn start --reset-cache         # 터미널 A
+corepack yarn android                     # 터미널 B
+```
+> "코드/의존성에 없는데 번들에 있다" = 좀비 Metro/스테일 캐시. 의존성부터 건드리지 말 것.
+
+### 5) iOS 보류 트랙 재검증 트리거
+
+`@react-native-firebase/*` 또는 `firebase-ios-sdk`(gRPC) 새 버전 / Xcode 26.x 호환 공지 시
+→ `docs/06_iOS_BUILD_NOTES.md` 옵션0(클린 재시도)부터.
+
+---
+
 *이 로드맵은 진행하면서 살아 움직이는 문서다. 변경 시 반드시 `CHANGELOG.md`에 기록.*

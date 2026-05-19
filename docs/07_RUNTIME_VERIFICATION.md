@@ -57,4 +57,35 @@ iOS 빌드는 `docs/06_iOS_BUILD_NOTES.md` 보류 트랙 유지(별도).
 
 ---
 
+---
+
+## Phase 2-1 — 다음 세션 검증 대기 (2026-05-19 시점 미확인)
+
+> 아래는 typecheck/Android 빌드만 통과, **런타임 미확인**. 다음 세션에서 확인.
+
+### 사전 절차 (필수 — 좀비 Metro 교훈)
+
+```bash
+lsof -ti:8081 | xargs kill -9 2>/dev/null     # ← 1순위
+adb uninstall com.yusung.routefinding 2>/dev/null
+watchman watch-del-all 2>/dev/null; rm -rf $TMPDIR/metro-* node_modules/.cache
+# 에뮬레이터 wipe(콜드부트) → corepack yarn start --reset-cache / corepack yarn android
+```
+
+### 체크리스트
+
+| # | 항목 | 기대 |
+|---|---|---|
+| 1 | 하단 **5탭** 표시 | 게시판/개념도/루트 위치/크루/마이페이지 (v1 home_screen 1:1) |
+| 2 | 탭 전환 | 5탭 각 placeholder 정상 전환 |
+| 3 | 마이페이지 진입 | ProfileHeader(아바타+닉네임+로그아웃) + 5탭 스위처(내 제보 관리/내글/내댓글/MY ROUTE/마이프로필) |
+| 4 | MyPage 탭 스위처 | 가로 스크롤 탭 선택 시 본문 전환, 활성 탭 primary 색 |
+| 5 | ProfileWithCrown | 등급별 테두리색(5.15 gold…5.7 blue/그외 lightBlue), 5.15/14/13만 👑, 사진 없으면 👤 |
+| 6 | 로그아웃 | ProfileHeader 로그아웃 → Auth 스택 복귀 |
+| 7 | (Phase 1 잔여) | 앱 완전 종료 후 자동 로그인 복원, 탭 클릭 전환 |
+
+→ 결과 ✅/❌ + ❌면 logcat/Metro 스택 원문. 큰 결정·양파면 멈추고 보고.
+
+---
+
 *Phase별 검증 시 이 문서에 결과/교훈을 누적한다.*

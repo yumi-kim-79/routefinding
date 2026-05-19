@@ -9,6 +9,25 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-05-19 세션 종합
+
+> **하루 성과**: Phase 0 마무리 → **Phase 1 (Android) 완료 + 런타임 검증** → Phase 2-1 진행분.
+> 세션 작업 커밋 **11개**(+ 세션 종료 docs 커밋 1 = 12), 브랜치 `v2`: `8bcbaaa → 8d837a9`.
+
+- **Phase 1 완료(Android 기준)**: RN 0.76.9 초기화 → Firebase(Android) → 네비(RNav7) → 상태관리(Zustand) → 디자인 시스템(하이브리드) → 인증 화면(v1 1:1 이메일 게이트). 에뮬레이터 런타임 검증 통과.
+- **Phase 2-1 진행분**: 네비 정정 + 스키마 정정 + ProfileWithCrown + MyPage 갓파일 분해 착수.
+- **🔍 자기진단·정정 패턴**:
+  - **4→5탭 정정**: Phase 1-3 탭 구조를 미사용 dead code(`bottom_nav_bar.dart`) 근거로 잘못 구현 → v1 실제(`home_screen.dart` 5탭) 발견·정정·이력 기록.
+  - 스키마 타입 오류 정정(`photoUrl`/`level:string`/`intro`), `bouldering_reports` 미문서화 발견·보강.
+- **🧅 "양파 까기"/이슈 해결 4건**(추측 패치 금지, 멈춤·보고 원칙 준수):
+  1. yarn Berry/홈 설정 충돌 → Berry 3.6.4 통일
+  2. iOS Xcode 26.3 ↔ gRPC (ScanDependencies→_stdio.h→modulemap) → **iOS 보류 트랙**(`06_iOS_BUILD_NOTES.md`)
+  3. RN 0.76 ↔ react-native-screens 4.25 codegen → 4.4.0 핀
+  4. async-storage 3.x Android 빌드 실패 → 제거(결정 A 일관)
+  5. (보너스) Notifee 빨간화면 = 의존성 무관, 좀비 Metro 스테일 번들 → 포트 정리
+- **결정 확정**: 패키지명(기존 유지)·RN 0.76.9·Node 20·yarn Berry·Zustand·디자인토큰(하이브리드)·이미지피커(react-native-image-picker, 미설치)·App Check(Play Integrity/DeviceCheck+debug).
+- **별도 트랙/연기**: iOS 빌드(1-2.5), FCM(Phase 3), 영상 스플래시·top-tab 라이브러리·아이콘 라이브러리([TBD]).
+
 ### 📁 문서
 
 #### Added
