@@ -151,12 +151,15 @@ v1의 핵심 기능을 v2에서 동일하게 사용 가능한 상태.
 
 ### 우선순위 순서
 
-#### Sprint 2-1: 홈 & 마이페이지 기반 (1주)
+#### Sprint 2-1: 홈 & 마이페이지 기반 (1주) — 🚧 진행 중 (2026-05-19)
 
-- [ ] **2-1-1**: HomeScreen (홈)
-- [ ] **2-1-2**: MyPageScreen 기반 구조 (탭 분해)
-- [ ] **2-1-3**: ProfileWithCrown 컴포넌트
-- [ ] **2-1-4**: 사용자 프로필 (`UserProfileScreen`)
+- [x] **①** 네비 4→5탭 정정 (Phase 1-3 dead-code 오판 정정, v1 home_screen.dart 기준)
+- [x] **②** 스키마 타입/문서 정정 (photoUrl/level:string/intro, bouldering_reports 문서화)
+- [x] **2-1-3**: ProfileWithCrown 컴포넌트 (v1 1:1, theme.grade, 크라운 placeholder)
+- [~] **2-1-2**: MyPageScreen 기반 구조 (탭 분해) — **착수**: 컨테이너+ProfileHeader(실)+useMyPage+5탭 placeholder. 탭 본문 구현 잔여
+- [ ] **2-1-1**: HomeScreen — v1 home_screen.dart = 탭 컨테이너(=MainTabNavigator, ①에서 처리). 부가기능(출석보상 P1 등) 잔여
+- [ ] **2-1-4**: UserProfileScreen (시간 남으면)
+- 잔여 결정: 마이프로필 image-picker(react-native-image-picker 확정, ④ 실구현 시 설치), top-tab 라이브러리 도입 여부(현재 경량 커스텀)
 
 #### Sprint 2-2: 게시판 (1.5주)
 
@@ -324,7 +327,7 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 |---|---|---|---|
 | Phase 0 | 95% | 2026-05-19 | (거의 완료, 일부 [TBD] 잔존) |
 | Phase 1 | ✅ 100% (Android) | 2026-05-19 | 1-1~1-6 기능+런타임 검증 완료(`07_RUNTIME_VERIFICATION.md`). iOS 빌드만 1-2.5 보류 트랙 |
-| Phase 2 | 0% | (다음) | 핵심 화면 마이그레이션 (Sprint 2-1~2-5) |
+| Phase 2 | ~8% | 2026-05-19 | Sprint 2-1 진행 중 (네비/스키마 정정+ProfileWithCrown 완료, MyPage 분해 착수) |
 | Phase 2 | 0% | TBD | TBD |
 | Phase 3 | 0% | TBD | TBD |
 | Phase 4 | 0% | TBD | TBD |

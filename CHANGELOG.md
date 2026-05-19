@@ -182,6 +182,18 @@
 - 크라운: 결정 C(이모지 👑 placeholder, 상위 3등급 5.15/5.14/5.13만 — v1 `_crownAsset` 조건 동일). 원본 4.2MB PNG 미도입, **TODO(v2.1+) 최적화 에셋 교체** 명시
 - ✅ typecheck, ✅ Android `assembleDebug`
 
+### 🧗 Phase 2-1 ④ MyPage 갓파일 분해 착수 (2026-05-19)
+
+#### Added
+- `mypage_screen.dart`(1163줄) 분해 골격: `screens/profile/MyPageScreen.tsx`(컨테이너) + `components/ProfileHeader.tsx`(실구현: ProfileWithCrown+닉네임+intro+로그아웃) + 5탭 컴포넌트(`MyReportsTab/MyPostsTab/MyCommentsTab/MyRouteTab/MyProfileTab` placeholder) + `hooks/useMyPage.ts`(authStore uid→userStore.fetchProfile)
+- 탭 스위처: v1 TabBar 라벨 1:1(`내 제보 관리/내글/내댓글/MY ROUTE/마이프로필`), 경량 커스텀 구현(@react-navigation/material-top-tabs 미도입 — 새 의존성 결정 회피)
+- 이전 MyPageScreen placeholder → 분해 컨테이너로 교체 (MainTabNavigator idx4 그대로 연결)
+- ✅ typecheck, ✅ Android `assembleDebug`
+
+#### 잔여 (후속)
+- 5탭 본문 실구현(Reports/Posts/Comments/Routes), MyProfileTab은 image-picker(react-native-image-picker 확정) 도입 시
+- 알림 아이콘(Phase 3), 출석보상(P1), `_updateAllPostsAndCommentsProfile` 비정규화 동기화
+
 ### 🌿 브랜치
 
 #### Added

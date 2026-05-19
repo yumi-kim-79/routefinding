@@ -1,7 +1,89 @@
-/** 마이페이지 탭 (v1 /mypage, 갓 파일 1163줄 → Phase 2-1에서 탭 분해 구현). */
-import React from 'react';
-import { PlaceholderScreen } from '../../components/common/PlaceholderScreen';
+/**
+ * 마이페이지 — v1 `lib/mypage_screen.dart`(1163줄 갓파일) 분해 컨테이너.
+ *
+ * 구조(분해): ProfileHeader + 5탭(내 제보 관리/내글/내댓글/MY ROUTE/마이프로필).
+ * v1은 TabBar/TabBarView. v2 1차는 경량 커스텀 탭 스위처(새 의존성 회피 —
+ * @react-navigation/material-top-tabs 도입은 별도 결정). 탭 본문은 후속 구현.
+ */
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Screen } from '../../components/common/Screen';
+import { Text } from '../../components/common/Text';
+import { useTheme } from '../../theme';
+import { useMyPage } from './hooks/useMyPage';
+import { ProfileHeader } from './components/ProfileHeader';
+import { MyReportsTab } from './components/MyReportsTab';
+import { MyPostsTab } from './components/MyPostsTab';
+import { MyCommentsTab } from './components/MyCommentsTab';
+import { MyRouteTab } from './components/MyRouteTab';
+import { MyProfileTab } from './components/MyProfileTab';
 
-export const MyPageScreen: React.FC = () => (
-  <PlaceholderScreen title="마이페이지" note="v1 탭3 /mypage (mypage_screen.dart)" />
-);
+// v1 Tab 라벨 1:1
+const TABS = [
+  { key: 'reports', label: '내 제보 관리', Comp: MyReportsTab },
+  { key: 'posts', label: '내글', Comp: MyPostsTab },
+  { key: 'comments', label: '내댓글', Comp: MyCommentsTab },
+  { key: 'routes', label: 'MY ROUTE', Comp: MyRouteTab },
+  { key: 'profile', label: '마이프로필', Comp: MyProfileTab },
+] as const;
+
+export const MyPageScreen: React.FC = () => {
+  const { colors } = useTheme();
+  const { profile, isLoading } = useMyPage();
+  const [index, setIndex] = useState(0);
+
+  const Active = TABS[index].Comp;
+
+  return (
+    <Screen padded={false}>
+      <ProfileHeader profile={profile} isLoading={isLoading} />
+
+      <View
+        style={[styles.tabBarWrap, { borderBottomColor: colors.divider }]}
+      >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabBar}
+        >
+          {TABS.map((t, i) => {
+            const active = i === index;
+            return (
+              <Pressable
+                key={t.key}
+                onPress={() => setIndex(i)}
+                style={[
+                  styles.tab,
+                  active && { borderBottomColor: colors.primary },
+                ]}
+              >
+                <Text
+                  variant="label"
+                  color={active ? 'primary' : 'textSecondary'}
+                >
+                  {t.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <View style={styles.body}>
+        <Active />
+      </View>
+    </Screen>
+  );
+};
+
+const styles = StyleSheet.create({
+  tabBarWrap: { borderBottomWidth: 1 },
+  tabBar: { paddingHorizontal: 8 },
+  tab: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  body: { flex: 1 },
+});
