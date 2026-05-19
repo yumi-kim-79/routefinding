@@ -30,9 +30,9 @@
 
 | Flutter | RN | 라인 수 | 상태 |
 |---|---|---|---|
-| `lib/main.dart` | `app/src/App.tsx` + `app/src/navigation/RootNavigator.tsx` | - | 🚧 골격(인증분기 스텁, Phase 1-4 authStore 연동 예정) |
-| `lib/home_screen.dart` | `app/src/screens/home/HomeScreen.tsx` | - | ⏳ (v1에서 탭 아님) |
-| `lib/bottom_nav_bar.dart` | `app/src/navigation/MainTabNavigator.tsx` | 50 | 🚧 4탭 골격 완료, 탭 화면은 플레이스홀더 |
+| `lib/main.dart` | `app/src/App.tsx` + `app/src/navigation/RootNavigator.tsx` | - | ✅ Android (authStore 인증분기) |
+| `lib/home_screen.dart` | `app/src/navigation/MainTabNavigator.tsx` (탭 컨테이너) | 172 | 🚧 5탭 골격 ✅. 부가기능(출석/업데이트/광고) Phase별 분리 예정 |
+| ~~`lib/bottom_nav_bar.dart`~~ | (해당 없음) | 50 | ❌ **미사용 dead code** — v2 미이전 (실제 탭=home_screen.dart) |
 
 ### 3. 지도 / 루트
 
@@ -329,37 +329,48 @@ CrewDetailScreen.tsx               ← 메인 (200~300줄)
 
 ## 🗺️ 네비게이션 구조
 
-> ✅ Phase 1-3에서 골격 구현·Android 빌드 검증 완료 (화면은 플레이스홀더, Phase 2에서 교체).
-> ⚠️ **정정**: 기존 문서는 5탭(Home/Map/Board/Crew/MyPage)으로 가정했으나,
-> Flutter v1(`git show main:lib/bottom_nav_bar.dart`) 실측 결과 **4탭**이다.
-> CLAUDE.md 1:1 보존 원칙에 따라 v1 4탭을 그대로 재현한다.
+> ✅ Phase 1-3 골격 → **Phase 2-1에서 5탭으로 재정정** (Android 빌드 검증).
+>
+> **탭 구조 정정 이력**:
+> 1. (문서 초안) 5탭 가정 Home/Map/Board/Crew/MyPage
+> 2. (Phase 1-3) `lib/bottom_nav_bar.dart` 근거로 **4탭**으로 변경 →
+>    ⚠️ 해당 파일은 **미사용 dead code**였음(`git grep "BottomNavBar(")` → 호출처 0)
+> 3. (Phase 2-1, 확정) v1 실제 진입 화면 `lib/home_screen.dart`(IndexedStack)
+>    분석 → **5탭**으로 재정정. CLAUDE.md 1:1 보존.
 
-### v1 하단 탭 실측 (lib/bottom_nav_bar.dart)
+### v1 하단 탭 실측 (lib/home_screen.dart — 실제 사용 화면)
 
-| idx | 라벨 | v1 라우트 | v2 탭 화면 |
+`_RootScreen`: `user != null ? HomeScreen : LoginScreen`. `HomeScreen` =
+IndexedStack + 5-item BottomNavigationBar. **HomeScreen 자체가 탭 컨테이너** = v2 `MainTabNavigator`.
+
+| idx | 라벨 | v1 화면 | v2 탭 |
 |---|---|---|---|
-| 0 | 게시판 | `/board` | `screens/board/BoardScreen.tsx` (NoticeBoardScreen) |
-| 1 | 개념도 | `/` | `screens/route/ConceptListScreen.tsx` |
-| 2 | 지도 | `/reports` | `screens/report/ReportListScreen.tsx` (⚠️ 라벨=지도, 실제=리포트목록) |
-| 3 | 마이페이지 | `/mypage` | `screens/profile/MyPageScreen.tsx` |
+| 0 | 게시판 | BoardScreen | `screens/board/BoardScreen.tsx` |
+| 1 | 개념도 | ConceptListScreen | `screens/route/ConceptListScreen.tsx` |
+| 2 | **루트 위치** | MapScreen(mountain) | `screens/map/MapScreen.tsx` |
+| 3 | **크루** | CrewMainScreen | `screens/crew/CrewMainScreen.tsx` |
+| 4 | 마이페이지 | MyPageScreen | `screens/profile/MyPageScreen.tsx` |
 
-> Home 탭·Crew 탭은 v1 하단바에 **없음**. HomeScreen은 존재하나 탭 아님. 크루는 비탭 경로(push)로 진입.
+> HomeScreen 부가기능 분리: 출석보상(P1, Phase 2-1 별도) / 업데이트체크(Phase 3+) /
+> AdMob 배너(Phase 4) / `_tabHistory` 백처리·`initialIndex`(가능한 한 1:1, 라우트 param).
+> `ReportListScreen`은 탭 아님 → Phase 2-5(리포트)에서 push로 연결.
 
 ```
-RootNavigator (인증 분기 — Phase 1-4 authStore 연동 예정)
-├── AuthStack (미인증)        Splash → Login → SignUp
+RootNavigator (인증: authStore gatePassed)
+├── AuthStack (미인증)        Login ↔ SignUp  (Splash=isInitializing 중)
 │
 └── MainStack (인증됨)
-    ├── MainTabs (v1 4탭)
+    ├── MainTabs (v1 5탭)
     │   ├── BoardTab   → BoardScreen      (게시판)
     │   ├── ConceptTab → ConceptListScreen (개념도)
-    │   ├── MapTab     → ReportListScreen  (지도=리포트목록)
+    │   ├── MapTab     → MapScreen         (루트 위치)
+    │   ├── CrewTab    → CrewMainScreen    (크루)
     │   └── MyPageTab  → MyPageScreen      (마이페이지)
     │
-    └── Push/Modal (비탭 진입 — 딥링크 대비 param 타입화, FCM 연동은 Phase 3)
+    └── Push/Modal (비탭 — 딥링크 대비 param 타입화, FCM은 Phase 3)
         ├── RouteDetail/ReportDetail/PitchDetail/ReportAdmin
         ├── PostDetail/CommentDetail/WritePost/EditPost
-        ├── CrewMain/CrewDetail/CrewChat   (크루 진입)
+        ├── CrewDetail/CrewChat          (CrewMain은 탭 idx3)
         └── UserProfile/Tracking/ApproachTracking/MapInput/ImageEditor/NotificationList
 ```
 

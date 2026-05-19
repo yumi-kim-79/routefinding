@@ -154,6 +154,18 @@
 - 검증 보고서·교훈 → `docs/07_RUNTIME_VERIFICATION.md` 신규
 - 🐞 교훈: Notifee "native module not found"는 **의존성 문제 아님**(notifee 트리에 부재) — 좀비 Metro(포트 8081)의 스테일 번들. 클린 절차 1순위 = `lsof -ti:8081 | xargs kill -9`
 
+### 🧭 Phase 2-1 ① 네비게이션 5탭 정정 (2026-05-19)
+
+#### Fixed
+- **하단 탭 4→5 정정 (Phase 1-3 오류 정정)**: Phase 1-3은 미사용 dead code `lib/bottom_nav_bar.dart`(4탭)를 근거로 4탭 구현. v1 실제 진입 화면 `lib/home_screen.dart`(IndexedStack 5탭) 분석 결과 정정 — **게시판/개념도/루트 위치/크루/마이페이지** (CLAUDE.md 1:1 보존)
+  - `MapTab`: 잘못된 `ReportListScreen` → `MapScreen`(v1 idx2 루트 위치)으로 수정
+  - `CrewTab` 추가(v1 idx3 CrewMainScreen), `CrewMain`은 push에서 탭으로 이동
+  - `types.ts` MainTabParamList 5탭, `MainTabNavigator` 재작성, `MainNavigator`에서 CrewMain push 제거
+  - 신규 placeholder: `screens/map/MapScreen.tsx`, `screens/crew/CrewMainScreen.tsx`
+- 04_WIREFRAMES.md 네비 섹션·매핑표 재정정 + **탭 구조 정정 이력**(5가정→4(dead code 오판)→5확정) 명시
+- HomeScreen 부가기능 분리 계획 명시: 출석보상(Phase 2-1 별도 P1) / 업데이트체크(Phase 3+) / AdMob(Phase 4) / `_tabHistory`·`initialIndex`(1:1 TODO)
+- ✅ typecheck, ✅ Android `assembleDebug`
+
 ### 🌿 브랜치
 
 #### Added

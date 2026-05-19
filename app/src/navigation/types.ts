@@ -16,12 +16,17 @@ export type AuthStackParamList = {
   SignUp: undefined;
 };
 
-/** 하단 탭 (v1 4탭 동등) */
+/**
+ * 하단 탭 — Flutter v1 `home_screen.dart`(실제 사용되는 탭 컨테이너)와 1:1 **5탭**.
+ * (이전 4탭은 미사용 dead code `bottom_nav_bar.dart` 기반 오판 → 정정.)
+ * 0 게시판 / 1 개념도 / 2 루트 위치(지도) / 3 크루 / 4 마이페이지.
+ */
 export type MainTabParamList = {
-  BoardTab: undefined; // 게시판  (v1 /board)
-  ConceptTab: undefined; // 개념도  (v1 /)
-  MapTab: undefined; // 지도    (v1 /reports = 리포트 목록)
-  MyPageTab: undefined; // 마이페이지 (v1 /mypage)
+  BoardTab: undefined; // 게시판     (v1 idx0 BoardScreen)
+  ConceptTab: undefined; // 개념도   (v1 idx1 ConceptListScreen)
+  MapTab: undefined; // 루트 위치    (v1 idx2 MapScreen)
+  CrewTab: undefined; // 크루        (v1 idx3 CrewMainScreen)
+  MyPageTab: undefined; // 마이페이지 (v1 idx4 MyPageScreen)
 };
 
 /** 인증 후 스택 (탭 + push/modal 화면). id 파라미터 = 딥링크 대비 */
@@ -40,8 +45,7 @@ export type MainStackParamList = {
   WritePost: undefined;
   EditPost: { postId: string };
 
-  // 크루 (v1처럼 비탭 경로 진입)
-  CrewMain: undefined;
+  // 크루 (CrewMain은 탭 idx3 → MainTabParamList.CrewTab. 상세/채팅만 push)
   CrewDetail: { crewId: string };
   CrewChat: { crewId: string };
 

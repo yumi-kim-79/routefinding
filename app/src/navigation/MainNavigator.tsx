@@ -37,8 +37,7 @@ export const MainNavigator: React.FC = () => (
     <Stack.Screen name="WritePost" component={makePlaceholder('글쓰기')} />
     <Stack.Screen name="EditPost" component={makePlaceholder('글 수정')} />
 
-    {/* 크루 (v1처럼 비탭 경로 진입) */}
-    <Stack.Screen name="CrewMain" component={makePlaceholder('크루')} />
+    {/* 크루 — CrewMain은 탭(idx3). 상세/채팅만 push */}
     <Stack.Screen name="CrewDetail" component={makePlaceholder('크루 상세')} />
     <Stack.Screen name="CrewChat" component={makePlaceholder('크루 채팅')} />
 

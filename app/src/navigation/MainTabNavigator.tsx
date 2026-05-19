@@ -1,34 +1,37 @@
 /**
- * 하단 탭 — Flutter v1(`lib/bottom_nav_bar.dart`)과 1:1 동등 4탭.
- * 0 게시판 / 1 개념도 / 2 지도(리포트목록) / 3 마이페이지.
- * Home 탭·Crew 탭은 v1처럼 하단바에 없음(크루는 비탭 경로 진입).
+ * 하단 탭 — Flutter v1 `home_screen.dart`(실제 탭 컨테이너)와 1:1 **5탭**.
+ * 0 게시판 / 1 개념도 / 2 루트 위치 / 3 크루 / 4 마이페이지.
+ *
+ * 정정 이력: Phase 1-3에서 미사용 dead code `bottom_nav_bar.dart`(4탭) 기반
+ *   오판 → Phase 2-1에서 v1 실제(home_screen.dart, IndexedStack 5탭)로 정정.
+ *
+ * TODO(Phase 2-1): v1 _tabHistory 백처리, initialIndex(라우트 param) 보존.
+ * 아이콘은 [TBD] 아이콘 라이브러리 결정 후 (현재 라벨만).
  */
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { MainTabParamList } from './types';
 import { BoardScreen } from '../screens/board/BoardScreen';
 import { ConceptListScreen } from '../screens/route/ConceptListScreen';
-import { ReportListScreen } from '../screens/report/ReportListScreen';
+import { MapScreen } from '../screens/map/MapScreen';
+import { CrewMainScreen } from '../screens/crew/CrewMainScreen';
 import { MyPageScreen } from '../screens/profile/MyPageScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const MainTabNavigator: React.FC = () => (
   <Tab.Navigator initialRouteName="BoardTab">
-    <Tab.Screen
-      name="BoardTab"
-      component={BoardScreen}
-      options={{ title: '게시판' }}
-    />
+    <Tab.Screen name="BoardTab" component={BoardScreen} options={{ title: '게시판' }} />
     <Tab.Screen
       name="ConceptTab"
       component={ConceptListScreen}
       options={{ title: '개념도' }}
     />
+    <Tab.Screen name="MapTab" component={MapScreen} options={{ title: '루트 위치' }} />
     <Tab.Screen
-      name="MapTab"
-      component={ReportListScreen}
-      options={{ title: '지도' }}
+      name="CrewTab"
+      component={CrewMainScreen}
+      options={{ title: '크루' }}
     />
     <Tab.Screen
       name="MyPageTab"
