@@ -174,6 +174,14 @@
 - `02_DATA_MODEL.md`에 **`bouldering_reports`** 컬렉션 신규 문서화(§5-1, 인공벽/볼더링 제보 — v1에서 사용 중이나 기존 문서 누락분, 실 스키마는 [TBD])
 - ✅ typecheck, ✅ Android `assembleDebug` (영향: types 전용, userStore 호환)
 
+### 👑 Phase 2-1 ③ ProfileWithCrown (2026-05-19)
+
+#### Added
+- `theme/colors.ts`에 **`grade` 맵 + `gradeDefault`** 추가 — v1 `_levelBorderColor` 10단계 1:1 (gold/silver/bronze=medal 재사용, purple=accent 재사용, red=error, yellow/blue 재사용, **brown/pink/lightBlueAccent 신규 팔레트**). dark는 상속(등급=도메인 상수)
+- `components/common/ProfileWithCrown.tsx` — v1 1:1 이식: 등급 테두리색·등급 뱃지·displayType 프리셋(profile/comment/reply)·showNickname Row. 사진 없으면 👤 fallback
+- 크라운: 결정 C(이모지 👑 placeholder, 상위 3등급 5.15/5.14/5.13만 — v1 `_crownAsset` 조건 동일). 원본 4.2MB PNG 미도입, **TODO(v2.1+) 최적화 에셋 교체** 명시
+- ✅ typecheck, ✅ Android `assembleDebug`
+
 ### 🌿 브랜치
 
 #### Added
