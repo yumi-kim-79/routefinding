@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import {
   collection,
-  getDocs,
   onSnapshot,
   query,
   where,
@@ -27,6 +26,7 @@ import { db } from '../../../services/firebase';
 import { COLLECTIONS } from '../../../constants/firestoreFields';
 import { Text } from '../../../components/common/Text';
 import { ProfileWithCrown } from '../../../components/common/ProfileWithCrown';
+import { UnreadBadge } from '../../../components/common/UnreadBadge';
 import { useTheme } from '../../../theme';
 import { useMyPage } from '../hooks/useMyPage';
 import { formatDate } from '../../../utils/date';
@@ -121,7 +121,9 @@ export const MyPostsTab: React.FC = () => {
               <Text variant="title" numberOfLines={1} style={styles.flex}>
                 {item.title || '(제목 없음)'}
               </Text>
-              {uid ? <UnreadBadge uid={uid} postId={item.postId} /> : null}
+              {uid ? (
+                <UnreadBadge uid={uid} field="postId" value={item.postId} />
+              ) : null}
             </View>
             <Text variant="caption" color="textSecondary">
               {(profile?.nickname ?? '') + '   ' + formatDate(item.timestamp)}
@@ -143,67 +145,10 @@ function snippetOf(content?: string): string {
   return content.length > 30 ? content.substring(0, 30) + '...' : content;
 }
 
-/**
- * 읽지 않은 알림 배지 — `notifications where receiverId==uid AND checked==false AND postId==<id>`.
- * v1 FutureBuilder per item과 동일(N+1, 1:1 보존). 인덱스 누락 시 콘솔 warn(앱은 계속 동작).
- */
-const UnreadBadge: React.FC<{ uid: string; postId: string }> = ({
-  uid,
-  postId,
-}) => {
-  const { colors } = useTheme();
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const q = query(
-          collection(db, COLLECTIONS.NOTIFICATIONS),
-          where('receiverId', '==', uid),
-          where('checked', '==', false),
-          where('postId', '==', postId),
-        );
-        const snap = await getDocs(q);
-        if (!cancelled) {
-          setCount(snap.size);
-        }
-      } catch (e) {
-        // 인덱스 누락 등 — v1 동작 보존(앱 안 깸). Firestore 에러 메시지에 인덱스 생성 URL 포함.
-        // eslint-disable-next-line no-console
-        console.warn('[MyPostsTab] unread badge query failed:', e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [uid, postId]);
-
-  if (count <= 0) {
-    return null;
-  }
-  return (
-    <View style={[styles.badge, { backgroundColor: colors.error }]}>
-      <Text variant="caption" style={{ color: colors.onPrimary, fontSize: 10 }}>
-        {count > 99 ? '99+' : String(count)}
-      </Text>
-    </View>
-  );
-};
-
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   row: { flexDirection: 'row', alignItems: 'flex-start' },
   body: { flex: 1, marginLeft: 12 },
   titleRow: { flexDirection: 'row', alignItems: 'center' },
   flex: { flex: 1 },
-  badge: {
-    minWidth: 18,
-    height: 18,
-    paddingHorizontal: 5,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 6,
-  },
 });

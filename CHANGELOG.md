@@ -228,6 +228,20 @@
 - `notifications.checked` (v1 실측, ~~`isRead`~~), `postId`/`commentId`/`reportId`/`crewId` (v1 실측, ~~`target*Id`~~) — 02_DATA_MODEL §7 정정
 - 나머지(comments.timestamp, my_routes.savedAt, route_reports.rejectionReason)는 해당 탭 구현 시 정정
 
+### 💬 Phase 2-1 2-1-2-② MyCommentsTab (2026-05-20)
+
+#### Added
+- `MyCommentsTab.tsx` 구현 — v1 `_buildMyCommentsTab` 1:1: `collectionGroup('comments') where userId==uid orderBy timestamp desc .snapshots()` (인덱스 firestore.indexes.json 정의 확인됨)
+- 아이템: 본인 ProfileWithCrown + **원본 글 제목**(`PostTitle` inline 서브컴포넌트, posts/{postId}.get per item N+1, v1 보존) + 댓글 본문(2줄) + 날짜 + 알림 배지
+- postId 추출: `doc.ref.parent.parent.id` (경로 posts/{postId}/comments/{commentId})
+- 신규 타입: `types/comment.ts` (v1 실측: `text`, `timestamp`, `photoUrl`)
+- 공용 컴포넌트 **`UnreadBadge` 추출** — MyPostsTab의 inline 배지를 `components/common/UnreadBadge.tsx`로 일반화(`field: 'postId'|'commentId'|'reportId'|'crewId'`). MyPostsTab도 공용 사용으로 교체(중복 제거)
+- onTap → 원본 PostDetail로 push
+- ✅ typecheck, ✅ Android `assembleDebug`
+
+#### Fixed (스키마 인라인 정정)
+- `comments.text` (v1 실측, ~~`content`~~), `comments.timestamp` (~~`createdAt`~~), `comments.photoUrl` (~~`authorProfileUrl`~~) — 02_DATA_MODEL §3 정정
+
 ### 🌿 브랜치
 
 #### Added

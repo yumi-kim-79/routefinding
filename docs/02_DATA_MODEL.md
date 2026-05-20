@@ -191,17 +191,19 @@ allow update, delete: if request.auth != null
 ```typescript
 interface Comment {
   commentId: string;
-  postId: string;
+  postId: string;              // 경로: posts/{postId}/comments/{commentId} (ref.parent.parent.id)
   userId: string;
-  nickname: string;
-  authorProfileUrl?: string;
+  nickname?: string;
+  photoUrl?: string;           // ⚠️ v1 실측: photoUrl (authorProfileUrl 아님)
 
-  content: string;
+  // 본문 — ⚠️ v1 실측: `text` (content 아님, Phase 2-1 정정 2026-05-20)
+  text: string;
 
   replyCount?: number;
   likeCount?: number;
 
-  createdAt: Timestamp;
+  // 메타 — ⚠️ v1 실측: `timestamp` (createdAt 아님)
+  timestamp?: Timestamp;
   updatedAt?: Timestamp;
   isDeleted?: boolean;
 }
