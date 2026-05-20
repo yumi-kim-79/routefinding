@@ -270,8 +270,9 @@ interface RouteReport {
   photoUrls?: string[];
 
   // 승인 상태
-  status: 'pending' | 'approved' | 'rejected';
-  rejectReason?: string;
+  status: 'draft' | 'pending' | 'approved' | 'rejected';   // ⚠️ v1: 기본 'draft' 포함
+  // ⚠️ v1 실측: `rejectionReason` (rejectReason 아님, Phase 2-1 정정 2026-05-20)
+  rejectionReason?: string;
   reviewedBy?: string;          // 검토자 UID
   reviewedAt?: Timestamp;
 

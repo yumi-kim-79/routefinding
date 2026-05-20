@@ -242,6 +242,20 @@
 #### Fixed (스키마 인라인 정정)
 - `comments.text` (v1 실측, ~~`content`~~), `comments.timestamp` (~~`createdAt`~~), `comments.photoUrl` (~~`authorProfileUrl`~~) — 02_DATA_MODEL §3 정정
 
+### 🧗 Phase 2-1 2-1-2-③ MyReportsTab (2026-05-20)
+
+#### Added
+- `MyReportsTab.tsx` — v1 `_buildMyReportsTab` 1:1. **두 컬렉션 동시 구독**(`route_reports` + `bouldering_reports` where `authorUid==uid`), 머지 후 `status!=='approved'` 필터(+v1 의도 보존) + `timestamp desc` 정렬. 컬렉션 태그(`Report.collection`)로 **삭제 시 안전 분기**(v1 휴리스틱 대체)
+- `ReportCard.tsx` — v1 `_buildReportCard` 1:1: 썸네일(`imageUrls[0]`)+`산·루트명`+ProfileWithCrown+상태 뱃지+반려사유(rejected 시)+액션
+- `ReportActions.tsx` — 권한별 액션: 삭제(본인||관리자, Alert 확인) / 승인(관리자&pending, 직접 update — v1 1:1 무확인) / 반려(관리자&pending, PromptModal). 승인·반려는 `route_reports`에만 적용(v1 동일)
+- `PromptModal.tsx`(공용) — RN 빌트인 `Modal`+`Input`+`Button` 자체구현(Alert.prompt iOS-only 우회, 새 의존성 0). 향후 다른 입력 다이얼로그에서 재사용
+- `types/report.ts` — `Report`/`ReportStatus`/`ReportCollection` + `statusToKorean`(v1 매핑). 상태색은 테마 의미 슬롯(disabled/warning/success/error)에 1:1 매핑
+- 작성자 N+1 제거(이 탭은 본인 제보만 → ProfileHeader profile 재사용)
+- ✅ typecheck, ✅ Android `assembleDebug`
+
+#### Fixed (스키마 인라인 정정)
+- `route_reports.rejectionReason` (v1 실측, ~~`rejectReason`~~) + status 'draft' 기본값 추가 — 02_DATA_MODEL §4 정정
+
 ### 🌿 브랜치
 
 #### Added
