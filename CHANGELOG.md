@@ -9,6 +9,25 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-05-20 세션 종합
+
+> **하루 성과**: Sprint 2-1 핵심 본문 4개 탭 완료 + ⑤ MyProfileTab [D] intro 편집. Sprint 2-1 진행도 **~80%**(잔여: [F] 사진 업로드, [E] 동기화 분석, ⑥ HomeScreen 부가, ⑦ UserProfile).
+> 세션 작업 커밋 **5개**(+ 세션 종료 docs 커밋 1 = 6), 브랜치 `v2`: `bbe3fd0 → c8e3132`.
+
+- **2-1-2 탭 본문 4종 완료** (모두 v1 1:1):
+  1. `MyPostsTab` — posts where userId .snapshots() + UnreadBadge(N+1) — `5020b3c`
+  2. `MyCommentsTab` — collectionGroup('comments') + PostTitle(N+1) + postId=ref.parent.parent.id — `6f4df3e`
+  3. `MyReportsTab` — 두 컬렉션 머지(route_reports+bouldering_reports) + approved 제외 + timestamp desc + 권한별 액션 + `PromptModal`(공용) — `60716c9`
+  4. `MyRouteTab` — users/{uid}/my_routes orderBy savedAt desc + 검색 + routeRef deref(N+1) + 삭제된 루트 처리 — `19a752a`
+- **⑤ MyProfileTab [D] intro 편집** 완료 (`c8e3132`): 읽기전용 필드+등급+"다음 등급까지 N점"(`levelCalculator.ts` 1:1 포팅) + intro TextInput+저장.
+- **공용 신규**: `PromptModal`(RN 빌트인 Modal, 외부 lib 0), `UnreadBadge`(MyPosts/MyComments 공용 추출)
+- **신규 타입**: `post`/`notification`/`comment`/`report`/`myRoute` (전부 v1 실측 필드명)
+- **02_DATA_MODEL 인라인 정정 6건**(스키마 불변, docs만): `posts.timestamp`·`notifications.{checked,postId,commentId,reportId,crewId}`·`comments.{text,timestamp,photoUrl}`·`route_reports.rejectionReason`+status'draft'·`my_routes.{savedAt,routeRef}`
+- **🔍 자기진단·정정 1건**: 사용자 [B] 닉네임/[C] 등급 변경 작업 요청이 **v1엔 없는 기능**임을 분석 중 발견(my_profile_tab은 read-only) → 멈춤·보고·옵션 A로 정정(MVP 1:1 보존 강화)
+- **🧅 양파 까기 0건** — 5/19(4건) 대비 큰 진전. typecheck+빌드 게이트 신뢰성 확립 + v1 코드 사전 정밀 분석 효과
+- **검증 모드 전환**: 각 탭마다 시각 검증 → 일괄 모드(typecheck+빌드 게이트만 통과 시 진행). 5/19 누적 검증으로 게이트 신뢰성 입증됨
+- **다음 세션 첫 작업**: 일괄 시각 검증 → ⑤[F] 사진 업로드(양파 위험 구간, 보고 후 신중 진행)
+
 ### 📅 2026-05-19 세션 종합
 
 > **하루 성과**: Phase 0 마무리 → **Phase 1 (Android) 완료 + 런타임 검증** → Phase 2-1 진행분.

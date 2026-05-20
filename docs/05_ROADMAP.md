@@ -327,7 +327,7 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 |---|---|---|---|
 | Phase 0 | 95% | 2026-05-19 | (거의 완료, 일부 [TBD] 잔존) |
 | Phase 1 | ✅ 100% (Android) | 2026-05-19 | 1-1~1-6 기능+런타임 검증 완료(`07_RUNTIME_VERIFICATION.md`). iOS 빌드만 1-2.5 보류 트랙 |
-| Phase 2 | ~8% | 2026-05-19 | Sprint 2-1 진행 중 (네비/스키마 정정+ProfileWithCrown 완료, MyPage 분해 착수) |
+| Phase 2 | ~17% | 2026-05-20 | Sprint 2-1 ~80% (탭 본문 4 + ⑤[D] 완료. 잔여: ⑤[F]/[E]/⑥/⑦) |
 | Phase 2 | 0% | TBD | TBD |
 | Phase 3 | 0% | TBD | TBD |
 | Phase 4 | 0% | TBD | TBD |
@@ -376,7 +376,78 @@ v2.0 안정화 후 진행할 항목들. 우선순위는 출시 후 다시 정한
 
 ---
 
-## 🚀 다음 세션 시작 가이드 v2 (2026-05-19 갱신)
+## 🚀 다음 세션 시작 가이드 v3 (2026-05-20 갱신)
+
+> 현재 위치: **Sprint 2-1 ~80% (Android, 게이트 통과·시각 미검증)**. 브랜치 `v2` HEAD = `c8e3132`.
+> 어제 가이드 v2(아래 보존)는 5/20에 5개 커밋(2-1-2 탭 본문 4종 + ⑤[D])으로 대부분 소화.
+
+### 1) 다음 세션 첫 작업 — 일괄 시각 검증 (Sprint 2-1 누적)
+
+```bash
+# 좀비 Metro 교훈 (5/19) — 1순위
+lsof -ti:8081 | xargs kill -9 2>/dev/null
+adb uninstall com.yusung.routefinding 2>/dev/null
+watchman watch-del-all 2>/dev/null; rm -rf $TMPDIR/metro-* node_modules/.cache
+# 에뮬레이터 콜드부트(-no-snapshot-load) 권장
+export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; nvm use 20
+cd ~/StudioProjects/routefinding/app
+corepack yarn start --reset-cache       # 터미널 A
+corepack yarn android                   # 터미널 B
+```
+
+검증 항목(누적):
+- 하단 5탭(게시판/개념도/루트 위치/크루/마이페이지)
+- MyPage: ProfileHeader + 5탭 스위처(내제보관리/내글/내댓글/MY ROUTE/마이프로필)
+- **내제보관리 ③**: 카드/상태뱃지/액션 버튼/PromptModal(반려 사유)
+- **내글 ①**: ProfileWithCrown+제목+snippet+UnreadBadge
+- **내댓글 ②**: collectionGroup+PostTitle+UnreadBadge+"(삭제된 글)"
+- **MY ROUTE ④**: 검색바+routeRef deref+카드/삭제
+- **마이프로필 ⑤[D]**: 읽기전용 필드+등급+"다음 등급까지 N점"+intro 편집
+
+### 2) 시각 검증 OK면 — ⑤[F] 프로필 사진 업로드 (⚠️ 양파 위험 구간)
+
+원칙: 양파 발생 시 즉시 멈춤·보고. 추측 패치 금지.
+
+```
+[1] npm view react-native-image-picker version dist-tags peerDependencies
+    → RN 0.76 호환 버전 결정 후 핀 (screens 4.25/async-storage 3.x 학습)
+[2] corepack yarn add react-native-image-picker@<핀 버전>
+[3] cd android && ./gradlew :app:assembleDebug --no-daemon  ← 첫 양파 가능 지점
+    실패면 즉시 멈춤·보고
+[4] AndroidManifest 권한 추가 (READ_MEDIA_IMAGES 등) → 다시 빌드
+[5] services/profile.ts 신규: uploadProfilePhoto(uid, localUri)
+    RNFB modular getStorage/ref/putFile/getDownloadURL
+[6] MyProfileTab 아바타 "사진 변경" 버튼 → 피커 → 업로드 →
+    userStore.updateProfile(uid, {photoUrl})
+[7] typecheck + 빌드 + 일괄 시각 검증 → 커밋
+```
+
+대안 (양파 심하면): [F] 보류, ⑥/⑦로 우회 → Sprint 2-1 마무리 → 별도 세션에서 [F] 재시도.
+
+### 3) 후속 우선순위 (Sprint 2-1 마무리)
+
+| 순위 | 작업 | 비고 |
+|---|---|---|
+| ③ | **[E] 비정규화 동기화 분석** — `_updateAllPostsAndCommentsProfile` 트리거 위치 v1 추가 분석 | v1도 자동 호출 X — 별도 UX 버튼 추정. 분석 후 결정 |
+| ④ | **⑥ HomeScreen 부가기능 분리** — 출석보상(P1)·`initialIndex`(라우트 param)·`_tabHistory` 백처리 | home_screen.dart 47~75 |
+| ⑤ | **⑦ UserProfileScreen + UserPostsScreen** | 351줄 |
+| ⑥ | **Sprint 2-1 마무리** + Phase 2-2(게시판) 진입 결정 | 2-2는 PostDetail(990줄) 등 분량 큼 |
+
+### 4) 미해결 결정 / [TBD]
+
+- **이미지 피커 호환 버전** — [F] 진입 시 결정 (react-native-image-picker 확정·미설치)
+- **[E] 비정규화 동기화 v1 트리거 위치** — 추가 분석 필요
+- **top-tab 라이브러리** — 현재 경량 커스텀 유지 (`@react-navigation/material-top-tabs` 미도입)
+- **지도 SDK** — Phase 2-3 진입 시 결정 (Google vs Kakao)
+- **아이콘 라이브러리** — ReportActions/PromptModal 등에 텍스트 버튼 사용 중 (추후 결정)
+
+### 5) iOS 보류 트랙 — 변동 없음
+
+`docs/06_iOS_BUILD_NOTES.md` 옵션0(클린 재시도) 트리거 = RNFB/firebase-ios-sdk 새 버전 / Xcode 26.x 호환 픽스.
+
+---
+
+## 🚀 다음 세션 시작 가이드 v2 (2026-05-19 갱신, 보존)
 
 > 현재 위치: **Phase 1 (Android) 완료 + 검증 / Phase 2-1 진행 중**. 브랜치 `v2` HEAD = `8d837a9`.
 
