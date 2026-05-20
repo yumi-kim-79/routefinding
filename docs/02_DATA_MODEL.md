@@ -162,8 +162,8 @@ interface Post {
   // 좋아요 사용자 목록 (배열) — 또는 별도 서브컬렉션?
   likedBy?: string[];           // [TBD] 데이터 구조 확인
 
-  // 메타
-  createdAt: Timestamp;
+  // 메타 — ⚠️ v1 실측 필드명은 `timestamp` (createdAt 아님, Phase 2-1 정정 2026-05-20)
+  timestamp: Timestamp;
   updatedAt?: Timestamp;
   isDeleted?: boolean;          // soft delete
 }
@@ -409,13 +409,14 @@ interface Notification {
   title: string;
   body: string;
 
-  // 딥링크 정보
-  targetPostId?: string;
-  targetCommentId?: string;
-  targetReportId?: string;
-  targetCrewId?: string;
+  // 딥링크 정보 — ⚠️ v1 실측: `target` 접두사 없음 (Phase 2-1 정정 2026-05-20)
+  postId?: string;
+  commentId?: string;
+  reportId?: string;
+  crewId?: string;
 
-  isRead: boolean;
+  // ⚠️ v1 실측: `checked` (isRead 아님)
+  checked?: boolean;
   createdAt: Timestamp;
 }
 ```

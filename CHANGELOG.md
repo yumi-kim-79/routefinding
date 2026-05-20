@@ -213,6 +213,21 @@
 - 5탭 본문 실구현(Reports/Posts/Comments/Routes), MyProfileTab은 image-picker(react-native-image-picker 확정) 도입 시
 - 알림 아이콘(Phase 3), 출석보상(P1), `_updateAllPostsAndCommentsProfile` 비정규화 동기화
 
+### 📝 Phase 2-1 2-1-2-① MyPostsTab (2026-05-20)
+
+#### Added
+- `MyPostsTab.tsx` 구현 — v1 `_buildMyPostsTab` 1:1: `posts where userId==uid .snapshots()`(orderBy/limit 없음 보존), ProfileWithCrown + 제목 + snippet(content 30자) + 날짜 + 빈 상태
+- `UnreadBadge`(inline 서브컴포넌트) — `notifications where receiverId+checked==false+postId` 일회성 조회(N+1, v1 FutureBuilder 보존). 인덱스 누락 등 에러 시 `console.warn`만(앱 안 깸)
+- 신규 타입: `types/post.ts`, `types/notification.ts` (v1 실측 필드명)
+- 신규 유틸: `utils/date.ts` (`formatDate` — v1 `_formatDate` 대응)
+- 네비: `MainStack`의 `PostDetail`로 push (현재 placeholder, Phase 2-2에서 실구현)
+- ✅ typecheck, ✅ Android `assembleDebug`
+
+#### Fixed (스키마 인라인 정정 — 점진 처리, Firestore 구조 불변)
+- `posts.timestamp` (v1 실측, ~~`createdAt`~~) — 02_DATA_MODEL §2 정정
+- `notifications.checked` (v1 실측, ~~`isRead`~~), `postId`/`commentId`/`reportId`/`crewId` (v1 실측, ~~`target*Id`~~) — 02_DATA_MODEL §7 정정
+- 나머지(comments.timestamp, my_routes.savedAt, route_reports.rejectionReason)는 해당 탭 구현 시 정정
+
 ### 🌿 브랜치
 
 #### Added
