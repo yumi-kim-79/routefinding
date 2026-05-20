@@ -256,6 +256,17 @@
 #### Fixed (스키마 인라인 정정)
 - `route_reports.rejectionReason` (v1 실측, ~~`rejectReason`~~) + status 'draft' 기본값 추가 — 02_DATA_MODEL §4 정정
 
+### 🥾 Phase 2-1 2-1-2-④ MyRouteTab (2026-05-20)
+
+#### Added
+- `MyRouteTab.tsx` — v1 `_buildMyRouteTab` 1:1: `users/{uid}/my_routes orderBy savedAt desc .snapshots()` + 상단 검색 TextInput(클라이언트 필터, post-deref 매칭 v1 동일)
+- `MyRouteCard.tsx` — v1 `_myRouteTile` 1:1: `routeRef` deref(N+1, getDoc)로 현재 mountain/routeName/imageUrl 표시, `routeRef` 없으면 저장 스냅샷, 삭제 시 "삭제된 루트입니다." 표시. 삭제(Alert 확인) + onTap → RouteDetail({reportId: routeRef.id ?? myRouteId}) placeholder
+- `types/myRoute.ts` — `routeRef`(modular `DocumentReference` 타입 — `getDoc(ref)` 직접 호출 가능), `savedAt` 등 v1 실측 필드
+- ✅ typecheck, ✅ Android `assembleDebug`
+
+#### Fixed (스키마 인라인 정정)
+- `users/{uid}/my_routes.savedAt` (v1 실측, ~~`completedAt`~~) + `routeRef`(DocumentReference) 필드 명시 — 02_DATA_MODEL §1-1 정정
+
 ### 🌿 브랜치
 
 #### Added

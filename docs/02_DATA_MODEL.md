@@ -106,22 +106,25 @@ allow write: if request.auth.uid == userId;
 
 ```typescript
 interface MyRoute {
-  routeId: string;              // 문서 ID
-  routeName: string;
-  mountain?: string;             // 산 이름
-  difficulty?: string;           // 등급 (5.10a, V3 등)
+  routeId: string;              // 문서 ID (= myRouteId)
+  // ⚠️ v1 실측: 원본 루트 doc 참조 — 카드 표시 시 deref해서 현재 mountain/routeName/imageUrl 사용
+  routeRef?: DocumentReference;
+  // 저장 시 스냅샷(원본이 삭제됐을 때 fallback 표시용)
+  routeName?: string;
+  mountain?: string;
+  difficulty?: string;           // 등급 (5.10a, V3 등) — [TBD] v1 실측 미확인
 
-  completedAt: Timestamp;        // 등반 완료 일시
-  attemptCount?: number;         // 시도 횟수
-  isOnsight?: boolean;          // 온사이트 여부
+  // ⚠️ v1 실측: `savedAt` (completedAt 아님, Phase 2-1 정정 2026-05-20)
+  savedAt: Timestamp;
+  attemptCount?: number;         // [TBD]
+  isOnsight?: boolean;           // [TBD]
 
-  notes?: string;                // 메모
-  imageUrls?: string[];          // 등반 사진
+  notes?: string;                // [TBD]
+  imageUrls?: string[];          // [TBD]
 
-  // GPX 트래킹 데이터 (옵션)
+  // GPX 트래킹 데이터 (옵션) — [TBD]
   gpxUrl?: string;
   duration?: number;             // 등반 시간 (초)
-  // [TBD] 추가 필드 확인 필요
 }
 ```
 
