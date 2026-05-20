@@ -267,6 +267,24 @@
 #### Fixed (스키마 인라인 정정)
 - `users/{uid}/my_routes.savedAt` (v1 실측, ~~`completedAt`~~) + `routeRef`(DocumentReference) 필드 명시 — 02_DATA_MODEL §1-1 정정
 
+### 👤 Phase 2-1 2-1-2-⑤ MyProfileTab [D] intro 편집 (2026-05-20)
+
+#### Added
+- `MyProfileTab.tsx` 실구현 — v1 `widgets/my_profile_tab.dart` 1:1 (편집 가능 필드: intro만 / 사진은 [F])
+- 읽기 전용 필드 v1 1:1: 닉네임 / 이메일 / **등급 + "다음 등급(X)까지 N점" 안내** / 포인트
+- 한 줄 소개(intro) `Input` multiline + "소개글 저장" `Button` → `useUserStore.updateProfile(uid, { intro })` (Alert로 결과 안내)
+- ProfileWithCrown 큰 사이즈 표시(편집 버튼 없음 — [F] 단계 추가)
+- `utils/levelCalculator.ts` — v1 `constants/level.dart`의 `LEVEL_POINT_MAP` + `getNextLevel` + `getRemainToNextLevel` 1:1 포팅
+- `types/user.ts`에 `point?: number` 추가 (v1 실측)
+- `KeyboardAvoidingView` + `ScrollView`(`keyboardShouldPersistTaps='handled'`)로 키보드 대응
+- ✅ typecheck, ✅ Android `assembleDebug`
+
+#### 정정 / 결정 사유 (v1 1:1 보존)
+- **닉네임 변경([B])·등급 변경([C]) 작업 제외** — v1 my_profile_tab은 두 필드를 read-only로만 표시. 변경 기능 자체가 v1에 없음(`ProfileService.updateDisplayName`은 정의돼 있으나 미사용). 신기능 추가는 v2.1+ (CLAUDE.md MVP 원칙)
+- **비정규화 동기화([E]) 보류** — v1도 MyProfileTab에서 자동 호출 안 함(`_updateAllPostsAndCommentsProfile`는 별도 트리거, 위치 추가 분석 필요). v1 동작 그대로 유지
+- 등급은 v1 `calcLevel`에 따라 도메인 자동 계산 — 수동 변경은 데이터 무결성 깨뜨림(별도 이유)
+- **[F] 프로필 사진(image-picker+Storage)은 양파 가능 구간으로 별도 보고 후 진행**
+
 ### 🌿 브랜치
 
 #### Added

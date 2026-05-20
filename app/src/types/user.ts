@@ -22,6 +22,8 @@ export interface UserProfile {
 
   // 등급 시스템 — 등반등급 문자열 ("5.15".."5.6"). ProfileWithCrown 색상 매핑에 사용.
   level?: string;
+  // 누적 포인트 (v1 level.dart calcLevel 입력). 마이프로필 read-only 표시.
+  point?: number;
 
   // 통계
   postCount?: number;
