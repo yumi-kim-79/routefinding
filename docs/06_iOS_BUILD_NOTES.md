@@ -1,7 +1,7 @@
 # 🍎 06_iOS_BUILD_NOTES.md — iOS 빌드 별도 트랙
 
-> **상태**: 🔄 재개 중 (2026-08-04). `pod install` **통과**. Xcode 빌드 미검증.
-> (이전 상태: ⏸️ 보류 — Android 정상, iOS만 미해결)
+> **상태**: ✅ **해결 (2026-08-04)** — Xcode 실기기 빌드 성공, 앱 실행·4탭 확인 완료.
+> (이력: ⏸️ 보류 2026-05-19 → 🔄 재개 2026-08-04 → ✅ 해결 2026-08-04)
 > **결정일**: 2026-05-19
 > **원칙**: Phase 1 나머지는 OS 무관하므로 Android로 진행. iOS는 생태계 추격 후 재검증.
 
@@ -167,6 +167,55 @@ use_frameworks! :linkage => :static
 - [ ] `use_frameworks!`는 **모든 pod의 링크 방식**을 바꾼다 →
       react-native-screens / image-picker / safe-area-context에서 새 에러 가능성
 - [ ] 안드로이드가 깨지지 않았는지 (2026-08-04 확인: 실기기 정상 실행 ✅)
+
+### 2026-08-04 시도 (8~10차) — ✅ **실기기 빌드 성공**
+
+| # | 시도 | 결과 |
+|---|---|---|
+| 8 | Xcode에서 Team 선택 | ❌ `Failed Registering Bundle Identifier` — `com.yusungyun.RouteFinding`은 **v1 Flutter가 쓰던 ID**이고 다른 Apple 팀에 이미 등록돼 있어 YUMI KIM 팀으로 가져올 수 없음 |
+| 9 | 번들 ID를 **`com.yusung.routefinding`으로 변경** + Firebase에 iOS 앱 신규 등록 → 새 `GoogleService-Info.plist` 교체 | ✅ 서명 통과 (Apple Development: YUMI KIM) |
+| 10 | 빌드 | ❌ `Build input file cannot be found: app/ios/GoogleService-Info.plist` → **파일을 그 경로로 이동** → ✅ **빌드 성공 · 실기기 실행 확인** |
+
+#### 🔑 번들 ID 변경 (되돌릴 수 없는 결정 — 사용자 승인 완료)
+
+- v1 Flutter iOS의 번들 ID는 `com.yusungyun.RouteFinding`이었고, 그 식별자가 **다른 Apple 계정에 선점**돼 있었다.
+  (예전에 무료 Personal Team으로 실기기 빌드할 때 Xcode가 자동 등록했을 가능성이 높다)
+- **v1 iOS는 App Store에 출시된 적이 없다**(사용자 확인) → 번들 ID를 바꿔도 잃을 사용자가 없다.
+- 새 값 **`com.yusung.routefinding`** = 안드로이드 `applicationId`와 동일. 양 플랫폼 통일.
+- Firebase 프로젝트 `routefinding09-4b597`에 **iOS 앱을 하나 더 등록**해 새 plist를 받았다.
+  기존 iOS 앱 항목(`com.yusungyun.RouteFinding`)은 **삭제하지 않고 그대로 둔다.**
+- ⚠️ `GoogleService-Info.plist`는 `.gitignore`에 있어 **커밋되지 않는다.** 다른 맥에서 빌드하려면
+  Firebase 콘솔에서 다시 받아야 한다.
+
+#### 🐛 `GoogleService-Info.plist` 경로 참조가 처음부터 깨져 있었다
+
+`project.pbxproj`의 파일 참조가 다른 파일들과 달리 폴더명이 빠져 있었다.
+
+```
+AppDelegate.mm            path = RouteFinding/AppDelegate.mm   ✅
+Info.plist                path = RouteFinding/Info.plist       ✅
+GoogleService-Info.plist  path = GoogleService-Info.plist      ⚠️ RouteFinding/ 누락
+```
+
+§2 시도 #3에서 `xcodeproj` gem으로 등록할 때 잘못 들어간 것으로 보인다.
+이전 빌드는 gRPC·서명 단계에서 먼저 죽어 이 에러까지 도달한 적이 없어 드러나지 않았다.
+→ **파일을 `app/ios/GoogleService-Info.plist`로 이동**해 해결(pbxproj는 건드리지 않음).
+
+#### ✅ 최종 통과 구성
+
+| 항목 | 값 |
+|---|---|
+| RNFB | 25.1.0 / firebase-ios-sdk 12.15.0 / gRPC-C++ 1.69.0 |
+| Podfile | `$RNFirebaseAsStaticFramework = true` + `use_frameworks! :linkage => :static`, gRPC 패치 **없음** |
+| 번들 ID | `com.yusung.routefinding` |
+| 팀 / 서명 | YUMI KIM (75K9YY6D2C), Automatically manage signing |
+| 빌드 | Release 구성, 실기기(iPhone) |
+| 결과 | 빌드 성공 · 앱 실행 · 4탭 네비게이션 동작 확인 |
+
+> **`use_frameworks!`로 인한 추가 에러는 없었다.** react-native-screens / image-picker /
+> safe-area-context 모두 static framework 링크에서 정상 컴파일.
+
+---
 
 #### RNFB 26으로 올리지 말 것
 v26부터 **New Architecture 필수**다. RN 0.76.9에서 켜려면 모든 네이티브 의존성이

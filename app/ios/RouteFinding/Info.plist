@@ -26,17 +26,13 @@
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-	  <!-- Do not change NSAllowsArbitraryLoads to true, or you will risk app rejection! -->
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<!-- ⚠️ 권한 문구는 비워두면 App Store 심사에서 거부된다. 용도를 구체적으로 적을 것. -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>주변 등반 루트를 지도에 표시하고 접근로를 안내하기 위해 위치 정보를 사용합니다.</string>
-
-	<!-- react-native-image-picker: 프로필 사진 선택 (2026-08-04 추가) -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>프로필 사진을 등록하기 위해 사진 보관함에 접근합니다.</string>
 	<key>UILaunchStoryboardName</key>

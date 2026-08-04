@@ -9,6 +9,37 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-04 (3차) — 🎉 iOS 실기기 빌드 성공 (5월부터 보류되던 트랙 해제)
+
+#### Fixed — iOS 빌드
+- Xcode Release 구성으로 **실기기 빌드·실행 성공**. 4탭 네비게이션 동작 확인
+- `use_frameworks! :linkage => :static` 전환으로 인한 추가 에러 **없음**
+  (react-native-screens / image-picker / safe-area-context 모두 정상)
+- `docs/05_ROADMAP.md` Phase 1-2.5 보류 트랙 해제
+
+#### Changed — iOS 번들 ID 변경 (사용자 승인)
+- `com.yusungyun.RouteFinding` → **`com.yusung.routefinding`** (안드로이드 `applicationId`와 통일)
+- 이유: 기존 ID가 **다른 Apple 팀에 선점**돼 있어 현재 개발 팀(YUMI KIM)으로 등록 불가.
+  v1 iOS는 **App Store 미출시**라 잃을 사용자가 없어 변경 비용 0
+- Firebase 프로젝트 `routefinding09-4b597`에 **iOS 앱 신규 등록** → 새 `GoogleService-Info.plist` 적용.
+  기존 iOS 앱 항목은 삭제하지 않고 보존
+- `GoogleService-Info.plist`는 `.gitignore` 대상이라 커밋되지 않는다.
+  다른 맥에서 빌드하려면 Firebase 콘솔에서 재발급 필요
+
+#### Fixed — `GoogleService-Info.plist` 경로 참조 (잠재 버그)
+- `project.pbxproj`의 파일 참조에 `RouteFinding/` 폴더명이 빠져 있어
+  `Build input file cannot be found` 발생. 다른 파일들은 모두 폴더명이 붙어 있었다
+- §2 시도 #3의 `xcodeproj` gem 등록 시점부터 깨져 있었고, 이전 빌드는 더 앞 단계에서
+  죽어 드러나지 않았다 → 파일을 `app/ios/GoogleService-Info.plist`로 이동해 해결
+
+#### 실기기 확인 결과 (iOS)
+- 앱 실행, 하단 4탭 이동, 개념도·마이페이지 정상
+- 지도 · 루트제보 = 플레이스홀더 (예정대로 Phase 2에서 구현)
+- **하단 탭 아이콘이 없다** — `MainTabNavigator.tsx`에 `tabBarIcon` 미정의(`[TBD] 아이콘 라이브러리`).
+  React Navigation 기본 도형이 4개 탭에 동일하게 표시된다. 웹은 이미
+  `components/common/AppIcon.vue`(인라인 SVG 24종)로 이모지를 걷어낸 상태 → 앱도 맞춰야 함
+
+
 ### 📅 2026-08-04 (후속) — RNFB 25.1.0 업그레이드 + iOS Podfile 근본 정정
 
 > **목적**: 보류 트랙이던 iOS 빌드 복구. `docs/09_RNFB_UPGRADE.md`의 조사 결론대로

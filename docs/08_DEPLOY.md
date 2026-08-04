@@ -155,7 +155,7 @@ cd android && ./gradlew clean bundleRelease   # AAB (Play Store 업로드용)
 
 ---
 
-## 3. iOS — ⚠️ `pod install` 통과, Xcode 빌드 미검증
+## 3. iOS — ✅ 실기기 빌드 성공 (2026-08-04)
 
 > **2026-08-04 갱신.** 이 문서의 이전 판은 "RNFB 26으로 올려라"라고 적혀 있었으나
 > **그 지침은 폐기됐다.** v26은 New Architecture가 필수라 RN 0.76.9에서 쓸 수 없다.
@@ -166,9 +166,12 @@ cd android && ./gradlew clean bundleRelease   # AAB (Play Store 업로드용)
 - `@react-native-firebase/*` **25.1.0** 적용 완료 (firebase-ios-sdk **12.15.0**)
 - 빌드 실패의 진짜 원인은 Xcode 26이 아니라 **`use_modular_headers!`** 였다.
   RNFB 공식 권장인 **static framework 링크**로 전환하고 gRPC 패치를 모두 제거 → **`pod install` 통과** ✅
-- ⏳ **남은 것은 Xcode 빌드 검증 하나뿐이다.**
+- ✅ **Xcode 실기기 빌드 성공** (2026-08-04). 번들 ID를 `com.yusung.routefinding`으로 바꾸고
+  Firebase에 iOS 앱을 신규 등록한 뒤 통과. 상세는 `06_iOS_BUILD_NOTES.md` §2 (8~10차)
+- ⚠️ 번들 ID가 **`com.yusungyun.RouteFinding` → `com.yusung.routefinding`으로 변경**됐다.
+  v1 iOS는 App Store 미출시라 잃을 사용자가 없고, 안드로이드 `applicationId`와 통일됐다.
 
-### 3-1. 다음 단계 — Xcode 실기기 빌드
+### 3-1. 빌드 방법 (재현용)
 
 ```bash
 open ~/StudioProjects/routefinding/app/ios/RouteFinding.xcworkspace
@@ -194,7 +197,7 @@ open ~/StudioProjects/routefinding/app/ios/RouteFinding.xcworkspace
       (키보드 회피, 전체화면 뷰어 회전, 등반일지 날짜 입력감)
 - [ ] Info.plist 권한 문구는 채워둠 ✅ (카메라 촬영을 쓰게 되면 `NSCameraUsageDescription` 추가 필요)
 - [ ] Apple Developer 계정 / 인증서 / 프로비저닝 프로파일
-- [ ] App Store Connect 앱 등록 (번들 ID `com.yusungyun.RouteFinding`)
+- [ ] App Store Connect 앱 등록 (번들 ID **`com.yusung.routefinding`**)
 
 ### 3-3. 하지 말 것
 
@@ -208,8 +211,8 @@ open ~/StudioProjects/routefinding/app/ios/RouteFinding.xcworkspace
 ```
 ① 웹 배포                          ← ✅ 완료 (2026-08-04)
 ② 앱 지도 SDK 결정                  ← ✅ 완료: Google Maps (react-native-maps)
-③ iOS Xcode 실기기 빌드 검증        ← 지금 여기 (pod install까지 통과)
-④ 안드로이드 assembleRelease APK 확인
+③ iOS Xcode 실기기 빌드 검증        ← ✅ 완료 (2026-08-04)
+④ 안드로이드 assembleRelease APK 확인   ← 지금 여기
 ⑤ 앱 지도 탭 + 루트제보 작성 화면 구현
 ⑥ 앱 개념도 사진/라인 그리기 이식
 ⑦ v1 서명 키 확보 + versionCode 정리   ← 가장 위험. Play 앱 서명 켜짐 여부 먼저 확인

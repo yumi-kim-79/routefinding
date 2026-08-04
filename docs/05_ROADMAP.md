@@ -74,7 +74,8 @@ RN 앱이 실행되고, Firebase 연결되고, 로그인이 작동하는 최소 
 - [~] ESLint, Prettier 설정 — 템플릿 기본 적용됨. "RideTalk 것 그대로"는 RideTalk이 private이라 미적용 (추후 확인 시 동기화)
 - [x] 폴더 구조 생성 (`src/` 27개 디렉터리, 각 `.gitkeep`+`README.md`, `App.tsx`→`src/App.tsx`)
 - [~] `package.json` 의존성 — 기본 의존성 설치 완료. 앱 라이브러리(Firebase/네비 등)는 1-2 이후 추가
-- [x] iOS/Android 번들 ID 설정 (기존 v1 ID 유지: Android `com.yusung.routefinding` / iOS `com.yusungyun.RouteFinding`)
+- [x] iOS/Android 번들 ID 설정 — **2026-08-04 양 플랫폼 `com.yusung.routefinding`으로 통일**
+      (iOS 기존값 `com.yusungyun.RouteFinding`은 타 Apple 팀에 선점돼 사용 불가. v1 iOS 미출시라 변경 비용 0)
 - [ ] iOS Podfile `pod install` — CocoaPods 환경에서 별도 실행 (1-2 Firebase 연동 시)
 
 #### 1-2. Firebase 연결 — Android ✅ 완료 (2026-05-19)
@@ -88,12 +89,13 @@ RN 앱이 실행되고, Firebase 연결되고, 로그인이 작동하는 최소 
 - [x] iOS `pod install` 해결(`use_modular_headers!`)
 → Phase 1-2는 **Android 기준 완료**로 간주. 나머지 Phase 1은 Android로 진행.
 
-#### 1-2.5. iOS 빌드 (⏸️ 보류 — 별도 트랙)
-- 상태: ❌ 빌드 미통과. 상세 시도/에러/다음 옵션 → **`docs/06_iOS_BUILD_NOTES.md`**
+#### 1-2.5. iOS 빌드 (✅ 해결 — 2026-08-04)
+- 상태: ✅ **실기기 빌드 성공(2026-08-04)**. RNFB 25.1.0 + static framework 링크 + 번들 ID 변경으로 해결.
+  전체 시도 이력 → **`docs/06_iOS_BUILD_NOTES.md`**
 - 근본 원인 추정: Xcode 26.3 (17C529) / Sim 26.2 SDK가 bleeding-edge ↔ firebase-ios-sdk 12.10.0 / gRPC 미추격
 - 보류 사유: 에러 양파 패턴, Phase 1 나머지는 OS 무관, 시간 효율(생태계 추격 대기)
 - 🔔 **재검증 트리거**: `@react-native-firebase/*` 또는 `firebase-ios-sdk`(gRPC) 새 버전 출시 / Xcode 26.x 호환 픽스 공지 시
-- [ ] iOS 빌드 검증 (트리거 충족 후 `06_iOS_BUILD_NOTES.md` 체크리스트대로 재시도)
+- [x] iOS 빌드 검증 — 2026-08-04 실기기 빌드·실행 성공
 
 #### 1-3. 네비게이션 ✅ 완료 (Android 기준 — 2026-05-19)
 - [x] React Navigation v7 설치 (+ screens 4.4.0 / safe-area-context 4.14.1 핀)
