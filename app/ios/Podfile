@@ -8,15 +8,27 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
+# ─────────────────────────────────────────────────────────────────────────
+# React Native Firebase iOS 설정 (2026-08-04 정정)
+#
+# 이전: `use_modular_headers!` 를 전역으로 켰다.
+#   → 최초 에러("Swift pods cannot yet be integrated as static libraries")는
+#     넘겼지만, 전역 모듈 헤더는 gRPC-Core의 헤더 배치와 맞지 않아
+#     `Pods/Headers/Private/grpc/gRPC-Core.modulemap not found` 로 이어졌다.
+#     (docs/06_iOS_BUILD_NOTES.md §2의 1·3차 실패 — 패치로 덧대던 원인)
+#
+# 현재: RNFB 공식 권장(rnfirebase.io)인 **static framework 링크**를 쓴다.
+#   `$RNFirebaseAsStaticFramework = true` 는 static framework 사용 시 필수 전역이다.
+#
+# 되돌리려면: 이 블록을 지우고 `use_modular_headers!` 를 복구한 뒤
+#             `cd ios && rm -rf Pods Podfile.lock && pod install`
+# ─────────────────────────────────────────────────────────────────────────
+$RNFirebaseAsStaticFramework = true
 
-# React Native Firebase: Swift pod이 static library로 통합되려면 모듈 맵 필요
-# (RNFB 공식 권장 — FirebaseAuth/Firestore/Storage 등 Swift pod 의존성 해결)
-use_modular_headers!
+# USE_FRAMEWORKS 환경변수로 재정의 가능. 기본값 static.
+linkage = ENV['USE_FRAMEWORKS'] || 'static'
+Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
+use_frameworks! :linkage => linkage.to_sym
 
 target 'RouteFinding' do
   config = use_native_modules!
@@ -41,17 +53,25 @@ target 'RouteFinding' do
       # :ccache_enabled => true
     )
 
-    # React Native Firebase(Firestore) iOS 빌드 패치 (최소화):
-    # 최신 Xcode의 C++20 explicit modules와 gRPC-C++ pod의 ScanDependencies 단계가
-    # 충돌해 빌드 실패 → gRPC 계열 타깃에서 *explicit* modules만 비활성화한다.
-    # 주의: CLANG_ENABLE_MODULES=NO 까지 끄면 시스템 SDK 헤더(_stdio.h)
-    #       파싱이 깨진다(2차 실패 원인). EXPLICIT_MODULES만 끄는 것으로 충분.
-    installer.pods_project.targets.each do |target|
-      if %w[gRPC-C++ gRPC-Core BoringSSL-GRPC].include?(target.name)
-        target.build_configurations.each do |bc|
-          bc.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
-        end
-      end
-    end
+    # ── gRPC 빌드 패치: RNFB 25 업그레이드(2026-08-04)와 함께 **제거** ──
+    #
+    # 배경: Xcode 26.x의 C++20 explicit modules와 gRPC-C++ pod이 충돌해
+    #       빌드가 깨졌고(docs/06_iOS_BUILD_NOTES.md), 임시로 아래 패치를 넣었다.
+    #       패치를 한 겹 벗길 때마다 다음 불일치가 드러나는 "양파 까기"였다.
+    #
+    # 해소: RNFB 25가 쓰는 firebase-ios-sdk 12.12.0+ 는 공식적으로
+    #       **Xcode 26.2 이상을 요구**한다 = 생태계가 정식 대응했다는 뜻.
+    #       따라서 이 패치는 불필요할 뿐 아니라, 남겨두면 오히려 방해가 된다.
+    #
+    # 만약 빌드가 다시 깨지면 아래 주석을 되살리고 에러 원문을
+    # docs/06_iOS_BUILD_NOTES.md §2 표에 추가할 것 (임의 패치 추가 금지).
+    #
+    # installer.pods_project.targets.each do |target|
+    #   if %w[gRPC-C++ gRPC-Core BoringSSL-GRPC].include?(target.name)
+    #     target.build_configurations.each do |bc|
+    #       bc.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
+    #     end
+    #   end
+    # end
   end
 end

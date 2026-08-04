@@ -4,7 +4,10 @@
  * 인증 세션의 단일 출처는 Firebase Auth(네이티브 영속). store는 이를 반영만 한다
  * (별도 persist 없음 — docs/05_ROADMAP.md Phase 1-4 결정 A).
  */
-import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+// RNFB v25부터 모듈러 타입을 패키지 루트에서 직접 가져온다.
+// (구 `FirebaseAuthTypes.User` 네임스페이스 타입은 onAuthStateChanged가 주는
+//  실제 타입과 더 이상 호환되지 않는다 — v26에서 네임스페이스 API 자체가 제거됨)
+import type { User } from '@react-native-firebase/auth';
 
 /** 앱에서 쓰는 최소 인증 사용자 (Firebase user에서 파생) */
 export interface AuthUser {
@@ -13,7 +16,7 @@ export interface AuthUser {
   emailVerified: boolean;
 }
 
-export function toAuthUser(user: FirebaseAuthTypes.User): AuthUser {
+export function toAuthUser(user: User): AuthUser {
   return {
     uid: user.uid,
     email: user.email,

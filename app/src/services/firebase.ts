@@ -18,7 +18,7 @@ import { getFirestore } from '@react-native-firebase/firestore';
 import { getStorage } from '@react-native-firebase/storage';
 import { getMessaging } from '@react-native-firebase/messaging';
 import {
-  firebase as appCheckFirebase,
+  ReactNativeFirebaseAppCheckProvider,
   initializeAppCheck,
 } from '@react-native-firebase/app-check';
 
@@ -40,10 +40,9 @@ export async function initAppCheck(): Promise<void> {
   }
   appCheckInitialized = true;
 
-  const provider =
-    appCheckFirebase
-      .appCheck()
-      .newReactNativeFirebaseAppCheckProvider();
+  // RNFB v25부터 모듈러 방식. 구 `firebase.appCheck().newReactNativeFirebaseAppCheckProvider()`는
+  // deprecated이며 v26에서 네임스페이스 API와 함께 제거된다.
+  const provider = new ReactNativeFirebaseAppCheckProvider();
 
   provider.configure({
     android: {
@@ -52,6 +51,9 @@ export async function initAppCheck(): Promise<void> {
     },
     apple: {
       // 개발: debug 토큰, 배포: DeviceCheck (docs/02_DATA_MODEL.md)
+      // [TBD] RNFB 현재 권장값은 'appAttestWithDeviceCheckFallback'이다.
+      //   App Attest는 Firebase 콘솔에서 별도 등록이 필요하므로,
+      //   iOS 빌드가 복구되고 실기기 검증이 끝난 뒤 전환을 검토한다.
       provider: __DEV__ ? 'debug' : 'deviceCheck',
     },
   });

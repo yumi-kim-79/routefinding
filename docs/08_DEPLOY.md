@@ -1,6 +1,6 @@
 # 🚀 08_DEPLOY.md — 배포 가이드
 
-> 작성일: 2026-08-04
+> 작성일: 2026-08-04 (최종 갱신 2026-08-04 후속 세션)
 > 결론 요약: **웹은 지금 배포 가능. 안드로이드·iOS는 아직 배포할 수 없다.**
 
 ---
@@ -12,15 +12,24 @@ Firebase Hosting. 프로젝트 `routefinding09-4b597`, 산출물 `dist/`.
 ```bash
 cd ~/routefinding-web
 
+# 0) ⚠️ 계정 함정 — 셸에 FIREBASE_TOKEN이 설정돼 있으면 로그인 계정을 덮어써서
+#    "프로젝트 없음" 에러가 난다. CLI 기본 로그인(gangtalk815@)이 아니라
+#    프로젝트 소유자(routefinding2025@)로 배포해야 한다.
+unset FIREBASE_TOKEN
+
 # 1) 배포 대상 프로젝트 확인 (프로젝트가 두 개라 반드시 확인)
 firebase use routefinding09-4b597
 
 # 2) 빌드
 npm run build
 
-# 3) 배포 — 호스팅만
-firebase deploy --only hosting
+# 3) 배포 — 호스팅만 (--account 명시 권장)
+firebase deploy --only hosting \
+  --project routefinding09-4b597 \
+  --account routefinding2025@gmail.com
 ```
+
+> ✅ 2026-08-04 배포 완료: https://routefinding09-4b597.web.app (커스텀 도메인 `routefinding.kr`)
 
 ### 배포 전 확인
 - [ ] `npm run build` 가 에러 없이 끝나는가 (vite 빌드 실패 시 배포 중단할 것)
@@ -56,7 +65,7 @@ firebase hosting:rollback               # 직전 버전으로
 
 | 탭 | 상태 |
 |---|---|
-| 지도 | ⛔ `MapScreen.tsx` = 플레이스홀더. 지도 SDK 미결정 (`[TBD] Google Maps vs Kakao Map`) |
+| 지도 | ⛔ `MapScreen.tsx` = 플레이스홀더. **지도 SDK는 Google Maps(`react-native-maps`)로 결정**(2026-08-04) — 아직 미도입 |
 | 개념도 | ✅ 검색·목록·상세·뷰어 완성 |
 | 루트제보 | ⛔ `ReportListScreen.tsx` = 플레이스홀더. 제보 **작성 화면 자체가 없음** |
 | 마이페이지 | ✅ 제보관리·등반일지·프로필(사진 변경 포함) 완성 |
@@ -146,44 +155,72 @@ cd android && ./gradlew clean bundleRelease   # AAB (Play Store 업로드용)
 
 ---
 
-## 3. iOS — ⛔ 빌드 자체가 안 됨
+## 3. iOS — ⚠️ `pod install` 통과, Xcode 빌드 미검증
 
-`docs/06_iOS_BUILD_NOTES.md` 참조. 요약:
+> **2026-08-04 갱신.** 이 문서의 이전 판은 "RNFB 26으로 올려라"라고 적혀 있었으나
+> **그 지침은 폐기됐다.** v26은 New Architecture가 필수라 RN 0.76.9에서 쓸 수 없다.
+> 최종 결정은 **25.1.0** — 근거는 `docs/09_RNFB_UPGRADE.md`.
 
-- Xcode 26.x와 firebase-ios-sdk가 끌어오는 gRPC-C++ 가 충돌해 **빌드 실패** 상태(보류 트랙)
-- 단, **재시도 트리거는 충족됐다**: RNFB 24.0.0 → 최신 **26.1.0**(2026-08-03)
+`docs/06_iOS_BUILD_NOTES.md` 참조. 현황 요약:
 
-재개 순서:
+- `@react-native-firebase/*` **25.1.0** 적용 완료 (firebase-ios-sdk **12.15.0**)
+- 빌드 실패의 진짜 원인은 Xcode 26이 아니라 **`use_modular_headers!`** 였다.
+  RNFB 공식 권장인 **static framework 링크**로 전환하고 gRPC 패치를 모두 제거 → **`pod install` 통과** ✅
+- ⏳ **남은 것은 Xcode 빌드 검증 하나뿐이다.**
+
+### 3-1. 다음 단계 — Xcode 실기기 빌드
+
 ```bash
-cd ~/StudioProjects/routefinding/app
-corepack yarn up '@react-native-firebase/*'    # 24 → 26 (메이저 2단계, breaking change 확인 필수)
-# Podfile의 gRPC post_install 패치를 주석 처리한 뒤
-cd ios && pod install && cd ..
-yarn ios
+open ~/StudioProjects/routefinding/app/ios/RouteFinding.xcworkspace
 ```
+- ⚠️ `.xcodeproj`가 아니라 **`.xcworkspace`** (CocoaPods 프로젝트)
+- Signing & Capabilities → Automatically manage signing → **Team 선택**
+- 번들 ID `com.yusungyun.RouteFinding`
+- **Product → Scheme → Edit Scheme → Run → Build Configuration = `Release`**
+  (Metro 없이 실기기 단독 실행)
+- `⌘R`
 
-빌드가 되면 그다음:
-- [ ] `pod install` 재실행 (2026-08-04에 추가된 `react-native-image-picker`)
-- [ ] 프로필 사진 업로드 실기기 검증 (`putFile`의 URI 형식)
-- [ ] Info.plist 권한 문구는 채워둠 ✅
+**빌드가 깨지면 임의 패치를 덧붙이지 말 것**(CLAUDE.md). 에러 원문을
+`docs/06_iOS_BUILD_NOTES.md` §2 표에 누적 기록하고 보고한다.
+`use_frameworks!`는 *모든* pod의 링크 방식을 바꾸므로
+`react-native-screens` / `react-native-image-picker` / `safe-area-context`에서
+새 에러가 나올 수 있다.
+
+### 3-2. 빌드가 되면 그다음
+
+- [ ] 프로필 사진 업로드 실기기 검증 (`services/profilePhoto.ts`의 `putFile`이 받는 URI 형식)
+- [ ] 로그인 → Auth · Firestore · App Check 동작 1회 검증
+- [ ] `06_iOS_BUILD_NOTES.md` §0-1의 iOS 전용 체크리스트 소진
+      (키보드 회피, 전체화면 뷰어 회전, 등반일지 날짜 입력감)
+- [ ] Info.plist 권한 문구는 채워둠 ✅ (카메라 촬영을 쓰게 되면 `NSCameraUsageDescription` 추가 필요)
 - [ ] Apple Developer 계정 / 인증서 / 프로비저닝 프로파일
 - [ ] App Store Connect 앱 등록 (번들 ID `com.yusungyun.RouteFinding`)
+
+### 3-3. 하지 말 것
+
+- ❌ **RNFB 26으로 업그레이드** — New Architecture 필수. RN 업그레이드와 묶어 별도 진행
+- ❌ `use_modular_headers!` 복구 — 이게 원인이었다
 
 ---
 
 ## 4. 권장 순서
 
 ```
-① 웹 배포                          ← 지금 가능
-② 앱 지도 SDK 결정 (Google/Kakao)
-③ 앱 지도 탭 + 루트제보 작성 화면 구현
-④ 앱 개념도 사진/라인 그리기 이식
-⑤ v1 서명 키 확보 + 버전 정리
-⑥ 안드로이드 내부 테스트 배포
-⑦ RNFB 26 업그레이드 → iOS 빌드 복구
-⑧ iOS TestFlight
-⑨ 양 플랫폼 정식 출시
+① 웹 배포                          ← ✅ 완료 (2026-08-04)
+② 앱 지도 SDK 결정                  ← ✅ 완료: Google Maps (react-native-maps)
+③ iOS Xcode 실기기 빌드 검증        ← 지금 여기 (pod install까지 통과)
+④ 안드로이드 assembleRelease APK 확인
+⑤ 앱 지도 탭 + 루트제보 작성 화면 구현
+⑥ 앱 개념도 사진/라인 그리기 이식
+⑦ v1 서명 키 확보 + versionCode 정리   ← 가장 위험. Play 앱 서명 켜짐 여부 먼저 확인
+⑧ 안드로이드 내부 테스트 배포
+⑨ iOS TestFlight
+⑩ 양 플랫폼 정식 출시
 ```
+
+> ③④는 macOS 툴체인(Xcode·CocoaPods·Gradle)이 필요해 **사용자가 직접 실행**해야 한다.
+> `react-native-maps` 도입(⑤)은 네이티브 재빌드를 부르므로 **③ 이후에 시작**하는 편이
+> 빌드 실패 원인을 분리하기 쉽다.
 
 **웹을 먼저 배포해도 안전하다.** 앱(v1)과 데이터를 공유하지만 이번 리뉴얼에서
 Firestore 스키마를 바꾸지 않았고, 새로 추가한 것(`climbing_logs`, `concept_photos`)은

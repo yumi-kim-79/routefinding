@@ -9,6 +9,50 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-04 (후속) — RNFB 25.1.0 업그레이드 + iOS Podfile 근본 정정
+
+> **목적**: 보류 트랙이던 iOS 빌드 복구. `docs/09_RNFB_UPGRADE.md`의 조사 결론대로
+> **25.1.0으로만** 올렸다(26은 New Architecture 필수라 RN 업그레이드와 묶어 별도 진행).
+
+#### Changed — `@react-native-firebase/*` 24.0.0 → **25.1.0**
+- 대상 6개: `app` / `auth` / `firestore` / `storage` / `messaging` / `app-check`
+- `src/types/auth.ts` — `FirebaseAuthTypes.User` → 모듈러 `User` 타입 (2곳)
+- `src/services/firebase.ts` — App Check provider를 모듈러 방식으로:
+  `firebase.appCheck().newReactNativeFirebaseAppCheckProvider()`
+  → `new ReactNativeFirebaseAppCheckProvider()`
+- iOS App Check는 **`deviceCheck` 유지**. 현재 권장값인
+  `appAttestWithDeviceCheckFallback`은 Firebase 콘솔에 App Attest 별도 등록이 필요해
+  실기기 검증 후로 미룸 (`[TBD]` 주석으로 표시)
+- Firestore/Storage 호출부는 처음부터 모듈러 API라 **수정 0건**
+
+#### Fixed — iOS `pod install` 실패의 진짜 원인 규명
+- 범인은 **`use_modular_headers!`** 였다. 1차 실패("Swift pods cannot yet be integrated
+  as static libraries")를 넘기려 전역으로 켰는데, gRPC-Core의 헤더 배치와 맞지 않아
+  `Pods/Headers/Private/grpc/gRPC-Core.modulemap not found`를 낳았다.
+  **패치를 벗길 때마다 다음 불일치가 드러나던 "양파 까기"의 근원.** Xcode 26 자체의 문제가 아니었다
+- `ios/Podfile` — `use_modular_headers!` 제거 → RNFB 공식 권장인 **static framework 링크**로 전환
+  (`$RNFirebaseAsStaticFramework = true` + `use_frameworks! :linkage => :static`,
+   `USE_FRAMEWORKS` 환경변수로 재정의 가능)
+- gRPC 3타깃(`gRPC-C++`/`gRPC-Core`/`BoringSSL-GRPC`)의 `CLANG_ENABLE_EXPLICIT_MODULES=NO`
+  **post_install 패치 전량 제거**
+- ✅ `pod install --repo-update` 통과 — firebase-ios-sdk **12.15.0**, gRPC-C++ 1.69.0
+- `project.pbxproj` — 링크 산출물이 `libPods-*.a`(static library) → `Pods_*.framework`로 자동 갱신
+- `PrivacyInfo.xcprivacy` — 파일 타임스탬프 API 사유 `3B52.1` 추가(pod install 갱신분)
+
+#### Docs
+- `docs/06_iOS_BUILD_NOTES.md` — §2에 **4~7차 시도 이력**과 원인 규명 추가
+- `docs/09_RNFB_UPGRADE.md` — 신규. "왜 25이고 26이 아닌가" 판단 근거와 실행 순서
+- `docs/08_DEPLOY.md` — §3이 아직 "26으로 올려라"로 남아 있어 **25 결정에 맞게 정정**,
+  §2-1의 지도 SDK `[TBD]`도 Google Maps 결정 반영, §1에 Firebase CLI 계정 함정 추가
+
+#### 검증
+- `tsc --noEmit` 0 error / `eslint` 0 error
+- ✅ 안드로이드 실기기 실행 정상 (업그레이드 후에도 깨지지 않음)
+- ⏳ **미검증: iOS Xcode 실기기 빌드.** `use_frameworks!`는 *모든* pod의 링크 방식을 바꾸므로
+  `react-native-screens` / `image-picker` / `safe-area-context`에서 새 에러가 날 수 있다.
+  실패 시 **임의 패치 금지** — 에러 원문을 `docs/06_iOS_BUILD_NOTES.md` §2 표에 누적 기록할 것
+
+
 ### 📅 2026-08-04 — 앱 단순화 + 마이페이지 개편 + 등반일지 신규
 
 #### Changed — 4탭 체제로 축소 (웹·앱 공통)

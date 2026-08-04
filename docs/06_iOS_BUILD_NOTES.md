@@ -1,6 +1,7 @@
 # 🍎 06_iOS_BUILD_NOTES.md — iOS 빌드 별도 트랙
 
-> **상태**: ⏸️ 보류 (Phase 1-2.5). Android는 정상 빌드. iOS만 미해결.
+> **상태**: 🔄 재개 중 (2026-08-04). `pod install` **통과**. Xcode 빌드 미검증.
+> (이전 상태: ⏸️ 보류 — Android 정상, iOS만 미해결)
 > **결정일**: 2026-05-19
 > **원칙**: Phase 1 나머지는 OS 무관하므로 Android로 진행. iOS는 생태계 추격 후 재검증.
 
@@ -131,6 +132,46 @@ post_install do |installer|
   end
 end
 ```
+
+---
+
+### 2026-08-04 시도 (4~7차) — **원인 규명 + pod install 통과**
+
+| # | 시도 | 결과 |
+|---|---|---|
+| 4 | RNFB 24.0.0 → **25.1.0** 업그레이드 (firebase-ios-sdk 12.15.0) | ✅ `yarn typecheck` 에러 1건뿐 (`FirebaseAuthTypes.User` → `User`) |
+| 5 | Podfile의 gRPC `CLANG_ENABLE_EXPLICIT_MODULES=NO` 패치 **제거** | ❌ `pod install` 실패 — 스펙 저장소가 오래됨 (`Firebase/AppCheck (= 12.15.0)` 못 찾음) |
+| 6 | `pod install --repo-update` | ✅ pod 해석 성공 → 빌드 진행 → ❌ **3차와 동일 에러**: `module map file '.../Pods/Headers/Private/grpc/gRPC-Core.modulemap' not found` |
+| 7 | **`use_modular_headers!` 제거 → static framework 방식으로 전환** | ✅ `pod install` 통과 (Podfile.lock 3611줄, gRPC-C++ 1.69.0) |
+
+#### 🔑 원인 규명 — 범인은 `use_modular_headers!` 였다
+
+1차 실패("Swift pods cannot yet be integrated as static libraries")를 넘기려고
+`use_modular_headers!`를 **전역으로** 켰는데, 이게 gRPC-Core의 헤더 배치와 맞지 않아
+`Pods/Headers/Private/grpc/gRPC-Core.modulemap not found`를 낳았다.
+**패치를 한 겹 벗길 때마다 다음 불일치가 드러나던 "양파 까기"의 근원이 여기였다.**
+Xcode 26 자체의 문제가 아니라 Podfile 접근 방식의 문제였다.
+
+RNFB 공식 문서(rnfirebase.io)의 권장 설정은 `use_modular_headers!`가 아니라
+**static framework 링크**다:
+
+```ruby
+$RNFirebaseAsStaticFramework = true
+use_frameworks! :linkage => :static
+```
+
+이 방식으로 전환하고 gRPC 패치를 모두 제거한 뒤 `pod install` 통과.
+
+#### 남은 검증
+- [ ] Xcode 실기기 빌드 (`RouteFinding.xcworkspace`, Scheme → Release)
+- [ ] `use_frameworks!`는 **모든 pod의 링크 방식**을 바꾼다 →
+      react-native-screens / image-picker / safe-area-context에서 새 에러 가능성
+- [ ] 안드로이드가 깨지지 않았는지 (2026-08-04 확인: 실기기 정상 실행 ✅)
+
+#### RNFB 26으로 올리지 말 것
+v26부터 **New Architecture 필수**다. RN 0.76.9에서 켜려면 모든 네이티브 의존성이
+지원해야 하고 사실상 RN 업그레이드와 묶어야 한다. iOS 복구 목적이면 25로 충분하다.
+(상세: `docs/09_RNFB_UPGRADE.md`)
 
 ---
 
