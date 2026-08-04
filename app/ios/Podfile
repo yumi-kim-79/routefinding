@@ -33,6 +33,16 @@ use_frameworks! :linkage => linkage.to_sym
 target 'RouteFinding' do
   config = use_native_modules!
 
+  # ── 지도 (2026-08-04) ────────────────────────────────────────────────
+  # react-native-maps의 iOS 기본값은 **애플 지도**다. 웹·안드로이드와 같은 지도를
+  # 보여주려면 Google 서브스펙을 명시해야 한다(GoogleMaps 9.4.0 + Maps-iOS-Utils).
+  #
+  # ⚠️ 이 Podfile은 RNFB 때문에 `use_frameworks! :linkage => :static`을 쓴다.
+  #    구글 지도 pod과 충돌해 빌드가 깨지면 **아래 두 줄을 지우고 pod install**하면
+  #    애플 지도로 즉시 되돌아간다 (JS는 constants/map.ts의 MAP_PROVIDER만 수정).
+  rn_maps_path = '../node_modules/react-native-maps'
+  pod 'react-native-maps/Google', :path => rn_maps_path
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.

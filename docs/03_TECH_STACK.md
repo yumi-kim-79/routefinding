@@ -98,14 +98,44 @@
 
 | 패키지 | 용도 | 우선순위 |
 |---|---|---|
-| **[TBD: react-native-maps (Google) vs Kakao Map]** | 지도 | P1 |
-| `@react-native-community/geolocation` 또는 `react-native-geolocation-service` | GPS | P1 |
-| `react-native-permissions` | 위치 권한 | P1 |
+| **`react-native-maps` 1.26.0** | 지도 (Google Maps) | P1 | ✅ **확정 2026-08-04** |
+| ~~`@react-native-community/geolocation`~~ | GPS | — | ❌ **미도입**. 지도의 `onUserLocationChange`로 대체 — 네이티브 의존성을 늘리지 않기 위해 |
+| ~~`react-native-permissions`~~ | 위치 권한 | — | ❌ **미도입**. Android는 RN 내장 `PermissionsAndroid`, iOS는 Info.plist + 지도 SDK가 처리 |
 | `ngeohash` | Geohash 인코딩 | P1 |
 
 > ⚠️ **지도 SDK 선택**: 기존 Flutter는 Google Maps. RideTalk은 Kakao Map.
 > → routefinding은 **해외 등반지(예: 요세미티)**도 다룰 가능성 있으므로 Google Maps 유력.
 > → [QUESTION] 사용자 결정 필요.
+
+#### 🗺️ 지도 결정 상세 (2026-08-04)
+
+**`react-native-maps@1.26.0` — 버전을 반드시 고정한다. 캐럿(`^`) 금지.**
+
+| react-native-maps | New Architecture 요구 RN |
+|---|---|
+| 1.26.1 이상 | **RN 0.81.1 이상** ← 우리(0.76.9)보다 높다 |
+| **1.26.0 이하** | RN 0.76 이상 ✅ |
+
+이 프로젝트는 **iOS·Android 양쪽 다 New Architecture**로 동작한다
+(iOS `Podfile.lock`에 `React-Fabric` pod 존재, Android `newArchEnabled=true`).
+따라서 최신(1.29.x)을 설치하면 빌드가 깨진다.
+
+**iOS는 구글 지도로 고정** (사용자 결정): 기본값인 애플 지도를 쓰면 웹·안드로이드와
+지도가 달라 보인다. `ios/Podfile`의 `pod 'react-native-maps/Google'` +
+AppDelegate의 `[GMSServices provideAPIKey:]`가 함께 있어야 한다.
+→ 되돌리려면 Podfile의 두 줄을 지우고 `src/constants/map.ts`의 `MAP_PROVIDER`를 비운다.
+
+**Google Maps API 키 (2026-08-04 발급)** — Google Cloud `routefinding09-4b597`
+
+| 키 이름 | 제한 | 사용처 |
+|---|---|---|
+| `Maps Android (routefinding v2)` | Android 앱: `com.yusung.routefinding` + SHA-1 / API: Maps SDK for Android | `AndroidManifest.xml` |
+| `Maps iOS (routefinding v2)` | iOS 앱: `com.yusung.routefinding` / API: Maps SDK for iOS | `AppDelegate.mm` |
+
+- Firebase 자동 생성 키는 **건드리지 않았다** (제한을 잘못 만지면 인증·Firestore가 멈춘다)
+- 지도 **표시**는 모바일 SDK 과금 없음
+- ⚠️ 현재 등록된 SHA-1은 **debug 키** 것이다. release 서명 키를 구하면(P2)
+  그 SHA-1도 같은 키에 추가해야 스토어 버전에서 지도가 나온다
 
 ### 🥾 GPX / 트래킹
 

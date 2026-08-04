@@ -152,6 +152,8 @@ cd android && ./gradlew clean bundleRelease   # AAB (Play Store 업로드용)
 - [ ] Firestore/Storage 규칙 배포 완료
 - [ ] 실기기에서 로그인 → 4탭 전부 동작 확인
 - [ ] 개인정보 처리방침 URL (Play Console 필수)
+- [ ] 🗺️ **release 서명 키의 SHA-1을 `Maps Android (routefinding v2)` 키 제한에 추가**
+      (지금은 debug 키 SHA-1만 등록돼 있어, release 서명으로 바꾸면 지도가 회색으로 뜬다)
 
 ---
 

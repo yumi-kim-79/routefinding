@@ -54,6 +54,14 @@ export interface Concept {
   directions?: string;
   no?: string | number;
 
+  /**
+   * 지도 좌표 (v1 실측 필드명).
+   * ⚠️ 문서에 따라 숫자/문자열이 섞여 있어 union으로 둔다 — 사용 전 반드시 Number() 변환.
+   * (웹 MapView.vue도 `Number(r.latitude)`로 변환해 쓴다)
+   */
+  latitude?: number | string;
+  longitude?: number | string;
+
   imageUrl?: string;
   imageUrls?: string[];
   pitches?: ConceptPitch[];

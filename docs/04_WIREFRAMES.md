@@ -38,7 +38,7 @@
 
 | Flutter | RN | 라인 수 | 상태 |
 |---|---|---|---|
-| `lib/map_screen.dart` | `app/src/screens/map/MapScreen.tsx` | 711 | ⏳ |
+| `lib/map_screen.dart` | `app/src/screens/map/MapScreen.tsx` + `hooks/useMapRoutes.ts` + 컴포넌트 5개 | 711 | ✅ (2026-08-04, 웹 MapView.vue 기준 이식) |
 | `lib/map_input_screen.dart` | `app/src/screens/map/MapInputScreen.tsx` + 컴포넌트 분해 | **1618** | ⏳ 🚨 |
 | `lib/route_screen.dart` | `app/src/screens/route/RouteListScreen.tsx` | - | ⏳ |
 | `lib/concept_list_screen.dart` | `app/src/screens/route/ConceptListScreen.tsx` + `components/ConceptCard.tsx` + `hooks/useConcepts.ts` | 595 | ✅ v2 리뉴얼(단순화) |

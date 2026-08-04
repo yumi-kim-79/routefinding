@@ -2,6 +2,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- 지도 '내 위치' 표시용 (2026-08-04, 지도 탭). 런타임 요청은 MapScreen에서 한다 -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
@@ -10,6 +14,12 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:supportsRtl="true">
+
+      <!-- ⚠️ Google Maps SDK for Android 키. Google Cloud Console에서 발급 후 값 교체.
+           앱 제한: 패키지명 com.yusung.routefinding + 서명 SHA-1 지문 -->
+      <meta-data
+        android:name="com.google.android.geo.API_KEY"
+        android:value="AIzaSyDZfdXP6ABX1Cd4HUhm3cXBRTY5sQb8wso" />
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

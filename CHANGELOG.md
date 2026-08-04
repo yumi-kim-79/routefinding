@@ -9,6 +9,57 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-04 (4차) — 지도 탭 구현 (웹 MapView.vue 이식)
+
+> 플레이스홀더였던 지도 탭을 실화면으로 교체. **iOS·Android 동시 개발**(사용자 요청).
+
+#### Added — `react-native-maps` 1.26.0
+- ⚠️ **버전 고정 필수, 캐럿(`^`) 금지.** 1.26.1+는 New Architecture에 RN 0.81.1 이상을 요구하는데
+  이 프로젝트는 RN 0.76.9다. 최신(1.29.x)을 넣으면 빌드가 깨진다
+- 실측: **iOS·Android 양쪽 다 New Architecture로 동작 중**
+  (iOS `Podfile.lock`에 `React-Fabric` pod, Android `newArchEnabled=true`)
+  → `docs/09_RNFB_UPGRADE.md`의 "RN 0.76.9는 New Arch가 기본이 아니다" 서술은 사실과 다름 (별도 정정 필요)
+- iOS는 **구글 지도로 고정**(기본값 애플 지도 → 웹·안드로이드와 달라 보임):
+  `ios/Podfile`에 `pod 'react-native-maps/Google'`, `AppDelegate.mm`에 `[GMSServices provideAPIKey:]`
+- Google Maps API 키 2개 발급 (Android/iOS 각각 앱 제한 + API 1개 제한).
+  Firebase 자동 생성 키는 건드리지 않음
+
+#### Added — 지도 탭 화면
+```
+src/screens/map/MapScreen.tsx              화면 조립
+src/screens/map/hooks/useMapRoutes.ts      데이터·필터·클러스터링
+src/screens/map/components/
+  MapFilterBar / PickerModal / RouteMarkerView / RouteDetailSheet / ClusterListModal
+src/constants/map.ts                       마커 실측 기하 + 지도 상수
+src/assets/icons/{lead,bouldering}_marker.png   v1 Flutter에서 추출
+```
+- 마커 앵커는 **PNG 알파 실측 비율 그대로**. 웹은 픽셀로 환산했지만
+  react-native-maps의 `anchor`는 0~1 비율을 받아 `{ x: 0.5, y: tipRatio }`로 변환 없이 쓴다
+- 클러스터 숫자: 웹은 canvas로 이미지를 구워 마커 2개를 겹쳤지만, RN은 마커 안에 `<Text>`를
+  넣어 **마커 1개**로 끝난다 → 양 플랫폼이 같은 코드로 같은 결과
+- `Concept` 타입에 `latitude`/`longitude` 추가 (런타임엔 이미 들어오던 값, 선언만 누락돼 있었음).
+  문서마다 숫자/문자열이 섞여 있어 `number | string` union + 사용 시 Number 변환
+
+#### Changed — 웹과 다르게 간 부분 (사용자 승인)
+| 항목 | 웹 | 앱 | 이유 |
+|---|---|---|---|
+| 데이터 | 타입 전환마다 `onSnapshot` 재구독 | `conceptService.fetchConcepts()` 캐시 재사용 | 개념도 탭과 캐시 공유, 칩 전환 즉시 반응 (산속 네트워크) |
+| 등반지·구역 선택 | `<select>` | 자체 모달 `PickerModal` | RN에 대응 요소 없음. Picker 라이브러리는 iOS/Android UI가 완전히 달라 "양쪽이 같아 보여야 한다"와 충돌 |
+| 위치 | `navigator.geolocation` | 지도의 `onUserLocationChange` | geolocation 라이브러리 추가 회피 (검증할 네이티브 표면 축소) |
+| 마커 수 | 제한 없음 | `MAX_MARKERS = 400` | RN 마커는 각각 네이티브 뷰라 수천 개면 앱이 멈춘다. 상한 초과 시 안내 배너 표시 [QUESTION] 실기기 체감 후 조정 |
+
+#### Fixed — 웹 RouteDetailDialog의 잘못된 필드명 (앱에서 정정)
+- 웹은 `route.images / description / createdAt`을 읽는데 실제 필드는
+  `imageUrls·imageUrl / overview / timestamp`다 → 웹 다이얼로그는 개요·등록일이 항상 비어 보인다
+- 앱 `RouteDetailSheet`는 **실측 필드명**으로 제대로 표시한다 (웹도 별도 수정 필요)
+
+#### 검증
+- `tsc --noEmit`: 지도 관련 신규 코드 **에러 0** (react-native-maps 미설치 상태의 모듈 해석 2건 제외)
+- ⏳ 미검증: `yarn install` → `pod install` → 양 플랫폼 실기기 동작
+- ⚠️ `pod install`이 최대 위험 구간이다. 이 Podfile은 RNFB 때문에 `use_frameworks! :linkage => :static`을
+  쓰는데 GoogleMaps 9.4.0 pod과 충돌할 수 있다. Podfile에 되돌리는 방법을 주석으로 남겨뒀다
+
+
 ### 📅 2026-08-04 (3차) — 🎉 iOS 실기기 빌드 성공 (5월부터 보류되던 트랙 해제)
 
 #### Fixed — iOS 빌드
