@@ -2,9 +2,13 @@
  * 내 제보 관리 탭 — v1 mypage_screen.dart::_buildMyReportsTab 1:1.
  *
  * 쿼리: 두 컬렉션 동시 구독
- *   - route_reports where authorUid==uid
- *   - bouldering_reports where authorUid==uid
+ *   - 본인:   route_reports / bouldering_reports where authorUid == uid
+ *   - 관리자: 위에 더해 where status in ['draft','pending','rejected'] (남의 제보까지)
  * 머지 후 status != 'approved' 필터 + timestamp desc 정렬 (v1 보존).
+ *
+ * ⚠️ 웹은 `where(status in ...) + orderBy(timestamp)`를 쓰지만 그 조합은 **복합 색인**이 필요하다.
+ *    앱은 단일 where만 쓰고 정렬은 클라이언트에서 한다 (conceptService와 같은 방침 —
+ *    색인 배포를 기다리지 않아도 되고, 실패 시 조용히 빈 목록이 되는 사고를 막는다).
  * 컬렉션 태그(`Report.collection`)로 삭제 시 안전 분기.
  *
  * 액션 다이얼로그: 삭제=Alert.alert(confirm) / 승인=직접 update / 반려=PromptModal(공용).
@@ -65,6 +69,30 @@ function subscribeReports(
   );
 }
 
+/** 관리자용: 승인 대기/반려/임시 상태의 **모든** 제보 (작성자 무관) */
+function subscribeAdminReports(
+  coll: ReportCollection,
+  setItems: (rows: Report[] | null) => void,
+  setError: (msg: string | null) => void,
+): () => void {
+  const q = query(
+    collection(db, coll),
+    where('status', 'in', ['draft', 'pending', 'rejected']),
+  );
+  return onSnapshot(
+    q,
+    (snap) => {
+      const rows: Report[] = snap.docs.map((d) => ({
+        reportId: d.id,
+        collection: coll,
+        ...(d.data() as Subset),
+      }));
+      setItems(rows);
+    },
+    (e) => setError(e.message),
+  );
+}
+
 export const MyReportsTab: React.FC = () => {
   const { colors, spacing } = useTheme();
   const { uid, profile } = useMyPage();
@@ -73,6 +101,9 @@ export const MyReportsTab: React.FC = () => {
 
   const [routeRows, setRouteRows] = useState<Report[] | null>(null);
   const [bldRows, setBldRows] = useState<Report[] | null>(null);
+  /** 관리자일 때만 채워진다 (남의 제보 포함) */
+  const [adminRouteRows, setAdminRouteRows] = useState<Report[] | null>(null);
+  const [adminBldRows, setAdminBldRows] = useState<Report[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // 반려 사유 모달 상태
@@ -104,6 +135,17 @@ export const MyReportsTab: React.FC = () => {
       setBldRows,
       setError,
     );
+    const adminUnsubs: Array<() => void> = [];
+    if (isAdmin) {
+      adminUnsubs.push(
+        subscribeAdminReports('route_reports', setAdminRouteRows, setError),
+        subscribeAdminReports('bouldering_reports', setAdminBldRows, setError),
+      );
+    } else {
+      setAdminRouteRows(null);
+      setAdminBldRows(null);
+    }
+
     const unsub3 = subscribeConceptPhotos(uid, isAdmin, setPhotos, (msg) =>
       // 사진 구독이 실패해도 제보 목록은 계속 보여준다 (부분 실패 허용)
       // eslint-disable-next-line no-console
@@ -113,6 +155,7 @@ export const MyReportsTab: React.FC = () => {
       unsub1();
       unsub2();
       unsub3();
+      adminUnsubs.forEach((u) => u());
     };
   }, [uid, isAdmin]);
 
@@ -120,13 +163,22 @@ export const MyReportsTab: React.FC = () => {
     if (routeRows === null || bldRows === null) {
       return null;
     }
-    return [...routeRows, ...bldRows]
+    // 같은 문서가 '본인 것'과 '관리자 전체'에 동시에 잡히므로 컬렉션/id로 중복을 없앤다
+    const map = new Map<string, Report>();
+    [
+      ...(adminRouteRows ?? []),
+      ...(adminBldRows ?? []),
+      ...routeRows,
+      ...bldRows,
+    ].forEach((r) => map.set(`${r.collection}/${r.reportId}`, r));
+
+    return Array.from(map.values())
       .filter((r) => (r.status ?? 'draft') !== 'approved') // v1: approved 제외
       .sort(
         (a, b) =>
           (b.timestamp?.toMillis() ?? 0) - (a.timestamp?.toMillis() ?? 0),
       );
-  }, [routeRows, bldRows]);
+  }, [routeRows, bldRows, adminRouteRows, adminBldRows]);
 
   const onApprovePhoto = (photo: ConceptPhoto, mode: ApplyMode) => {
     if (!uid) {
@@ -161,8 +213,10 @@ export const MyReportsTab: React.FC = () => {
       return;
     }
     try {
-      // v1: 반려는 route_reports에만 적용
-      await updateDoc(doc(db, 'route_reports', target.reportId), {
+      // ⚠️ 예전엔 route_reports로 하드코딩돼 있었다(v1 동작 보존).
+      //    관리자가 볼더링 제보까지 보게 되면서(2026-08-05) 그대로 두면
+      //    **엉뚱한 컬렉션의 같은 id 문서를 반려**하게 된다 → 카드가 알려준 컬렉션을 쓴다.
+      await updateDoc(doc(db, target.collection, target.reportId), {
         status: 'rejected',
         rejectionReason: reason,
       });

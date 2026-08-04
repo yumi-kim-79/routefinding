@@ -4,7 +4,7 @@
  * 권한:
  *   - 삭제: 본인 || 관리자 → Alert confirm → deleteDoc({collection}/{id})
  *           (v1의 휴리스틱 대신 `report.collection` 태그로 안전 분기)
- *   - 승인: 관리자 && status==pending → route_reports.update({status:'approved'})
+ *   - 승인: 관리자 && status==pending → {collection}.update({status:'approved'})
  *   - 반려: 관리자 && status==pending → 부모가 PromptModal 띄움(onRequestReject)
  *
  * 아이콘 라이브러리는 [TBD]라 텍스트 버튼으로 — 향후 IconButton로 교체 TODO.
@@ -59,8 +59,10 @@ export const ReportActions: React.FC<ReportActionsProps> = ({
 
   const onApprove = async () => {
     try {
-      // v1: 승인은 route_reports에만 적용
-      await updateDoc(doc(db, 'route_reports', report.reportId), {
+      // ⚠️ 예전엔 route_reports로 하드코딩돼 있었다(v1 동작 보존).
+      //    관리자가 볼더링 제보까지 보게 되면서(2026-08-05) 그대로 두면
+      //    **엉뚱한 컬렉션의 같은 id 문서를 승인**하게 된다 → 카드가 알려준 컬렉션을 쓴다.
+      await updateDoc(doc(db, report.collection, report.reportId), {
         status: 'approved',
       });
       // 승인 → approved 필터에 의해 자동 제거
