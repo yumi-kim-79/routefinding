@@ -9,6 +9,54 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-04 (8차) — 개념도 이미지 확대 + 사진 등록·라인 그리기
+
+> 웹에는 있는데 앱에 없던 두 기능. 사용자 확인 2026-08-04.
+
+#### Added — 전체화면 뷰어 핀치 줌 (`components/common/ZoomableImage.tsx`)
+- 개념도는 "사진 위의 라인"을 읽는 게 목적이라 확대가 필수인데
+  앱 뷰어는 가로 스와이프만 됐다 (`[TBD] 제스처 라이브러리` 주석 상태였음)
+- 두 손가락 확대(1~4배) · 확대 중 드래그 · **두 번 탭 확대/복귀**
+- 확대 중에는 가로 스와이프를 잠근다 (이동과 페이지 넘김이 싸우지 않도록)
+- **외부 제스처 라이브러리 없이** RN 내장 `PanResponder` + `Animated`로 구현.
+  gesture-handler + reanimated는 네이티브 의존성이 2개 늘고, maps·svg에서 겪은
+  RN 버전 불일치 함정이 반복될 수 있다
+
+#### Added — 개념도 사진 등록 + 라인/텍스트 그리기
+```
+components/common/ConceptPhotoOverlay.tsx   읽기전용 SVG 오버레이 (웹 동명 컴포넌트 이식)
+screens/route/components/ConceptPhotoEditor.tsx  촬영·첨부 → 그리기 → 등록 (모달)
+services/conceptPhotoService.ts             원본+합성본 업로드 + concept_photos 생성
+types/conceptPhoto.ts                       좌표 규약 + toPath (웹과 동일 알고리즘)
+```
+- 진입점 2곳 — **개념도 목록 카드의 카메라 버튼**, **상세의 '사진 등록 · 라인 그리기'**
+  (웹의 📷 버튼 / '사진 등록' 버튼과 같은 자리)
+- 도구: 선 / 글자 · 기본색 6종 · 되돌리기 · 전체 지우기 — 웹과 동일
+- **좌표 규약을 웹과 동일하게 유지**: 0~1 정규화, 선 굵기 가로의 0.6%,
+  글자 세로의 4%, 글자 외곽선 18%, 곡선은 이웃 두 점의 중점을 지나는 2차 베지어
+- Storage 경로도 웹과 동일 → `storage.rules` 변경 불필요:
+  `route_images/{산}/{구역}/{루트}/user_{uid}_{ts}.jpg` + `..._lined.jpg`
+- **합성본을 업로드 시점에 만든다** — 승인되면 합성본이 개념도 `imageUrls`에 들어가는데,
+  목록·캐러셀·뷰어는 URL을 그냥 이미지로 띄우므로 원본을 넣으면 라인이 사라진다
+
+#### Added — 라이브러리 `react-native-view-shot` 4.0.3 (버전 고정)
+- 라인 합성본을 굽는 용도. 4.0.3은 2024-12 릴리스로 RN 0.76 시기이고
+  **C++ 소스가 없어** Yoga API 드리프트 위험이 없다 (svg에서 당한 방식의 사고 예방)
+
+#### Added — iOS `NSCameraUsageDescription`
+- `launchCamera`를 처음 쓰게 됐다. 이 문구가 없으면 **촬영 시 크래시**한다
+  (`docs/06_iOS_BUILD_NOTES.md` §0-1에 예고돼 있던 항목)
+
+#### 아직 안 한 것
+- 개념도 목록·상세에서 **등록된 `concept_photos`의 오버레이를 겹쳐 보여주는 것**은 미구현.
+  지금은 등록(제보)까지만 된다. 웹은 목록·상세에 오버레이를 그린다 → 다음 작업
+- 관리자 승인 화면(승인·추가 / 승인·교체 / 반려)도 앱에는 아직 없다 (웹에서 처리 가능)
+
+#### 검증
+- `tsc --noEmit`: 신규 코드 에러 0 (react-native-view-shot 미설치 1건 제외)
+- ⏳ 미검증: 실기기 촬영·그리기·합성·업로드
+
+
 ### 📅 2026-08-04 (7차) — 🐛 `react-native-svg` 버전 고정 (안드로이드 네이티브 빌드 실패 수정)
 
 #### Fixed — `assembleRelease`가 C++ 컴파일에서 실패하던 문제

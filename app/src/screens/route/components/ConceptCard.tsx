@@ -8,6 +8,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Text } from '../../../components/common/Text';
+import { AppIcon } from '../../../components/common/AppIcon';
 import { useTheme } from '../../../theme';
 import {
   conceptLengthLabel,
@@ -21,9 +22,11 @@ type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 interface ConceptCardProps {
   concept: Concept;
+  /** 있으면 카드 우측에 사진 등록(📷) 버튼을 띄운다 — 웹 목록 카드의 카메라 버튼 대응 */
+  onPhotoPress?: (concept: Concept) => void;
 }
 
-export const ConceptCard: React.FC<ConceptCardProps> = ({ concept }) => {
+export const ConceptCard: React.FC<ConceptCardProps> = ({ concept, onPhotoPress }) => {
   const navigation = useNavigation<Nav>();
   const { colors, radius, spacing } = useTheme();
 
@@ -115,11 +118,24 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ concept }) => {
           ) : null}
         </View>
       </View>
+
+      {onPhotoPress ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="개념도 사진 등록"
+          onPress={() => onPhotoPress(concept)}
+          hitSlop={8}
+          style={styles.photoBtn}
+        >
+          <AppIcon name="camera" size={20} color={colors.primary} />
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
+  photoBtn: { alignSelf: 'center', paddingHorizontal: 12, paddingVertical: 8 },
   card: {
     flexDirection: 'row',
     borderWidth: 1,

@@ -13,7 +13,7 @@
  * 데이터: 기존 컬렉션 그대로 (route_reports + bouldering_reports, status=='approved').
  *   스키마 변경 없음 — docs/02_DATA_MODEL.md 준수.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -26,7 +26,9 @@ import {
 import { Text } from '../../components/common/Text';
 import { useTheme } from '../../theme';
 import { ConceptCard } from './components/ConceptCard';
+import { ConceptPhotoEditor } from './components/ConceptPhotoEditor';
 import { useConcepts, type ConceptFilter } from './hooks/useConcepts';
+import type { Concept } from '../../types/concept';
 
 const FILTERS: readonly ConceptFilter[] = ['전체', '리드', '볼더링'];
 
@@ -35,6 +37,8 @@ const SEARCH_EXAMPLES = ['북한산', '인수봉', '파주', '무의도'];
 
 export const ConceptListScreen: React.FC = () => {
   const { colors, radius, spacing } = useTheme();
+  /** 사진 등록 대상 (카드의 카메라 버튼으로 연다) */
+  const [photoTarget, setPhotoTarget] = useState<Concept | null>(null);
   const {
     filtered,
     keyword,
@@ -183,7 +187,7 @@ export const ConceptListScreen: React.FC = () => {
           contentContainerStyle={
             filtered.length === 0 ? styles.emptyContent : { padding: spacing.md }
           }
-          renderItem={({ item }) => <ConceptCard concept={item} />}
+          renderItem={({ item }) => <ConceptCard concept={item} onPhotoPress={setPhotoTarget} />}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -206,6 +210,11 @@ export const ConceptListScreen: React.FC = () => {
           removeClippedSubviews
         />
       )}
+      <ConceptPhotoEditor
+        visible={photoTarget !== null}
+        concept={photoTarget}
+        onClose={() => setPhotoTarget(null)}
+      />
     </View>
   );
 };

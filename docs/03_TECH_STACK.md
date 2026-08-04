@@ -159,6 +159,19 @@ react-native-svg는 15.11.2(2025-02-24)부터 새 API를 쓴다.
 > react-native-maps와 같은 종류의 함정이다. RN 0.76을 쓰는 동안
 > 두 라이브러리 모두 **버전을 올리지 말 것.** RN 업그레이드 때 함께 올린다.
 
+#### 📸 개념도 사진 · 라인 그리기 (2026-08-04)
+
+| 라이브러리 | 용도 | 비고 |
+|---|---|---|
+| `react-native-svg` 15.11.1 | 라인·텍스트 오버레이 렌더 | 위 버전 고정 주의 참조 |
+| **`react-native-view-shot` 4.0.3** | 라인 합성본 굽기 | ⚠️ **버전 고정.** 4.0.3(2024-12)이 RN 0.76 시기 릴리스이고 **C++ 소스가 없어** Yoga API 드리프트 위험이 없다. 5.x(2026)는 미검증 |
+| `react-native-image-picker` (기존) | 촬영 / 앨범 | `launchCamera` 사용 → **iOS `NSCameraUsageDescription` 필수** (2026-08-04 추가) |
+
+**제스처는 라이브러리를 쓰지 않는다.** 그리기·핀치 줌 모두 RN 내장
+`PanResponder` + `Animated`로 구현했다. `react-native-gesture-handler` + `reanimated`는
+네이티브 의존성이 2개 늘고, react-native-maps·react-native-svg에서 겪은
+**RN 버전 불일치 함정**이 그대로 반복될 수 있다.
+
 #### 📄 파일 선택 (GPX 업로드)
 
 | 라이브러리 | 용도 | 비고 |

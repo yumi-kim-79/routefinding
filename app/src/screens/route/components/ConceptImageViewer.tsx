@@ -2,13 +2,13 @@
  * 전체화면 개념도 뷰어 (웹 ImageViewer.vue 대응).
  *
  * 개념도는 "사진 위의 라인"을 읽는 게 목적이라 크게 보는 화면이 필수다.
- * 현재는 가로 스와이프 + contain 표시까지. 핀치 줌은 별도 제스처 라이브러리가 필요해
- * [TBD] — 라인 그리기(P1)와 함께 도입 여부를 결정한다(docs/03_TECH_STACK.md).
+ * 가로 스와이프 + **핀치 줌/드래그/두 번 탭 확대** (2026-08-04 추가, 웹에서 되던 기능).
+ * 확대는 RN 내장 PanResponder+Animated로 구현했다 — `components/common/ZoomableImage.tsx`
+ * (gesture-handler/reanimated를 안 쓰는 이유는 그 파일 주석 참조).
  */
 import React, { useState } from 'react';
 import {
   FlatList,
-  Image,
   Modal,
   Pressable,
   StyleSheet,
@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { Text } from '../../../components/common/Text';
+import { ZoomableImage } from '../../../components/common/ZoomableImage';
 
 interface ConceptImageViewerProps {
   visible: boolean;
@@ -32,6 +33,8 @@ export const ConceptImageViewer: React.FC<ConceptImageViewerProps> = ({
 }) => {
   const { width, height } = useWindowDimensions();
   const [index, setIndex] = useState(initialIndex);
+  /** 확대 중에는 가로 스와이프를 잠근다 (안 그러면 이동과 페이지 넘김이 싸운다) */
+  const [zoomed, setZoomed] = useState(false);
 
   return (
     <Modal
@@ -48,6 +51,7 @@ export const ConceptImageViewer: React.FC<ConceptImageViewerProps> = ({
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
+          scrollEnabled={!zoomed}
           keyExtractor={(uri, i) => `${i}-${uri}`}
           initialScrollIndex={initialIndex}
           getItemLayout={(_, i) => ({
@@ -59,10 +63,11 @@ export const ConceptImageViewer: React.FC<ConceptImageViewerProps> = ({
             setIndex(Math.round(e.nativeEvent.contentOffset.x / width))
           }
           renderItem={({ item }) => (
-            <Image
-              source={{ uri: item }}
-              style={{ width, height: height * 0.8 }}
-              resizeMode="contain"
+            <ZoomableImage
+              uri={item}
+              width={width}
+              height={height * 0.8}
+              onZoomChange={setZoomed}
             />
           )}
         />
