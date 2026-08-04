@@ -13,7 +13,7 @@
  * 데이터: 기존 컬렉션 그대로 (route_reports + bouldering_reports, status=='approved').
  *   스키마 변경 없음 — docs/02_DATA_MODEL.md 준수.
  */
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -29,6 +29,14 @@ import { ConceptCard } from './components/ConceptCard';
 import { ConceptPhotoEditor } from './components/ConceptPhotoEditor';
 import { useConcepts, type ConceptFilter } from './hooks/useConcepts';
 import type { Concept } from '../../types/concept';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { MainStackParamList } from '../../navigation/types';
+import { useAuthStore } from '../../stores/authStore';
+import { isAdminEmail } from '../../constants/admin';
+import { useFavorites } from './hooks/useFavorites';
+import { deleteReport } from '../../services/reportService';
+import { Alert } from 'react-native';
 
 const FILTERS: readonly ConceptFilter[] = ['전체', '리드', '볼더링'];
 
@@ -39,6 +47,47 @@ export const ConceptListScreen: React.FC = () => {
   const { colors, radius, spacing } = useTheme();
   /** 사진 등록 대상 (카드의 카메라 버튼으로 연다) */
   const [photoTarget, setPhotoTarget] = useState<Concept | null>(null);
+  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const isAdmin = isAdminEmail(useAuthStore((st) => st.user?.email));
+  const favorites = useFavorites();
+
+  /** 등반일지 쓰기 — 장소·루트명이 채워진 채 열린다 (웹 카드의 연필 버튼) */
+  const writeLog = useCallback(
+    (c: Concept) =>
+      navigation.navigate('ClimbingLogEdit', {
+        initial: {
+          place: [c.mountain, c.zone].filter(Boolean).join(' '),
+          routeName: c.routeName ?? '',
+          conceptId: c.id,
+          conceptSource: c.source,
+        },
+      }),
+    [navigation],
+  );
+
+  const editConcept = useCallback(
+    (c: Concept) => navigation.navigate('ConceptEdit', { conceptId: c.id, source: c.source }),
+    [navigation],
+  );
+
+  const deleteConcept = useCallback((c: Concept) => {
+    Alert.alert(
+      '개념도 삭제',
+      `"${c.routeName ?? '이름 없음'}"을(를) 정말 삭제할까요?\n되돌릴 수 없습니다.`,
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => {
+            void deleteReport(c.source, c.id).catch((e: unknown) =>
+              Alert.alert('삭제 실패', e instanceof Error ? e.message : String(e)),
+            );
+          },
+        },
+      ],
+    );
+  }, []);
   const {
     filtered,
     keyword,
@@ -187,7 +236,18 @@ export const ConceptListScreen: React.FC = () => {
           contentContainerStyle={
             filtered.length === 0 ? styles.emptyContent : { padding: spacing.md }
           }
-          renderItem={({ item }) => <ConceptCard concept={item} onPhotoPress={setPhotoTarget} />}
+          renderItem={({ item }) => (
+            <ConceptCard
+              concept={item}
+              onPhotoPress={setPhotoTarget}
+              isFavorite={favorites.isFavorite(item.id)}
+              onFavoritePress={favorites.toggle}
+              onLogPress={writeLog}
+              isAdmin={isAdmin}
+              onEditPress={editConcept}
+              onDeletePress={deleteConcept}
+            />
+          )}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

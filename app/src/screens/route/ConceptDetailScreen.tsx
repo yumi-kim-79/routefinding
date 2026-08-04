@@ -9,6 +9,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -24,6 +25,10 @@ import { db } from '../../services/firebase';
 import { Text } from '../../components/common/Text';
 import { Button } from '../../components/common/Button';
 import { ConceptPhotoEditor } from './components/ConceptPhotoEditor';
+import { useAuthStore } from '../../stores/authStore';
+import { isAdminEmail } from '../../constants/admin';
+import { useFavorites } from './hooks/useFavorites';
+import { deleteReport } from '../../services/reportService';
 import { useTheme } from '../../theme';
 import { formatDate } from '../../utils/date';
 import {
@@ -78,6 +83,8 @@ export const ConceptDetailScreen: React.FC = () => {
   });
   /** 개념도 사진 등록 모달 (웹 상세의 '사진 등록' 버튼 대응) */
   const [photoOpen, setPhotoOpen] = useState(false);
+  const isAdmin = isAdminEmail(useAuthStore((st) => st.user?.email));
+  const favorites = useFavorites();
 
   useEffect(() => {
     let cancelled = false;
@@ -197,6 +204,53 @@ export const ConceptDetailScreen: React.FC = () => {
         onPress={() => setPhotoOpen(true)}
         style={styles.logBtn}
       />
+
+      {/* 즐겨찾기 (웹 목록 카드의 별과 같은 my_routes) */}
+      <Button
+        title={favorites.isFavorite(c.id) ? '즐겨찾기 해제' : '즐겨찾기에 추가'}
+        variant="ghost"
+        onPress={() => favorites.toggle(c)}
+        style={styles.logBtn}
+      />
+
+      {/* 관리자 전용 — 수정 / 삭제 (웹 개념도 목록의 관리자 버튼과 동일) */}
+      {isAdmin ? (
+        <View style={styles.adminRow}>
+          <Button
+            title="수정"
+            variant="secondary"
+            onPress={() =>
+              navigation.navigate('ConceptEdit', { conceptId: c.id, source: c.source })
+            }
+            style={styles.adminBtn}
+          />
+          <Button
+            title="삭제"
+            variant="ghost"
+            onPress={() =>
+              Alert.alert(
+                '개념도 삭제',
+                `"${c.routeName ?? '이름 없음'}"을(를) 정말 삭제할까요?\n되돌릴 수 없습니다.`,
+                [
+                  { text: '취소', style: 'cancel' },
+                  {
+                    text: '삭제',
+                    style: 'destructive',
+                    onPress: () => {
+                      void deleteReport(c.source, c.id)
+                        .then(() => navigation.goBack())
+                        .catch((e: unknown) =>
+                          Alert.alert('삭제 실패', e instanceof Error ? e.message : String(e)),
+                        );
+                    },
+                  },
+                ],
+              )
+            }
+            style={styles.adminBtn}
+          />
+        </View>
+      ) : null}
 
       {/* 사진 (개념도 본체) */}
       {images.length > 0 ? (
@@ -341,6 +395,8 @@ export const ConceptDetailScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  adminRow: { flexDirection: 'row', columnGap: 8, marginTop: 8 },
+  adminBtn: { flex: 1 },
   center: {
     flex: 1,
     alignItems: 'center',

@@ -22,11 +22,29 @@ type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 interface ConceptCardProps {
   concept: Concept;
-  /** 있으면 카드 우측에 사진 등록(📷) 버튼을 띄운다 — 웹 목록 카드의 카메라 버튼 대응 */
+  /** 사진 등록 (웹 목록 카드의 카메라 버튼) */
   onPhotoPress?: (concept: Concept) => void;
+  /** 즐겨찾기 토글 (웹 카드의 별) */
+  isFavorite?: boolean;
+  onFavoritePress?: (concept: Concept) => void;
+  /** 등반일지 쓰기 (웹 카드의 연필) */
+  onLogPress?: (concept: Concept) => void;
+  /** 관리자 전용 — 수정/삭제 (웹 카드의 관리자 버튼 그룹) */
+  isAdmin?: boolean;
+  onEditPress?: (concept: Concept) => void;
+  onDeletePress?: (concept: Concept) => void;
 }
 
-export const ConceptCard: React.FC<ConceptCardProps> = ({ concept, onPhotoPress }) => {
+export const ConceptCard: React.FC<ConceptCardProps> = ({
+  concept,
+  onPhotoPress,
+  isFavorite = false,
+  onFavoritePress,
+  onLogPress,
+  isAdmin = false,
+  onEditPress,
+  onDeletePress,
+}) => {
   const navigation = useNavigation<Nav>();
   const { colors, radius, spacing } = useTheme();
 
@@ -119,23 +137,80 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ concept, onPhotoPress 
         </View>
       </View>
 
-      {onPhotoPress ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="개념도 사진 등록"
-          onPress={() => onPhotoPress(concept)}
-          hitSlop={8}
-          style={styles.photoBtn}
-        >
-          <AppIcon name="camera" size={20} color={colors.primary} />
-        </Pressable>
-      ) : null}
+      {/* 카드 우측 액션 열 — 웹 목록 카드의 별/연필/카메라 + 관리자 수정·삭제 */}
+      <View style={styles.actionCol}>
+        {onFavoritePress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isFavorite ? '즐겨찾기 해제' : '즐겨찾기'}
+            onPress={() => onFavoritePress(concept)}
+            hitSlop={6}
+            style={styles.actionBtn}
+          >
+            <AppIcon
+              name="star"
+              size={18}
+              filled={isFavorite}
+              color={isFavorite ? colors.warning : colors.textSecondary}
+            />
+          </Pressable>
+        ) : null}
+
+        {onLogPress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="등반일지 쓰기"
+            onPress={() => onLogPress(concept)}
+            hitSlop={6}
+            style={styles.actionBtn}
+          >
+            <AppIcon name="pencil" size={17} color={colors.textSecondary} />
+          </Pressable>
+        ) : null}
+
+        {onPhotoPress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="개념도 사진 등록"
+            onPress={() => onPhotoPress(concept)}
+            hitSlop={6}
+            style={styles.actionBtn}
+          >
+            <AppIcon name="camera" size={18} color={colors.primary} />
+          </Pressable>
+        ) : null}
+
+        {isAdmin && onEditPress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="개념도 수정"
+            onPress={() => onEditPress(concept)}
+            hitSlop={6}
+            style={styles.actionBtn}
+          >
+            <AppIcon name="type" size={17} color={colors.accent.purple} />
+          </Pressable>
+        ) : null}
+
+        {isAdmin && onDeletePress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="개념도 삭제"
+            onPress={() => onDeletePress(concept)}
+            hitSlop={6}
+            style={styles.actionBtn}
+          >
+            <AppIcon name="trash" size={17} color={colors.error} />
+          </Pressable>
+        ) : null}
+      </View>
     </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
-  photoBtn: { alignSelf: 'center', paddingHorizontal: 12, paddingVertical: 8 },
+  actionCol: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 8, rowGap: 2 },
+  actionBtn: { padding: 5 },
   card: {
     flexDirection: 'row',
     borderWidth: 1,

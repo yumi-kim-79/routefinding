@@ -39,6 +39,9 @@ export type MainStackParamList = {
    */
   ConceptDetail: { conceptId: string; source?: ConceptSource };
 
+  /** 개념도 수정 (관리자 전용 — 웹 concepts/edit/:id 대응) */
+  ConceptEdit: { conceptId: string; source: ConceptSource };
+
   /**
    * 등반일지 작성/수정.
    * `logId` 있으면 수정, 없으면 새로 작성.

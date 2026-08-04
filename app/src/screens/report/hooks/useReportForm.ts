@@ -20,7 +20,13 @@ import {
   type ReportForm,
 } from '../../../types/routeReport';
 import type { ConceptType } from '../../../types/concept';
-import { fetchMountains, fetchZones, submitReport } from '../../../services/reportService';
+import {
+  fetchMountains,
+  fetchZones,
+  submitReport,
+  updateReport,
+} from '../../../services/reportService';
+import type { ConceptSource } from '../../../types/concept';
 
 export interface UseReportFormResult {
   form: ReportForm;
@@ -67,8 +73,15 @@ function move<T extends { uid: string }>(list: T[], uid: string, dir: -1 | 1): T
   return next;
 }
 
-export function useReportForm(): UseReportFormResult {
-  const [form, setForm] = useState<ReportForm>(() => emptyReportForm());
+/** 편집 모드 — 관리자가 기존 개념도를 고칠 때 (웹 ConceptEditView 대응) */
+export interface ReportFormEditTarget {
+  conceptId: string;
+  source: ConceptSource;
+  initial: ReportForm;
+}
+
+export function useReportForm(edit?: ReportFormEditTarget): UseReportFormResult {
+  const [form, setForm] = useState<ReportForm>(() => edit?.initial ?? emptyReportForm());
   const [mountains, setMountains] = useState<string[]>([]);
   const [zones, setZones] = useState<string[]>([]);
   const [loadingLists, setLoadingLists] = useState(true);
@@ -296,8 +309,13 @@ export function useReportForm(): UseReportFormResult {
     void (async () => {
       setSaving(true);
       try {
-        await submitReport(form);
-        setForm(emptyReportForm(form.typeRoot));
+        if (edit) {
+          await updateReport(edit.source, edit.conceptId, form);
+        } else {
+          await submitReport(form);
+          // 수정은 폼을 비우지 않는다 (화면이 곧 닫히고, 비우면 되돌릴 수 없다)
+          setForm(emptyReportForm(form.typeRoot));
+        }
         setSavedAt(Date.now());
       } catch (e) {
         Alert.alert('저장 실패', e instanceof Error ? e.message : String(e));
@@ -305,7 +323,7 @@ export function useReportForm(): UseReportFormResult {
         setSaving(false);
       }
     })();
-  }, [form, saving]);
+  }, [edit, form, saving]);
 
   return {
     form,

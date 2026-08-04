@@ -14,6 +14,7 @@ import type { MainStackParamList } from './types';
 import { MainTabNavigator } from './MainTabNavigator';
 import { PlaceholderScreen } from '../components/common/PlaceholderScreen';
 import { ConceptDetailScreen } from '../screens/route/ConceptDetailScreen';
+import { ConceptEditScreen } from '../screens/route/ConceptEditScreen';
 import { ClimbingLogEditScreen } from '../screens/profile/ClimbingLogEditScreen';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -38,6 +39,11 @@ export const MainNavigator: React.FC = () => (
       component={ConceptDetailScreen}
       options={{ title: '개념도' }}
     />
+      <Stack.Screen
+        name="ConceptEdit"
+        component={ConceptEditScreen}
+        options={{ title: '개념도 수정' }}
+      />
 
     {/* 등반일지 작성/수정 */}
     <Stack.Screen

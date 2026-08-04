@@ -15,12 +15,12 @@
  *    차이: 웹은 status 무관 전체를, 우리는 승인분만 본다 → 목록이 약간 좁을 수 있으나
  *    읽기 비용과 대기시간이 없다. 직접 입력이 항상 가능하므로 기능 손실은 없다.
  */
-import { addDoc, collection } from '@react-native-firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, updateDoc } from '@react-native-firebase/firestore';
 import { getDownloadURL, putFile, ref } from '@react-native-firebase/storage';
 import { auth, db, storage } from './firebase';
 import { fetchConcepts } from './conceptService';
-import type { ConceptSource, ConceptType } from '../types/concept';
-import type { LocalImage, ReportForm } from '../types/routeReport';
+import type { Concept, ConceptSource, ConceptType } from '../types/concept';
+import { genUid, type LocalImage, type ReportForm } from '../types/routeReport';
 
 /** 타입 → 컬렉션 (웹과 동일) */
 export function collectionOf(typeRoot: ConceptType): ConceptSource {
@@ -177,4 +177,135 @@ export async function submitReport(form: ReportForm): Promise<SubmitResult> {
   const target = collectionOf(form.typeRoot);
   const docRef = await addDoc(collection(db, target), payload);
   return { reportId: docRef.id, collection: target };
+}
+
+
+/**
+ * 기존 개념도 → 편집 폼 (관리자 수정 — 웹 `ConceptEditView.vue` 대응).
+ * 이미 올라간 이미지는 `remoteUrl`로 담아 재업로드하지 않는다.
+ */
+export function conceptToForm(c: Concept): ReportForm {
+  const toLocal = (urls: string[] | undefined): LocalImage[] =>
+    (urls ?? [])
+      .filter((u): u is string => typeof u === 'string' && u.length > 0)
+      .map((u) => ({ uid: genUid(), uri: u, remoteUrl: u }));
+
+  const rootUrls =
+    Array.isArray(c.imageUrls) && c.imageUrls.length > 0
+      ? c.imageUrls
+      : c.imageUrl
+        ? [c.imageUrl]
+        : [];
+
+  return {
+    typeRoot: c.type,
+    mountain: c.mountain ?? '',
+    zone: c.zone ?? '',
+    routeName: c.routeName ?? '',
+    latitude: c.latitude !== undefined ? String(c.latitude) : '',
+    longitude: c.longitude !== undefined ? String(c.longitude) : '',
+    images: toLocal(rootUrls),
+    overview: c.overview ?? '',
+    type: c.climbType ?? '',
+    equipment: c.equipment ?? '',
+    avgDifficulty: c.avgDifficulty ?? '',
+    pioneer: c.pioneer ?? '',
+    pitches: (c.pitches ?? []).map((p) => ({
+      uid: genUid(),
+      name: p.name ?? '',
+      length: p.length !== undefined ? String(p.length) : '',
+      difficulty: p.difficulty ?? '',
+      style: p.style ?? '',
+      gear: p.gear ?? '',
+      images: toLocal(p.imageUrls),
+    })),
+    directions: c.directions ?? '',
+    no: c.no !== undefined ? String(c.no) : '',
+    difficulty: c.difficulty ?? '',
+    gpxUri: null,
+    gpxName: null,
+  };
+}
+
+/**
+ * 개념도 수정 (관리자). 새로 고른 사진만 업로드하고 기존 URL은 그대로 둔다.
+ *
+ * ⚠️ `status` / `timestamp` / `authorUid`는 **건드리지 않는다.**
+ *    승인 상태나 작성자가 수정으로 바뀌면 안 된다 (웹 ConceptEditView와 동일).
+ */
+export async function updateReport(
+  source: ConceptSource,
+  conceptId: string,
+  form: ReportForm,
+): Promise<void> {
+  const mountain = form.mountain.trim();
+  const routeName = form.routeName.trim();
+  if (!mountain) {
+    throw new Error('등반지를 입력하세요.');
+  }
+  if (!routeName) {
+    throw new Error('루트 이름을 입력하세요.');
+  }
+
+  const safeM = safe(mountain);
+  const safeR = safe(routeName);
+  const zoneSeg = form.zone.trim() ? safe(form.zone.trim()) : '미지정';
+
+  const imageUrls = await uploadImages(
+    form.images,
+    (i) => `route_images/${safeM}/${zoneSeg}/${safeR}/root_${i + 1}.jpg`,
+  );
+
+  const pitches = [];
+  for (let i = 0; i < form.pitches.length; i += 1) {
+    const p = form.pitches[i];
+    const urls = await uploadImages(
+      p.images,
+      (j) => `pitch_images/${safeM}/${safeR}/pitch${i + 1}_${j + 1}.jpg`,
+    );
+    pitches.push({
+      name: p.name,
+      length: p.length,
+      difficulty: p.difficulty,
+      style: p.style,
+      gear: p.gear,
+      imageUrls: urls,
+    });
+  }
+
+  let gpxPatch: { gpxUrl: string } | Record<string, never> = {};
+  if (form.gpxUri) {
+    const gpxUrl = await upload(
+      `route_gpx/${safeM}/${safeR}/approach_${Date.now()}.gpx`,
+      form.gpxUri,
+    );
+    gpxPatch = { gpxUrl };
+  }
+
+  await updateDoc(doc(db, source, conceptId), {
+    typeRoot: form.typeRoot,
+    mountain,
+    routeName,
+    latitude: form.latitude ? parseFloat(form.latitude) : null,
+    longitude: form.longitude ? parseFloat(form.longitude) : null,
+    imageUrls,
+    // 목록·지도가 imageUrl 단일 필드도 보므로 첫 장으로 맞춰준다
+    imageUrl: imageUrls[0] ?? '',
+    overview: form.overview,
+    type: form.type,
+    equipment: form.equipment,
+    avgDifficulty: form.avgDifficulty,
+    pioneer: form.pioneer,
+    zone: form.zone,
+    directions: form.directions,
+    no: form.no,
+    difficulty: form.difficulty,
+    pitches,
+    ...gpxPatch,
+  });
+}
+
+/** 개념도 삭제 (관리자) — 웹 ConceptListView.deleteRoute와 동일 */
+export async function deleteReport(source: ConceptSource, conceptId: string): Promise<void> {
+  await deleteDoc(doc(db, source, conceptId));
 }

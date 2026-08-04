@@ -54,11 +54,15 @@ function toConcept(
     typeRoot === '리드' || typeRoot === '볼더링' ? typeRoot : fallbackType;
 
   // 스프레드로 통째로 받되 id/source/type은 우리가 확정한 값으로 덮어쓴다.
+  // ⚠️ 문서의 `type`은 **등반 형태**(슬랩/크랙 등)라 여기서 덮어써진다.
+  //    관리자 수정에서 되살려야 하므로 `climbType`에 원본을 남긴다.
+  const rawType = typeof data.type === 'string' ? data.type : undefined;
   return {
     ...(data as Omit<Concept, 'id' | 'source' | 'type'>),
     id,
     source,
     type,
+    climbType: rawType === '리드' || rawType === '볼더링' ? undefined : rawType,
   };
 }
 

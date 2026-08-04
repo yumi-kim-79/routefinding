@@ -35,16 +35,23 @@ import { PickerModal } from '../../components/common/PickerModal';
 import { useTheme } from '../../theme';
 import { MAX_ROOT_IMAGES } from '../../types/routeReport';
 import type { ConceptType } from '../../types/concept';
-import { useReportForm } from './hooks/useReportForm';
+import { useReportForm, type ReportFormEditTarget } from './hooks/useReportForm';
 import { ImageStrip } from './components/ImageStrip';
 import { PitchEditor } from './components/PitchEditor';
 import { CoordPickerModal } from './components/CoordPickerModal';
 
 const TYPES: readonly ConceptType[] = ['리드', '볼더링'];
 
-export const ReportWriteScreen: React.FC = () => {
+interface ReportWriteScreenProps {
+  /** 있으면 **수정 모드** (관리자 개념도 수정). 없으면 새 제보 */
+  edit?: ReportFormEditTarget;
+  /** 수정 저장 후 호출 (화면 닫기) */
+  onSaved?: () => void;
+}
+
+export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSaved }) => {
   const { colors, radius, spacing } = useTheme();
-  const f = useReportForm();
+  const f = useReportForm(edit);
   const { form } = f;
 
   const [picker, setPicker] = useState<'mountain' | 'zone' | null>(null);
@@ -54,10 +61,16 @@ export const ReportWriteScreen: React.FC = () => {
 
   // 저장 성공 안내 (웹 alert('제보 저장 완료!') 대응)
   useEffect(() => {
-    if (f.savedAt) {
+    if (!f.savedAt) {
+      return;
+    }
+    if (edit) {
+      Alert.alert('수정 완료', '개념도가 수정되었습니다.');
+      onSaved?.();
+    } else {
       Alert.alert('제보 저장 완료', '관리자 승인 후 개념도와 지도에 표시됩니다.');
     }
-  }, [f.savedAt]);
+  }, [edit, f.savedAt, onSaved]);
 
   const hasCoord = !!form.latitude && !!form.longitude;
   const isLead = form.typeRoot === '리드';
@@ -332,7 +345,7 @@ export const ReportWriteScreen: React.FC = () => {
         )}
 
         <Button
-          title={f.saving ? '저장 중…' : '루트 제보 저장'}
+          title={f.saving ? '저장 중…' : edit ? '수정 저장' : '루트 제보 저장'}
           onPress={f.submit}
           loading={f.saving}
           disabled={f.saving}

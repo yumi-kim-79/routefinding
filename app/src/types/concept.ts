@@ -23,9 +23,13 @@ export type ConceptType = '리드' | '볼더링';
 
 /** 피치 (문서의 `pitches` 배열 원소, v1 실측) */
 export interface ConceptPitch {
-  length?: number;
+  /** ⚠️ 웹 제보/수정 폼이 쓰는 필드인데 모델에 빠져 있었다 (2026-08-05 추가).
+   *     빠진 채로 수정 저장하면 기존 값이 지워진다. */
+  name?: string;
+  length?: number | string;
   style?: string;
   difficulty?: string;
+  gear?: string;
   imageUrls?: string[];
 }
 
@@ -48,6 +52,12 @@ export interface Concept {
 
   difficulty?: string;
   avgDifficulty?: string;
+  /**
+   * 문서의 원본 `type` 필드 = **등반 형태**(예: 슬랩/크랙).
+   * ⚠️ 이 인터페이스의 `type`은 리드/볼더링 구분으로 덮어써지므로 원본을 여기 따로 보관한다.
+   *    (없으면 관리자 수정 저장 시 등반 형태가 지워진다 — 2026-08-05 실측)
+   */
+  climbType?: string;
   length?: number;
   pioneer?: string;
   equipment?: string;
