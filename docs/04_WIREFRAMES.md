@@ -50,7 +50,7 @@
 
 | Flutter | RN | 라인 수 | 상태 |
 |---|---|---|---|
-| `lib/route_report_list_screen.dart` | `app/src/screens/report/ReportListScreen.tsx` | - | ⏳ |
+| `lib/route_report_list_screen.dart` | ~~`ReportListScreen.tsx`~~ → **`ReportWriteScreen.tsx`** + `hooks/useReportForm.ts` + 컴포넌트 3개 | - | ✅ (2026-08-04) 웹 `/report`처럼 **탭=작성 폼**. 목록 화면은 파일만 보존 |
 | `lib/route_report_admin_screen.dart` | `app/src/screens/report/ReportAdminScreen.tsx` | 326 | ⏳ |
 | `lib/report_list_screen.dart` | (위와 통합 검토) | - | ⏳ |
 | `lib/report_detail_screen.dart` | `app/src/screens/report/ReportDetailScreen.tsx` | - | ⏳ |

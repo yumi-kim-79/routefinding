@@ -8,7 +8,7 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native
 import { Text } from '../../../components/common/Text';
 import { useTheme } from '../../../theme';
 import type { ConceptType } from '../../../types/concept';
-import { PickerModal } from './PickerModal';
+import { PickerModal } from '../../../components/common/PickerModal';
 
 const TYPES: readonly ConceptType[] = ['리드', '볼더링'];
 

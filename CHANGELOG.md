@@ -9,6 +9,52 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-04 (6차) — 루트제보 작성 화면 (웹 ReportView.vue 이식)
+
+> 4탭 중 마지막 플레이스홀더였던 루트제보를 실화면으로 교체.
+> **웹 `/report`는 목록이 아니라 작성 폼**이라 앱도 탭을 누르면 바로 폼이 열린다.
+
+#### Added — 작성 화면
+```
+src/screens/report/ReportWriteScreen.tsx        폼 조립
+src/screens/report/hooks/useReportForm.ts       상태·검증·업로드 호출
+src/screens/report/components/
+  ImageStrip      사진 첨부(썸네일·삭제·순서)
+  PitchEditor     피치 목록 (리드 전용)
+  CoordPickerModal 지도에서 좌표 선택
+src/services/reportService.ts                   Storage 업로드 + Firestore 저장
+src/types/routeReport.ts                        폼 모델
+```
+- `components/common/PickerModal.tsx`로 이동 (지도 필터와 공용)
+- 저장 필드·Storage 경로는 **웹과 1:1** (스키마 변경 없음):
+  `route_images/{산}/{구역|미지정}/{루트}/root_{n}.jpg`,
+  `pitch_images/{산}/{루트}/pitch{i}_{j}.jpg`, `route_gpx/{산}/{루트}/approach_{ts}.gpx`
+- `status: 'pending'`으로 저장 → 관리자 승인 후 개념도·지도에 나온다
+
+#### Added — 라이브러리 2개
+| 라이브러리 | 이유 |
+|---|---|
+| `@react-native-community/geolocation` 3.4.0 | '현재위치' 버튼. 지도 탭은 `onUserLocationChange`로 됐지만 폼 화면엔 지도가 없다 |
+| `@react-native-documents/picker` **10.1.7** | GPX 파일 선택. ⚠️ 12.x는 RN 0.79+ 요구(우리 0.76.9), 구 `react-native-document-picker`는 deprecated |
+
+#### Changed — 웹과 다르게 간 부분 · 이유
+| 항목 | 웹 | 앱 | 이유 |
+|---|---|---|---|
+| 등반지·구역 선택 | `<select>` | 공용 `PickerModal` + 직접 입력 토글 | RN에 select 없음. Picker 라이브러리는 iOS/안드로이드 UI가 완전히 달라 통일 불가 |
+| 사진 순서 변경 | vuedraggable 드래그 | 좌/우 이동 버튼 | 드래그하려면 reanimated + gesture-handler 2개가 더 필요 |
+| 지도에서 선택 | 마커 드래그 | 화면 중앙 십자선 | 손가락에 가리지 않고 양 플랫폼 동작이 동일 |
+| 등반지·구역 목록 | 컬렉션 전체 재조회 | `conceptService` 5분 캐시 재사용 | 승인 루트 5,407건. 승인분만 보므로 목록이 약간 좁을 수 있으나 직접 입력이 항상 가능 |
+
+#### 미구현 — [QUESTION] 임시저장
+웹 폼에 `임시저장` / `임시저장 불러오기` 버튼이 있지만 **`saveDraft`·`showDraftList` 구현이 없다**
+(눌러도 아무 일도 일어나지 않는다). 앱에는 넣지 않았다.
+실제로 필요한 기능인지 확인 후 **양쪽에 같이** 넣는 것이 맞다.
+
+#### 검증
+- `tsc --noEmit`: 신규 코드 에러 0 (미설치 모듈 해석 3건 제외)
+- ⏳ 미검증: `yarn install` → `pod install` → 실기기에서 사진 업로드·GPX·좌표·저장
+
+
 ### 📅 2026-08-04 (5차) — 안드로이드 마커 버그 수정 + 아이콘 웹과 통일
 
 #### Fixed — 🐛 안드로이드에서 마커 핀이 안 보이고 숫자만 나오던 문제

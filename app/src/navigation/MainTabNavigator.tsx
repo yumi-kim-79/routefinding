@@ -7,6 +7,9 @@
  *  - Phase 2-1: v1 실제(home_screen.dart, IndexedStack 5탭)로 정정
  *  - 2026-08-04: 리뉴얼 결정 — 게시판·크루 제거하고 루트제보를 탭으로 승격.
  *    (화면 파일 BoardScreen/CrewMainScreen은 보존, 등록만 해제)
+ *  - 2026-08-04(3차): 루트제보 탭이 **작성 폼**(ReportWriteScreen)이 됐다.
+ *    웹의 `/report`도 목록이 아니라 작성 폼이다. 플레이스홀더였던 ReportListScreen은
+ *    파일만 보존하고 탭 등록에서 뺐다.
  *  - 2026-08-04(2차): **아이콘 도입.** 그전까지 `tabBarIcon`이 없어 React Navigation
  *    기본 도형이 4탭에 똑같이 그려졌다. 웹 `BottomNavBar.vue`와 **같은 SVG path**를 쓴다
  *    (`components/common/AppIcon.tsx`) → 웹·iOS·안드로이드 세 곳이 같은 모양.
@@ -16,7 +19,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { MainTabParamList } from './types';
 import { MapScreen } from '../screens/map/MapScreen';
 import { ConceptListScreen } from '../screens/route/ConceptListScreen';
-import { ReportListScreen } from '../screens/report/ReportListScreen';
+import { ReportWriteScreen } from '../screens/report/ReportWriteScreen';
 import { MyPageScreen } from '../screens/profile/MyPageScreen';
 import { AppIcon, type AppIconName } from '../components/common/AppIcon';
 import { useTheme } from '../theme';
@@ -58,7 +61,7 @@ export const MainTabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="ReportTab"
-        component={ReportListScreen}
+        component={ReportWriteScreen}
         options={{ title: '루트제보', tabBarIcon: tabIcon('report') }}
       />
       <Tab.Screen

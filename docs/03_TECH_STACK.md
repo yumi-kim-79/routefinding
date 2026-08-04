@@ -99,7 +99,7 @@
 | 패키지 | 용도 | 우선순위 |
 |---|---|---|
 | **`react-native-maps` 1.26.0** | 지도 (Google Maps) | P1 | ✅ **확정 2026-08-04** |
-| ~~`@react-native-community/geolocation`~~ | GPS | — | ❌ **미도입**. 지도의 `onUserLocationChange`로 대체 — 네이티브 의존성을 늘리지 않기 위해 |
+| **`@react-native-community/geolocation` 3.4.0** | GPS 1회 측정 | P1 | ✅ **확정 2026-08-04**. 지도 탭은 `onUserLocationChange`로 충분했지만, 루트제보의 '현재위치' 버튼은 지도가 없는 화면에서 **한 번만** 좌표를 받아야 해서 도입 |
 | ~~`react-native-permissions`~~ | 위치 권한 | — | ❌ **미도입**. Android는 RN 내장 `PermissionsAndroid`, iOS는 Info.plist + 지도 SDK가 처리 |
 | `ngeohash` | Geohash 인코딩 | P1 |
 
@@ -136,6 +136,15 @@ AppDelegate의 `[GMSServices provideAPIKey:]`가 함께 있어야 한다.
 - 지도 **표시**는 모바일 SDK 과금 없음
 - ⚠️ 현재 등록된 SHA-1은 **debug 키** 것이다. release 서명 키를 구하면(P2)
   그 SHA-1도 같은 키에 추가해야 스토어 버전에서 지도가 나온다
+
+#### 📄 파일 선택 (GPX 업로드)
+
+| 라이브러리 | 용도 | 비고 |
+|---|---|---|
+| **`@react-native-documents/picker` 10.1.7** | 루트제보 GPX 파일 선택 | ⚠️ **버전 고정.** 12.x는 RN 0.79 이상을 요구한다(우리는 0.76.9). 구 `react-native-document-picker`는 deprecated라 신규 스코프의 10.x를 쓴다 |
+
+안드로이드가 주는 `content://` URI는 Storage 업로드에서 실패할 수 있어
+`keepLocalCopy()`로 앱 캐시에 복사한 뒤 `file://` 경로로 올린다.
 
 ### 🥾 GPX / 트래킹
 

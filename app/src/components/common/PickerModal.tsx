@@ -1,5 +1,5 @@
 /**
- * 목록 선택 모달 (등반지 / 구역 공용).
+ * 목록 선택 모달 (지도 필터의 등반지·구역, 루트제보 작성의 등반지·구역 공용).
  *
  * 웹은 `<select>`를 쓰지만 RN에는 대응 요소가 없다.
  * `@react-native-picker/picker`는 iOS(휠)와 Android(드롭다운) UI가 완전히 달라
@@ -8,9 +8,9 @@
  */
 import React from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
-import { Text } from '../../../components/common/Text';
-import { useTheme } from '../../../theme';
-import { AppIcon } from '../../../components/common/AppIcon';
+import { Text } from './Text';
+import { useTheme } from '../../theme';
+import { AppIcon } from './AppIcon';
 
 interface PickerModalProps {
   visible: boolean;

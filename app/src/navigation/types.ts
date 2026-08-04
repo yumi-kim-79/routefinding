@@ -24,7 +24,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   MapTab: undefined; // 지도       (로그인 후 첫 화면)
   ConceptTab: undefined; // 개념도
-  ReportTab: undefined; // 루트제보 (route_reports 목록)
+  ReportTab: undefined; // 루트제보 (작성 폼 — 웹 /report와 동일)
   MyPageTab: undefined; // 마이페이지
 };
 
