@@ -9,6 +9,49 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-04 (5차) — 안드로이드 마커 버그 수정 + 아이콘 웹과 통일
+
+#### Fixed — 🐛 안드로이드에서 마커 핀이 안 보이고 숫자만 나오던 문제
+- **원인**: 안드로이드는 마커 자식 View를 **비트맵으로 한 번 떠서** 지도에 얹는다.
+  그 스냅샷이 이미지 디코딩보다 먼저 찍히면 핀은 비고 텍스트만 남는다.
+  iOS는 뷰를 그대로 올리므로 **같은 코드에서 iOS만 정상**으로 보였다
+- 두 겹으로 수정:
+  1. `Image`에 `fadeDuration={0}` — 안드로이드 기본 페이드인(300ms) 중에 스냅샷이 찍히면
+     투명한 이미지가 박힌다 (직접 원인)
+  2. `tracksViewChanges`를 **마커별로** 자기 이미지 `onLoad`까지만 true로 유지
+     → 기존엔 전역 타이머(700ms) 일괄 처리라 느린 마커가 타이밍을 놓쳤다
+- 마커 1개 = `components/RouteMarker.tsx`로 분리 (MapScreen에서 전역 타이머 제거)
+
+#### Added — `react-native-svg` 15.15.5 + `components/common/AppIcon.tsx`
+- 웹 `components/common/AppIcon.vue`의 **path 데이터를 그대로 이식** (아이콘 27종).
+  24x24 viewBox · stroke 1.8 · 둥근 끝/이음 — 규칙도 웹과 동일
+- ⚠️ path는 웹과 같은 값을 유지할 것. 한쪽만 고치면 두 화면이 갈라진다
+- 웹의 `currentColor` 대응이 RN에 없어 `color` prop으로 받는다 (미지정 시 테마 textPrimary)
+- react-native-svg는 개념도 라인 그리기(P1)에도 필요해 어차피 들어올 의존성이었다
+
+#### Fixed — 하단 탭에 아이콘이 없던 문제
+- `MainTabNavigator.tsx`에 `tabBarIcon`이 아예 정의돼 있지 않아
+  React Navigation 기본 도형이 4탭에 **똑같이** 그려지고 있었다 (`[TBD] 아이콘 라이브러리`)
+- 웹 `BottomNavBar.vue`와 같은 SVG path 사용: 개념도(봉우리) / 지도(접힌 지도) /
+  루트제보(문서+더하기) / 마이페이지(사람). 크기 23, 활성 굵기 2.1 — 웹과 동일
+- 활성·비활성 색은 테마 토큰(`primary` / `textSecondary`) 사용.
+  웹은 `#1573ee` / `#9aa0ac` 하드코딩이라 아주 미세하게 다르다 [TBD] 필요 시 토큰 추가
+
+#### Changed — 남아 있던 이모지 제거 (웹은 이미 제거 완료)
+| 위치 | 이전 | 이후 |
+|---|---|---|
+| 등반일지 카드 | `⏱ 🎒 👥` 텍스트 | `clock` / `backpack` / `users` 아이콘 |
+| 개념도 상세 버튼 | `✎ 등반일지 쓰기` | `등반일지 쓰기` |
+| 지도 선택 모달 | `✓` | `check` 아이콘 |
+
+- `ProfileWithCrown.tsx`의 `👤`/`👑`은 **그대로 둔다** — 등급 제거로 v2 화면에서 미사용,
+  보존 파일이라 건드리지 않는다
+
+#### 검증
+- `tsc --noEmit`: 신규 코드 에러 0 (react-native-svg 미설치 상태의 모듈 해석 1건 제외)
+- ⏳ 미검증: `yarn install` → `pod install` → 양 플랫폼 실기기
+
+
 ### 📅 2026-08-04 (4차) — 지도 탭 구현 (웹 MapView.vue 이식)
 
 > 플레이스홀더였던 지도 탭을 실화면으로 교체. **iOS·Android 동시 개발**(사용자 요청).

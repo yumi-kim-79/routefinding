@@ -173,7 +173,7 @@ export const ConceptDetailScreen: React.FC = () => {
 
       {/* 이 루트로 등반일지 작성 (장소·루트명 자동 입력) */}
       <Button
-        title="✎ 등반일지 쓰기"
+        title="등반일지 쓰기"
         onPress={() =>
           navigation.navigate('ClimbingLogEdit', {
             initial: {

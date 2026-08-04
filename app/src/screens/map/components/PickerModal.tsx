@@ -10,6 +10,7 @@ import React from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../../components/common/Text';
 import { useTheme } from '../../../theme';
+import { AppIcon } from '../../../components/common/AppIcon';
 
 interface PickerModalProps {
   visible: boolean;
@@ -75,7 +76,7 @@ export const PickerModal: React.FC<PickerModalProps> = ({
                   ]}
                 >
                   <Text color={active ? 'primary' : 'textPrimary'}>{item.label}</Text>
-                  {active ? <Text color="primary">✓</Text> : null}
+                  {active ? <AppIcon name="check" size={18} color={colors.primary} /> : null}
                 </Pressable>
               );
             }}

@@ -5,8 +5,7 @@
  * RN은 마커 안에 View를 넣을 수 있어 **하나의 마커**로 끝난다.
  * 숫자는 핀 '구멍 중심'(holeRatio)에 올려 핀 끝(실제 좌표)을 가리지 않게 한다.
  *
- * ⚠️ `tracksViewChanges`는 호출부(MapScreen)에서 첫 렌더 후 false로 내린다.
- *    true로 두면 마커마다 매 프레임 스냅샷을 떠서 지도가 버벅인다.
+ * ⚠️ `tracksViewChanges` 제어는 `RouteMarker.tsx`가 맡는다 (안드로이드 스냅샷 타이밍).
  */
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
@@ -23,9 +22,11 @@ interface RouteMarkerViewProps {
   type: ConceptType;
   /** 1이면 단일 마커, 2 이상이면 클러스터(숫자 표시) */
   count: number;
+  /** 핀 이미지 로드 완료 — 안드로이드 스냅샷 타이밍 제어용 (RouteMarker 참조) */
+  onImageLoad?: () => void;
 }
 
-export const RouteMarkerView: React.FC<RouteMarkerViewProps> = ({ type, count }) => {
+export const RouteMarkerView: React.FC<RouteMarkerViewProps> = ({ type, count, onImageLoad }) => {
   const geo = MARKER_GEOMETRY[type];
   const isCluster = count > 1;
   const w = isCluster ? CLUSTER_PIN_W : SINGLE_PIN;
@@ -38,6 +39,11 @@ export const RouteMarkerView: React.FC<RouteMarkerViewProps> = ({ type, count })
         style={{ width: w, height: h }}
         // 웹도 52x60으로 늘려 쓰므로(원본 200x200) 같은 비율을 유지하려면 stretch
         resizeMode={isCluster ? 'stretch' : 'contain'}
+        // ⚠️ 안드로이드 전용: 기본 페이드인(300ms) 중에 마커 스냅샷이 찍히면
+        //    핀이 투명하게 박힌다 (숫자만 보이던 버그의 직접 원인)
+        fadeDuration={0}
+        onLoad={onImageLoad}
+        onError={onImageLoad}
       />
       {isCluster ? (
         <View

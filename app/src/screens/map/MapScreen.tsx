@@ -28,7 +28,6 @@ import {
   View,
 } from 'react-native';
 import MapView, {
-  Marker,
   type Region,
   type UserLocationChangeEvent,
 } from 'react-native-maps';
@@ -38,15 +37,10 @@ import { Text } from '../../components/common/Text';
 import { useTheme } from '../../theme';
 import type { MainStackParamList } from '../../navigation/types';
 import type { Concept } from '../../types/concept';
-import {
-  DEFAULT_REGION,
-  MAP_PROVIDER,
-  MARKER_GEOMETRY,
-  MY_LOCATION_DELTA,
-} from '../../constants/map';
+import { DEFAULT_REGION, MAP_PROVIDER, MY_LOCATION_DELTA } from '../../constants/map';
 import { useMapRoutes, type RouteCluster } from './hooks/useMapRoutes';
 import { MapFilterBar } from './components/MapFilterBar';
-import { RouteMarkerView } from './components/RouteMarkerView';
+import { RouteMarker } from './components/RouteMarker';
 import { RouteDetailSheet } from './components/RouteDetailSheet';
 import { ClusterListModal } from './components/ClusterListModal';
 
@@ -99,17 +93,6 @@ export const MapScreen: React.FC = () => {
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
     ).then((res) => setLocationAllowed(res === PermissionsAndroid.RESULTS.GRANTED));
   }, []);
-
-  /**
-   * 마커 성능. tracksViewChanges가 true면 마커마다 매 프레임 스냅샷을 떠서 지도가 버벅인다.
-   * 마커 집합이 바뀔 때만 잠깐 켜고 곧 끈다.
-   */
-  const [tracksChanges, setTracksChanges] = useState(true);
-  useEffect(() => {
-    setTracksChanges(true);
-    const t = setTimeout(() => setTracksChanges(false), 700);
-    return () => clearTimeout(t);
-  }, [clusters]);
 
   /** 필터가 바뀌었을 때만 첫 군집으로 이동 (사용자가 손으로 옮긴 화면을 뺏지 않도록) */
   const filterSig = `${type}|${mountain}|${zone}|${keyword.trim()}`;
@@ -200,16 +183,12 @@ export const MapScreen: React.FC = () => {
           }}
         >
           {clusters.map((cluster) => (
-            <Marker
+            <RouteMarker
               key={cluster.key}
-              coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
-              // 핀 끝이 실제 좌표에 오도록 실측 비율 사용 (constants/map.ts 주석 참조)
-              anchor={{ x: 0.5, y: MARKER_GEOMETRY[type].tipRatio }}
-              tracksViewChanges={tracksChanges}
-              onPress={() => onMarkerPress(cluster)}
-            >
-              <RouteMarkerView type={type} count={cluster.routes.length} />
-            </Marker>
+              cluster={cluster}
+              type={type}
+              onPress={onMarkerPress}
+            />
           ))}
         </MapView>
 
