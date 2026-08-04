@@ -212,8 +212,8 @@ open ~/StudioProjects/routefinding/app/ios/RouteFinding.xcworkspace
 ① 웹 배포                          ← ✅ 완료 (2026-08-04)
 ② 앱 지도 SDK 결정                  ← ✅ 완료: Google Maps (react-native-maps)
 ③ iOS Xcode 실기기 빌드 검증        ← ✅ 완료 (2026-08-04)
-④ 안드로이드 assembleRelease APK 확인   ← 지금 여기
-⑤ 앱 지도 탭 + 루트제보 작성 화면 구현
+④ 안드로이드 assembleRelease APK 확인   ← ✅ 완료 (2026-08-04, 59MB)
+⑤ 앱 지도 탭 + 루트제보 작성 화면 구현   ← 지금 여기
 ⑥ 앱 개념도 사진/라인 그리기 이식
 ⑦ v1 서명 키 확보 + versionCode 정리   ← 가장 위험. Play 앱 서명 켜짐 여부 먼저 확인
 ⑧ 안드로이드 내부 테스트 배포

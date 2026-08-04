@@ -32,6 +32,15 @@
 - §2 시도 #3의 `xcodeproj` gem 등록 시점부터 깨져 있었고, 이전 빌드는 더 앞 단계에서
   죽어 드러나지 않았다 → 파일을 `app/ios/GoogleService-Info.plist`로 이동해 해결
 
+#### Added — 안드로이드 release APK 산출 확인
+- `./gradlew assembleRelease` 성공 (2m 42s). `app-release.apk` **59MB**
+  (debug 132MB 대비 절반 이하)
+- `assets/index.android.bundle` **1.5MB 포함** → Metro 없이 단독 실행 가능 ✅
+- ABI 4종(arm64-v8a / armeabi-v7a / x86 / x86_64) 모두 포함
+- ⚠️ 여전히 **debug 키 서명**이라 사이드로딩 전용. 스토어 업로드 불가 (P2, `docs/08` §2-2)
+- ⚠️ `applicationId`가 스토어의 v1과 같은 `com.yusung.routefinding`이라,
+  v1이 설치된 기기에는 서명 불일치로 설치되지 않는다 → v1 삭제 후 설치할 것
+
 #### 실기기 확인 결과 (iOS)
 - 앱 실행, 하단 4탭 이동, 개념도·마이페이지 정상
 - 지도 · 루트제보 = 플레이스홀더 (예정대로 Phase 2에서 구현)
