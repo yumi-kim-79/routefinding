@@ -217,6 +217,37 @@ GoogleService-Info.plist  path = GoogleService-Info.plist      ⚠️ RouteFindi
 
 ---
 
+### 2026-08-04 (11차) — 지도 도입 후 `pod install` ✅
+
+**우려했던 `use_frameworks! :linkage => :static` ↔ GoogleMaps 충돌은 발생하지 않았다.**
+
+```
+Installing Google-Maps-iOS-Utils (6.1.0)
+Installing GoogleMaps (9.4.0)
+Installing react-native-maps (1.26.0)
+Framework build type is static framework
+Pod installation complete! 77 dependencies from the Podfile, 104 total pods
+```
+
+- `react-native-maps`는 `includesGeneratedCode: true`라 Codegen이 새로 생성하지 않고
+  동봉된 코드를 쓴다 (로그에 `RNMapsSpecs` 생성 단계가 없는 것이 정상)
+- 안드로이드도 같은 커밋에서 빌드 성공 (3m 08s)
+
+#### ⚠️ 새로 뜬 경고 — CocoaPods 지원 종료 예고
+
+```
+[!] FirebaseCore has been deprecated in favor of the Firebase Apple SDK via
+    Swift Package Manager. ... new versions will no longer be published to
+    CocoaPods after October 2026.
+```
+
+지금 동작에는 영향 없다. 다만 **2026년 10월 이후 firebase-ios-sdk 새 버전이
+CocoaPods에 올라오지 않는다** → 그 시점 이후의 RNFB/Firebase 업그레이드는 SPM 전환이
+필요할 수 있다. RN 업그레이드 + New Architecture + RNFB 26 작업과 묶어 검토할 것.
+[TBD] 별도 트랙.
+
+---
+
 #### RNFB 26으로 올리지 말 것
 v26부터 **New Architecture 필수**다. RN 0.76.9에서 켜려면 모든 네이티브 의존성이
 지원해야 하고 사실상 RN 업그레이드와 묶어야 한다. iOS 복구 목적이면 25로 충분하다.

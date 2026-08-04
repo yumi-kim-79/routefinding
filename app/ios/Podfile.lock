@@ -1290,9 +1290,14 @@ PODS:
     - GTMSessionFetcher/Core (< 6.0, >= 3.4)
   - fmt (11.0.2)
   - glog (0.3.5)
+  - Google-Maps-iOS-Utils (6.1.0):
+    - GoogleMaps (~> 9.0)
   - GoogleDataTransport (10.1.1):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
+  - GoogleMaps (9.4.0):
+    - GoogleMaps/Maps (= 9.4.0)
+  - GoogleMaps/Maps (9.4.0)
   - GoogleUtilities/AppDelegateSwizzler (8.1.2):
     - GoogleUtilities/Environment
     - GoogleUtilities/Logger
@@ -2721,6 +2726,76 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-maps (1.26.0):
+    - react-native-maps/Maps (= 1.26.0)
+  - react-native-maps/Generated (1.26.0):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.10.14.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
+  - react-native-maps/Google (1.26.0):
+    - DoubleConversion
+    - glog
+    - Google-Maps-iOS-Utils (= 6.1.0)
+    - GoogleMaps (= 9.4.0)
+    - hermes-engine
+    - RCT-Folly (= 2024.10.14.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - react-native-maps/Generated
+    - react-native-maps/Maps
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
+  - react-native-maps/Maps (1.26.0):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.10.14.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - react-native-maps/Generated
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - react-native-safe-area-context (4.14.1):
     - DoubleConversion
     - glog
@@ -3286,6 +3361,8 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
+  - react-native-maps (from `../node_modules/react-native-maps`)
+  - react-native-maps/Google (from `../node_modules/react-native-maps`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - React-nativeconfig (from `../node_modules/react-native/ReactCommon`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -3342,7 +3419,9 @@ SPEC REPOS:
     - FirebaseMessaging
     - FirebaseSharedSwift
     - FirebaseStorage
+    - Google-Maps-iOS-Utils
     - GoogleDataTransport
+    - GoogleMaps
     - GoogleUtilities
     - "gRPC-C++"
     - gRPC-Core
@@ -3430,6 +3509,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   react-native-image-picker:
     :path: "../node_modules/react-native-image-picker"
+  react-native-maps:
+    :path: "../node_modules/react-native-maps"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   React-nativeconfig:
@@ -3527,7 +3608,9 @@ SPEC CHECKSUMS:
   FirebaseStorage: 949f0a5a8d8a77fff68ec8733057dc76a0e08179
   fmt: 01b82d4ca6470831d1cc0852a1af644be019e8f6
   glog: 08b301085f15bcbb6ff8632a8ebaf239aae04e6a
+  Google-Maps-iOS-Utils: 0a484b05ed21d88c9f9ebbacb007956edd508a96
   GoogleDataTransport: a24e58982ab3ba2f64d79613e027fe7f57e88539
+  GoogleMaps: 0608099d4870cac8754bdba9b6953db543432438
   GoogleUtilities: 766ace00c6b10d8148408f329d10c4f051931850
   "gRPC-C++": cc207623316fb041a7a3e774c252cf68a058b9e8
   gRPC-Core: 860978b7db482de8b4f5e10677216309b5ff6330
@@ -3567,6 +3650,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 9343a5c14536d4463c80f09a960653d754daae21
   React-microtasksnativemodule: c7cafd8f4470cf8a4578ee605daa4c74d3278bf8
   react-native-image-picker: 5352ab9db7c9f9b1f2cdc3943f8f3fc9954f5350
+  react-native-maps: 2249e6b9eaa0e0eeea9e9bcc9efa82c5335ba68d
   react-native-safe-area-context: 85b5cac157862cff5cabe0d420da8197ac139da1
   React-nativeconfig: 415626a63057638759bcc75e0a96e2e07771a479
   React-NativeModulesApple: d33b55553c6957ff94835574636838d78121a1c6
@@ -3606,6 +3690,6 @@ SPEC CHECKSUMS:
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 1259c7a8cbaccf7b4c3ddf8ee36ca11be9dee407
 
-PODFILE CHECKSUM: 2435afaf667c4189420c9766ebcda5a31c86f439
+PODFILE CHECKSUM: 86aaf6a4619e1e78152961d52aab1e8aeac2e97a
 
 COCOAPODS: 1.16.2
