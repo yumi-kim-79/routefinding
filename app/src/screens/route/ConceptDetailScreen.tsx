@@ -6,7 +6,7 @@
  *     → 지도·GPX는 별도 탭(루트 위치/트래킹) 소관. 여기서는 GPX가 있으면 존재만 표시.
  * 라인(선) 그리기·개념도 추가는 다음 단계(P1) — 이 화면이 그 뷰어 기반이 된다.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,7 +17,7 @@ import {
   View,
 } from 'react-native';
 import type { RouteProp } from '@react-navigation/native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { doc, getDoc } from '@react-native-firebase/firestore';
 import { db } from '../../services/firebase';
@@ -86,6 +86,21 @@ export const ConceptDetailScreen: React.FC = () => {
   const [photoOpen, setPhotoOpen] = useState(false);
   const isAdmin = isAdminEmail(useAuthStore((st) => st.user?.email));
   const favorites = useFavorites();
+  /**
+   * 수정 화면에서 돌아오면 다시 읽는다.
+   * (Firestore 오프라인 캐시 때문에 화면이 그대로 남아 **수정 전 사진이 보이던 문제**, 2026-08-05)
+   */
+  const [reloadKey, setReloadKey] = useState(0);
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      setReloadKey((k) => k + 1);
+    }, []),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -137,7 +152,7 @@ export const ConceptDetailScreen: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [params.conceptId, params.source]);
+  }, [params.conceptId, params.source, reloadKey]);
 
   // 헤더 타이틀을 루트명으로 (로딩 중엔 '개념도')
   useEffect(() => {

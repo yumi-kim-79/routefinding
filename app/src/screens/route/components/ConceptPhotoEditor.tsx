@@ -25,7 +25,6 @@ import {
   Modal,
   PanResponder,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
   type LayoutChangeEvent,
@@ -37,6 +36,7 @@ import { Input } from '../../../components/common/Input';
 import { Button } from '../../../components/common/Button';
 import { AppIcon } from '../../../components/common/AppIcon';
 import { ConceptPhotoOverlay } from '../../../components/common/ConceptPhotoOverlay';
+import { KeyboardAwareScroll } from '../../../components/common/KeyboardAwareScroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme';
 import type { Concept } from '../../../types/concept';
@@ -274,9 +274,8 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
           <View style={styles.headerRight} />
         </View>
 
-        <ScrollView
+        <KeyboardAwareScroll
           contentContainerStyle={{ padding: spacing.md }}
-          keyboardShouldPersistTaps="handled"
           // 그리는 중에는 스크롤이 개입하지 않도록
           scrollEnabled={!drawing}
         >
@@ -437,7 +436,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
           <Text variant="caption" color="textSecondary" style={styles.notice}>
             등록하면 관리자 승인 후 개념도에 반영됩니다. 승인 전에는 본인에게만 보입니다.
           </Text>
-        </ScrollView>
+        </KeyboardAwareScroll>
       </View>
     </Modal>
   );

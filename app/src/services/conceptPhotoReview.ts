@@ -19,6 +19,7 @@ import {
   where,
 } from '@react-native-firebase/firestore';
 import { db } from './firebase';
+import { clearConceptCache } from './conceptService';
 import type { ConceptPhoto } from '../types/conceptPhoto';
 
 export type ApplyMode = 'add' | 'replace';
@@ -79,6 +80,9 @@ export async function approveConceptPhoto(
     reviewedAt: serverTimestamp(),
     reviewedBy: reviewerUid,
   });
+
+  // 개념도의 imageUrls가 바뀌었으므로 목록 캐시를 버린다
+  clearConceptCache();
 }
 
 export async function rejectConceptPhoto(

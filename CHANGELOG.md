@@ -9,6 +9,34 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-05 (5차) — 🐛 키보드 가림 + 개념도 수정이 반영 안 되던 문제
+
+#### Fixed — 입력칸이 키보드에 가려 뭘 쓰는지 안 보이던 문제
+- **원인**: `KeyboardAvoidingView behavior="padding"`만으로는 iOS에서 하단 입력칸이 가려진다.
+  `SafeAreaView` 안쪽이라 높이 계산이 어긋난다
+- **조치**: `components/common/KeyboardAwareScroll.tsx` 신설
+  - iOS는 `automaticallyAdjustKeyboardInsets`(RN 0.70+)로 스크롤 인셋 자동 조정
+  - Android는 매니페스트의 `adjustResize`가 처리 + 넉넉한 하단 여백(260)
+  - `keyboardDismissMode`도 플랫폼별로 자연스럽게
+- 적용: **등반일지 작성 / 루트제보 작성·수정 / 개념도 사진 등록** 세 화면이 같은 동작을 갖는다
+
+#### Fixed — 🚨 관리자가 개념도를 수정해도 반영되지 않던 문제
+사진을 지우고 저장한 뒤 다시 들어가면 **지운 사진이 그대로 보였다.** 원인이 두 겹이었다.
+
+1. **`conceptService`의 5분 캐시를 아무도 비우지 않았다.**
+   `clearConceptCache()`가 정의만 돼 있고 **호출처가 한 곳도 없었다** →
+   수정·삭제·사진 승인 후에도 목록/지도가 최대 5분간 옛 데이터를 보여준다
+   → `updateReport` / `deleteReport` / `submitReport` / `approveConceptPhoto`에서 캐시를 비운다
+   → `useConcepts`는 화면에 돌아올 때 재확인 (캐시가 살아 있으면 읽기 0, 비었으면 그때만 재조회)
+2. **개념도 상세가 다시 읽지 않았다.**
+   수정 화면에서 돌아와도 첫 로드 결과가 그대로 남는다 (Firestore 오프라인 캐시도 겹친다)
+   → 화면에 다시 포커스되면 재조회 (첫 진입은 중복 조회하지 않도록 가드)
+
+#### 검증
+- `tsc --noEmit` 에러 0 / `eslint` 에러 0
+- ⏳ 미검증: 실기기에서 키보드 가림·수정 반영
+
+
 ### 📅 2026-08-05 (4차) — 이미지 URL 변환 + 개념도 상세 사진 오버레이
 
 #### Fixed — 🚨 개념도 사진이 403으로 안 뜨던 문제 (웹에는 있던 처리가 앱에 없었다)

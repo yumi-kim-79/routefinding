@@ -18,7 +18,7 @@
 import { addDoc, collection, deleteDoc, doc, updateDoc } from '@react-native-firebase/firestore';
 import { getDownloadURL, putFile, ref } from '@react-native-firebase/storage';
 import { auth, db, storage } from './firebase';
-import { fetchConcepts } from './conceptService';
+import { clearConceptCache, fetchConcepts } from './conceptService';
 import type { Concept, ConceptSource, ConceptType } from '../types/concept';
 import { genUid, type LocalImage, type ReportForm } from '../types/routeReport';
 
@@ -176,6 +176,7 @@ export async function submitReport(form: ReportForm): Promise<SubmitResult> {
 
   const target = collectionOf(form.typeRoot);
   const docRef = await addDoc(collection(db, target), payload);
+  clearConceptCache();
   return { reportId: docRef.id, collection: target };
 }
 
@@ -303,9 +304,15 @@ export async function updateReport(
     pitches,
     ...gpxPatch,
   });
+
+  // ⚠️ 목록·지도는 conceptService의 5분 캐시를 본다.
+  //    비우지 않으면 **수정한 내용이 최대 5분간 반영되지 않는다**
+  //    (2026-08-05: 삭제한 사진이 그대로 보이던 원인).
+  clearConceptCache();
 }
 
 /** 개념도 삭제 (관리자) — 웹 ConceptListView.deleteRoute와 동일 */
 export async function deleteReport(source: ConceptSource, conceptId: string): Promise<void> {
   await deleteDoc(doc(db, source, conceptId));
+  clearConceptCache();
 }

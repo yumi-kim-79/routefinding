@@ -20,10 +20,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -32,6 +29,7 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { AppIcon } from '../../components/common/AppIcon';
 import { PickerModal } from '../../components/common/PickerModal';
+import { KeyboardAwareScroll } from '../../components/common/KeyboardAwareScroll';
 import { useTheme } from '../../theme';
 import { MAX_ROOT_IMAGES } from '../../types/routeReport';
 import type { ConceptType } from '../../types/concept';
@@ -81,16 +79,8 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
   ];
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      // iOS는 키보드가 폼을 덮어 입력칸이 가려진다. 안드로이드는 windowSoftInputMode가 처리
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        style={[styles.flex, { backgroundColor: colors.background }]}
-        contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xl }}
-        keyboardShouldPersistTaps="handled"
-      >
+    <View style={[styles.flex, { backgroundColor: colors.background }]}>
+      <KeyboardAwareScroll contentContainerStyle={{ padding: spacing.md }}>
         {/* 1. 타입 */}
         <View style={styles.typeRow}>
           {TYPES.map((t) => {
@@ -360,7 +350,7 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
             </Text>
           </View>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScroll>
 
       <PickerModal
         visible={picker === 'mountain'}
@@ -394,7 +384,7 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
         }}
         onClose={() => setShowMap(false)}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 

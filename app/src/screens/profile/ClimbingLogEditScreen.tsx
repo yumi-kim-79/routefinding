@@ -13,9 +13,6 @@
  */
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -25,6 +22,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Screen } from '../../components/common/Screen';
 import { Text } from '../../components/common/Text';
 import { Input } from '../../components/common/Input';
+import { KeyboardAwareScroll } from '../../components/common/KeyboardAwareScroll';
 import { Button } from '../../components/common/Button';
 import { useTheme } from '../../theme';
 import { useAuthStore } from '../../stores/authStore';
@@ -137,14 +135,7 @@ export const ClimbingLogEditScreen: React.FC = () => {
 
   return (
     <Screen padded={false}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.flex}
-      >
-        <ScrollView
-          contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl }}
-          keyboardShouldPersistTaps="handled"
-        >
+      <KeyboardAwareScroll contentContainerStyle={{ padding: spacing.md }}>
           <Text variant="headline" style={styles.heading}>
             {isEdit ? '등반일지 수정' : '등반일지 작성'}
           </Text>
@@ -223,8 +214,7 @@ export const ClimbingLogEditScreen: React.FC = () => {
               style={styles.action}
             />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScroll>
     </Screen>
   );
 };

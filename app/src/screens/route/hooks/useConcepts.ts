@@ -13,6 +13,7 @@
  * 예: "북한산 슬랩" → 등반지 북한산 + 구역/루트명에 슬랩 포함.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { fetchConcepts } from '../../../services/conceptService';
 import {
   conceptSearchIndex,
@@ -82,6 +83,20 @@ export function useConcepts(): UseConceptsResult {
     setLoading(true);
     void load(false).finally(() => setLoading(false));
   }, [hasQuery, load]);
+
+  /**
+   * 화면으로 돌아올 때 재확인.
+   * 캐시가 살아 있으면 `fetchConcepts`가 즉시 반환하므로 읽기 비용은 0이고,
+   * 수정·삭제·승인으로 캐시가 비워졌다면 그때만 다시 읽는다
+   * (2026-08-05: 관리자 수정이 목록에 반영되지 않던 문제).
+   */
+  useFocusEffect(
+    useCallback(() => {
+      if (startedRef.current) {
+        void load(false);
+      }
+    }, [load]),
+  );
 
   const refresh = useCallback(() => {
     setRefreshing(true);
