@@ -98,3 +98,63 @@ export async function rejectConceptPhoto(
 export async function deleteConceptPhoto(photo: ConceptPhoto): Promise<void> {
   await deleteDoc(doc(db, 'concept_photos', photo.id));
 }
+
+
+/**
+ * 특정 개념도에 등록된 사진 구독 (개념도 상세용).
+ *
+ * ⚠️ Firestore 쿼리는 **결과 문서를 전부 읽을 수 있어야** 통과한다.
+ *    `where(conceptId==X)`만 걸면 남의 pending까지 포함돼 권한 오류로 **쿼리 전체가 실패**한다.
+ *    → 관리자는 한 번에, 일반 사용자는 '승인된 것'과 '내 것' 두 쿼리로 나눠 구독한다.
+ */
+export function subscribeConceptPhotosFor(
+  conceptId: string,
+  uid: string,
+  isAdmin: boolean,
+  onData: (rows: ConceptPhoto[]) => void,
+  onError?: (message: string) => void,
+): () => void {
+  const col = collection(db, 'concept_photos');
+  const toRows = (snap: { docs: Array<{ id: string; data: () => unknown }> }): ConceptPhoto[] =>
+    snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ConceptPhoto, 'id'>) }));
+
+  const sortDesc = (rows: ConceptPhoto[]): ConceptPhoto[] =>
+    [...rows].sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+
+  if (isAdmin) {
+    return onSnapshot(
+      query(col, where('conceptId', '==', conceptId)),
+      (snap) => onData(sortDesc(toRows(snap))),
+      (e) => onError?.(e.message),
+    );
+  }
+
+  let approved: ConceptPhoto[] = [];
+  let mine: ConceptPhoto[] = [];
+  const merge = () => {
+    const map = new Map<string, ConceptPhoto>();
+    [...approved, ...mine].forEach((p) => map.set(p.id, p));
+    onData(sortDesc(Array.from(map.values())));
+  };
+
+  const unsubA = onSnapshot(
+    query(col, where('conceptId', '==', conceptId), where('status', '==', 'approved')),
+    (snap) => {
+      approved = toRows(snap);
+      merge();
+    },
+    (e) => onError?.(e.message),
+  );
+  const unsubB = onSnapshot(
+    query(col, where('conceptId', '==', conceptId), where('authorUid', '==', uid)),
+    (snap) => {
+      mine = toRows(snap);
+      merge();
+    },
+    (e) => onError?.(e.message),
+  );
+  return () => {
+    unsubA();
+    unsubB();
+  };
+}

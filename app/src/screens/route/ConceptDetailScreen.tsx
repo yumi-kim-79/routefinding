@@ -10,7 +10,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,8 +22,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { doc, getDoc } from '@react-native-firebase/firestore';
 import { db } from '../../services/firebase';
 import { Text } from '../../components/common/Text';
+import { RemoteImage } from '../../components/common/RemoteImage';
 import { Button } from '../../components/common/Button';
 import { ConceptPhotoEditor } from './components/ConceptPhotoEditor';
+import { ConceptPhotoStrip } from './components/ConceptPhotoStrip';
 import { useAuthStore } from '../../stores/authStore';
 import { isAdminEmail } from '../../constants/admin';
 import { useFavorites } from './hooks/useFavorites';
@@ -205,6 +206,15 @@ export const ConceptDetailScreen: React.FC = () => {
         style={styles.logBtn}
       />
 
+      {/* 등록된 사진 + 라인 오버레이 (승인 대기는 본인·관리자만 보인다) */}
+      <ConceptPhotoStrip
+        conceptId={c.id}
+        onPreview={(url) => {
+          const idx = images.indexOf(url);
+          setViewer({ open: true, index: idx >= 0 ? idx : 0 });
+        }}
+      />
+
       {/* 즐겨찾기 (웹 목록 카드의 별과 같은 my_routes) */}
       <Button
         title={favorites.isFavorite(c.id) ? '즐겨찾기 해제' : '즐겨찾기에 추가'}
@@ -268,8 +278,8 @@ export const ConceptDetailScreen: React.FC = () => {
                 onPress={() => setViewer({ open: true, index: i })}
                 style={{ width: imageWidth, marginRight: i === images.length - 1 ? 0 : spacing.sm }}
               >
-                <Image
-                  source={{ uri }}
+                <RemoteImage
+                  uri={uri}
                   style={[
                     styles.mainImage,
                     {
@@ -343,8 +353,8 @@ export const ConceptDetailScreen: React.FC = () => {
                       setViewer({ open: true, index: idx >= 0 ? idx : 0 });
                     }}
                   >
-                    <Image
-                      source={{ uri: thumb }}
+                    <RemoteImage
+                      uri={thumb}
                       style={[styles.pitchThumb, { borderRadius: radius.sm }]}
                     />
                   </Pressable>

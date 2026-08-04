@@ -5,9 +5,10 @@
  * 본인  : 승인 전 취소(삭제)
  */
 import React from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../../components/common/Text';
 import { AppIcon } from '../../../components/common/AppIcon';
+import { RemoteImage } from '../../../components/common/RemoteImage';
 import { useTheme } from '../../../theme';
 import type { ConceptPhoto } from '../../../types/conceptPhoto';
 import type { ApplyMode } from '../../../services/conceptPhotoReview';
@@ -67,18 +68,11 @@ export const ConceptPhotoCard: React.FC<ConceptPhotoCardProps> = ({
         onPress={() => onPreview(photo)}
         style={styles.row}
       >
-        {thumb ? (
-          <Image
-            source={{ uri: thumb }}
-            style={[styles.thumb, { borderRadius: radius.sm, backgroundColor: colors.surfaceVariant }]}
-          />
-        ) : (
-          <View style={[styles.thumb, styles.center, { backgroundColor: colors.surfaceVariant, borderRadius: radius.sm }]}>
-            <Text variant="caption" color="disabled">
-              사진 없음
-            </Text>
-          </View>
-        )}
+        <RemoteImage
+          uri={thumb}
+          style={[styles.thumb, { borderRadius: radius.sm }]}
+          emptyLabel="사진 없음"
+        />
 
         <View style={styles.body}>
           <Text variant="label" numberOfLines={2}>

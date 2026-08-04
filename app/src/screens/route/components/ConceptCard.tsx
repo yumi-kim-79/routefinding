@@ -4,11 +4,12 @@
  * 탭 → ConceptDetail 이동.
  */
 import React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Text } from '../../../components/common/Text';
 import { AppIcon } from '../../../components/common/AppIcon';
+import { RemoteImage } from '../../../components/common/RemoteImage';
 import { useTheme } from '../../../theme';
 import {
   conceptLengthLabel,
@@ -72,8 +73,8 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({
       ]}
     >
       {thumb ? (
-        <Image
-          source={{ uri: thumb }}
+        <RemoteImage
+          uri={thumb}
           style={[styles.thumb, { borderTopLeftRadius: radius.md, borderBottomLeftRadius: radius.md }]}
         />
       ) : (

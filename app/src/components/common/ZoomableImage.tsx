@@ -14,7 +14,8 @@
  *   · 두 번 탭 → 2배 확대 / 원래대로
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Image, PanResponder, StyleSheet, View } from 'react-native';
+import { Animated, PanResponder, StyleSheet, View } from 'react-native';
+import { RemoteImage } from './RemoteImage';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 4;
@@ -152,7 +153,7 @@ export const ZoomableImage: React.FC<ZoomableImageProps> = ({
           { transform: [{ translateX }, { translateY }, { scale }] },
         ]}
       >
-        <Image source={{ uri }} style={{ width, height }} resizeMode="contain" />
+        <RemoteImage uri={uri} style={{ width, height }} resizeMode="contain" />
         {children}
       </Animated.View>
       {zoomed ? null : null}
