@@ -22,6 +22,11 @@ export interface Report {
   status?: ReportStatus;
   /** ⚠️ v1 실측: `rejectionReason` (rejectReason 아님) */
   rejectionReason?: string;
+  /**
+   * 레거시/오기재 대비. 02_DATA_MODEL 초안과 일부 옛 문서가 `rejectReason`을 썼다.
+   * 쓰기는 항상 `rejectionReason`으로 하고, **읽을 때만** 둘 다 본다.
+   */
+  rejectReason?: string;
 
   /** ⚠️ v1 실측: `timestamp` (createdAt 아님) */
   timestamp?: FirebaseFirestoreTypes.Timestamp;

@@ -94,6 +94,12 @@ export const ConceptPhotoCard: React.FC<ConceptPhotoCardProps> = ({
               </Text>
             )}
           </View>
+
+          {rejected ? (
+            <Text variant="caption" color="error" numberOfLines={3}>
+              반려 사유: {photo.rejectionReason || '없음'}
+            </Text>
+          ) : null}
         </View>
       </Pressable>
 

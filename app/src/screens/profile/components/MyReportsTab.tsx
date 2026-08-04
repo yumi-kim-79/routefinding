@@ -14,7 +14,7 @@
  * 액션 다이얼로그: 삭제=Alert.alert(confirm) / 승인=직접 update / 반려=PromptModal(공용).
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from 'react-native';
 import {
   collection,
   doc,
@@ -185,13 +185,13 @@ export const MyReportsTab: React.FC = () => {
       return;
     }
     void approveConceptPhoto(photo, mode, uid).catch((e: unknown) =>
-      setError(e instanceof Error ? e.message : '사진 승인 실패'),
+      Alert.alert('사진 승인 실패', e instanceof Error ? e.message : String(e)),
     );
   };
 
   const onDeletePhoto = (photo: ConceptPhoto) => {
     void deleteConceptPhoto(photo).catch((e: unknown) =>
-      setError(e instanceof Error ? e.message : '사진 삭제 실패'),
+      Alert.alert('사진 삭제 실패', e instanceof Error ? e.message : String(e)),
     );
   };
 
@@ -202,7 +202,7 @@ export const MyReportsTab: React.FC = () => {
       return;
     }
     void rejectConceptPhoto(target, reason, uid).catch((e: unknown) =>
-      setError(e instanceof Error ? e.message : '사진 반려 실패'),
+      Alert.alert('사진 반려 실패', e instanceof Error ? e.message : String(e)),
     );
   };
 
@@ -221,7 +221,8 @@ export const MyReportsTab: React.FC = () => {
         rejectionReason: reason,
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : '반려 실패');
+      // 화면 전체를 에러로 덮지 않고 알림으로 알린다 (목록은 계속 보여야 한다)
+      Alert.alert('반려 실패', e instanceof Error ? e.message : String(e));
     }
   };
 

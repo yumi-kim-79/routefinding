@@ -109,13 +109,17 @@ export const ReportCard: React.FC<ReportCardProps> = ({
             상태: {statusToKorean(status)}
           </Text>
 
-          {status === 'rejected' && report.rejectionReason ? (
+          {/*
+            반려면 사유 줄을 **항상** 띄운다 (웹 `반려사유: {{ r.rejectionReason || '없음' }}`와 동일).
+            예전엔 사유가 있을 때만 그려서, 저장이 안 된 건지 표시가 안 되는 건지 구분할 수 없었다.
+          */}
+          {status === 'rejected' ? (
             <Text
               variant="caption"
-              style={{ color: colors.warning, marginTop: 4 }}
-              numberOfLines={2}
+              style={{ color: colors.error, marginTop: 4 }}
+              numberOfLines={4}
             >
-              반려 사유: {report.rejectionReason}
+              반려 사유: {report.rejectionReason || report.rejectReason || '없음'}
             </Text>
           ) : null}
         </View>

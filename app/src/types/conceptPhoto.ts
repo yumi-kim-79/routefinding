@@ -46,6 +46,8 @@ export interface ConceptPhoto {
   lines: PhotoLine[];
   texts: PhotoText[];
   status: 'pending' | 'approved' | 'rejected';
+  /** 반려 사유 (관리자가 남긴 값) */
+  rejectionReason?: string;
   createdAt?: FirebaseFirestoreTypes.Timestamp;
 }
 

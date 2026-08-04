@@ -111,7 +111,7 @@ export const ConceptPhotoStrip: React.FC<ConceptPhotoStripProps> = ({ conceptId,
                 </Text>
               ) : p.status === 'rejected' ? (
                 <Text variant="caption" color="error">
-                  반려됨
+                  반려됨 · 사유: {p.rejectionReason || '없음'}
                 </Text>
               ) : (
                 <Text variant="caption" color="textSecondary">
