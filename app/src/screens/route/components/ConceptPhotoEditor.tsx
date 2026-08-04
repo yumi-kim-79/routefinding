@@ -37,6 +37,7 @@ import { Input } from '../../../components/common/Input';
 import { Button } from '../../../components/common/Button';
 import { AppIcon } from '../../../components/common/AppIcon';
 import { ConceptPhotoOverlay } from '../../../components/common/ConceptPhotoOverlay';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme';
 import type { Concept } from '../../../types/concept';
 import {
@@ -63,6 +64,8 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   onSaved,
 }) => {
   const { colors, radius, spacing } = useTheme();
+  // Modal은 SafeAreaView 바깥이라 노치·상태바에 헤더가 가린다 (iOS에서 X 버튼이 안 눌리던 원인)
+  const insets = useSafeAreaInsets();
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [tool, setTool] = useState<Tool>('line');
@@ -249,7 +252,16 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={closeAll}>
       <View style={[styles.wrap, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.divider, padding: spacing.md }]}>
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: colors.divider,
+              padding: spacing.md,
+              paddingTop: spacing.md + insets.top,
+            },
+          ]}
+        >
           <Pressable accessibilityRole="button" onPress={closeAll} hitSlop={10} disabled={saving}>
             <AppIcon name="x" size={22} color={colors.textPrimary} />
           </Pressable>

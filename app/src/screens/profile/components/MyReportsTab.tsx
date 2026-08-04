@@ -28,6 +28,16 @@ import { useMyPage } from '../hooks/useMyPage';
 import { isAdminEmail } from '../../../constants/admin';
 import { type Report, type ReportCollection } from '../../../types/report';
 import { ReportCard } from './ReportCard';
+import { ConceptPhotoCard } from './ConceptPhotoCard';
+import { ConceptImageViewer } from '../../route/components/ConceptImageViewer';
+import type { ConceptPhoto } from '../../../types/conceptPhoto';
+import {
+  approveConceptPhoto,
+  deleteConceptPhoto,
+  rejectConceptPhoto,
+  subscribeConceptPhotos,
+  type ApplyMode,
+} from '../../../services/conceptPhotoReview';
 
 type Subset = Omit<Report, 'reportId' | 'collection'>;
 
@@ -68,6 +78,16 @@ export const MyReportsTab: React.FC = () => {
   // 반려 사유 모달 상태
   const [rejectTarget, setRejectTarget] = useState<Report | null>(null);
 
+  /**
+   * 개념도 사진(concept_photos) 검토 목록.
+   * 별도 컬렉션이라 route_reports 구독에는 잡히지 않는다 —
+   * 앱에서 등록한 사진이 제보 관리에 안 보이던 원인 (2026-08-04 수정).
+   */
+  const [photos, setPhotos] = useState<ConceptPhoto[]>([]);
+  const [photoRejectTarget, setPhotoRejectTarget] = useState<ConceptPhoto | null>(null);
+  /** 사진 크게 보기 (핀치 줌 되는 공용 뷰어 재사용) */
+  const [previewPhoto, setPreviewPhoto] = useState<ConceptPhoto | null>(null);
+
   useEffect(() => {
     if (!uid) {
       return;
@@ -84,11 +104,17 @@ export const MyReportsTab: React.FC = () => {
       setBldRows,
       setError,
     );
+    const unsub3 = subscribeConceptPhotos(uid, isAdmin, setPhotos, (msg) =>
+      // 사진 구독이 실패해도 제보 목록은 계속 보여준다 (부분 실패 허용)
+      // eslint-disable-next-line no-console
+      console.warn('[concept_photos] 구독 실패:', msg),
+    );
     return () => {
       unsub1();
       unsub2();
+      unsub3();
     };
-  }, [uid]);
+  }, [uid, isAdmin]);
 
   const items = useMemo<Report[] | null>(() => {
     if (routeRows === null || bldRows === null) {
@@ -101,6 +127,32 @@ export const MyReportsTab: React.FC = () => {
           (b.timestamp?.toMillis() ?? 0) - (a.timestamp?.toMillis() ?? 0),
       );
   }, [routeRows, bldRows]);
+
+  const onApprovePhoto = (photo: ConceptPhoto, mode: ApplyMode) => {
+    if (!uid) {
+      return;
+    }
+    void approveConceptPhoto(photo, mode, uid).catch((e: unknown) =>
+      setError(e instanceof Error ? e.message : '사진 승인 실패'),
+    );
+  };
+
+  const onDeletePhoto = (photo: ConceptPhoto) => {
+    void deleteConceptPhoto(photo).catch((e: unknown) =>
+      setError(e instanceof Error ? e.message : '사진 삭제 실패'),
+    );
+  };
+
+  const onConfirmPhotoReject = (reason: string) => {
+    const target = photoRejectTarget;
+    setPhotoRejectTarget(null);
+    if (!target || !uid) {
+      return;
+    }
+    void rejectConceptPhoto(target, reason, uid).catch((e: unknown) =>
+      setError(e instanceof Error ? e.message : '사진 반려 실패'),
+    );
+  };
 
   const onConfirmReject = async (reason: string) => {
     const target = rejectTarget;
@@ -142,6 +194,27 @@ export const MyReportsTab: React.FC = () => {
         data={items}
         keyExtractor={(r) => `${r.collection}/${r.reportId}`}
         contentContainerStyle={{ padding: spacing.md }}
+        ListHeaderComponent={
+          photos.length > 0 ? (
+            <View style={{ marginBottom: spacing.md }}>
+              <Text variant="title" style={{ marginBottom: spacing.sm }}>
+                개념도 사진 {isAdmin ? '승인 대기' : '등록 현황'} ({photos.length})
+              </Text>
+              {photos.map((p) => (
+                <ConceptPhotoCard
+                  key={p.id}
+                  photo={p}
+                  isAdmin={isAdmin}
+                  isMine={!!uid && p.authorUid === uid}
+                  onApprove={onApprovePhoto}
+                  onReject={setPhotoRejectTarget}
+                  onDelete={onDeletePhoto}
+                  onPreview={setPreviewPhoto}
+                />
+              ))}
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.center}>
             <Text variant="body" color="textSecondary">
@@ -158,6 +231,25 @@ export const MyReportsTab: React.FC = () => {
             onRequestReject={(r) => setRejectTarget(r)}
           />
         )}
+      />
+
+      <ConceptImageViewer
+        visible={previewPhoto !== null}
+        images={
+          previewPhoto ? [previewPhoto.flatUrl || previewPhoto.imageUrl].filter(Boolean) : []
+        }
+        onClose={() => setPreviewPhoto(null)}
+      />
+
+      <PromptModal
+        visible={!!photoRejectTarget}
+        title="사진 반려 사유"
+        message="반려 사유를 입력하세요. 등록한 사람에게 표시됩니다."
+        placeholder="반려 사유를 입력하세요"
+        submitLabel="반려"
+        multiline
+        onSubmit={onConfirmPhotoReject}
+        onCancel={() => setPhotoRejectTarget(null)}
       />
 
       <PromptModal

@@ -11,6 +11,7 @@ import MapView, { type Region } from 'react-native-maps';
 import { Text } from '../../../components/common/Text';
 import { Button } from '../../../components/common/Button';
 import { AppIcon } from '../../../components/common/AppIcon';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme';
 import { DEFAULT_REGION, MAP_PROVIDER } from '../../../constants/map';
 
@@ -29,6 +30,8 @@ export const CoordPickerModal: React.FC<CoordPickerModalProps> = ({
   onClose,
 }) => {
   const { colors, spacing } = useTheme();
+  // Modal은 SafeAreaView 바깥이라 노치·상태바에 헤더가 가린다 (iOS에서 X 버튼이 안 눌리던 원인)
+  const insets = useSafeAreaInsets();
   const start: Region = {
     latitude: initial?.latitude ?? DEFAULT_REGION.latitude,
     longitude: initial?.longitude ?? DEFAULT_REGION.longitude,
@@ -41,7 +44,16 @@ export const CoordPickerModal: React.FC<CoordPickerModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={[styles.wrap, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.divider, padding: spacing.md }]}>
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: colors.divider,
+              padding: spacing.md,
+              paddingTop: spacing.md + insets.top,
+            },
+          ]}
+        >
           <Pressable accessibilityRole="button" onPress={onClose} hitSlop={10}>
             <AppIcon name="x" size={22} color={colors.textPrimary} />
           </Pressable>
