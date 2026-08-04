@@ -11,7 +11,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Text } from '../../../components/common/Text';
-import { ProfileWithCrown } from '../../../components/common/ProfileWithCrown';
+import { Avatar } from '../../../components/common/Avatar';
 import { useTheme } from '../../../theme';
 import { formatDate } from '../../../utils/date';
 import { type Report, statusToKorean } from '../../../types/report';
@@ -88,11 +88,9 @@ export const ReportCard: React.FC<ReportCardProps> = ({
           </Text>
 
           <View style={styles.metaRow}>
-            <ProfileWithCrown
+            <Avatar
               photoUrl={profile?.photoUrl}
-              level={profile?.level}
               nickname={profile?.nickname}
-              displayType="reply"
               radius={12}
             />
             <Text

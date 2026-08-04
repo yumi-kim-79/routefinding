@@ -1,21 +1,28 @@
 /**
  * 인증 후 스택: 하단 4탭(MainTabs) + push/modal 화면들.
- * push/modal 화면은 Phase 1-3에서 골격 검증용 플레이스홀더.
- * 실제 화면은 Phase 2 스프린트에서 교체(docs/04_WIREFRAMES.md 라우트표).
+ * push/modal 화면은 아직 골격 검증용 플레이스홀더(실화면은 스프린트별 교체).
+ *
+ * 실화면 교체 이력:
+ *   - ConceptDetail (개념도 상세) — 2026-08-03 리뉴얼 1단계에서 실구현으로 교체.
+ *
+ * v2 리뉴얼 (2026-08-04): 게시판·크루 계열 라우트 등록 해제.
+ *   화면 파일(BoardScreen/CrewMainScreen 등)은 보존 — 되돌리려면 아래 주석 복구.
  */
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { MainStackParamList } from './types';
 import { MainTabNavigator } from './MainTabNavigator';
 import { PlaceholderScreen } from '../components/common/PlaceholderScreen';
+import { ConceptDetailScreen } from '../screens/route/ConceptDetailScreen';
+import { ClimbingLogEditScreen } from '../screens/profile/ClimbingLogEditScreen';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
-/** 라우트명을 그대로 보여주는 플레이스홀더 (Phase 2에서 교체) */
+/** 라우트명을 그대로 보여주는 플레이스홀더 (후속 스프린트에서 교체) */
 const makePlaceholder =
   (title: string): React.FC =>
   () =>
-    <PlaceholderScreen title={title} note="Phase 2 마이그레이션 대상" />;
+    <PlaceholderScreen title={title} note="후속 스프린트 구현 대상" />;
 
 export const MainNavigator: React.FC = () => (
   <Stack.Navigator initialRouteName="MainTabs">
@@ -25,21 +32,25 @@ export const MainNavigator: React.FC = () => (
       options={{ headerShown: false }}
     />
 
+    {/* 개념도 (리뉴얼 1단계: 찾아서 보기) */}
+    <Stack.Screen
+      name="ConceptDetail"
+      component={ConceptDetailScreen}
+      options={{ title: '개념도' }}
+    />
+
+    {/* 등반일지 작성/수정 */}
+    <Stack.Screen
+      name="ClimbingLogEdit"
+      component={ClimbingLogEditScreen}
+      options={{ title: '등반일지' }}
+    />
+
     {/* 루트/리포트 */}
     <Stack.Screen name="RouteDetail" component={makePlaceholder('루트 상세')} />
     <Stack.Screen name="ReportDetail" component={makePlaceholder('리포트 상세')} />
     <Stack.Screen name="PitchDetail" component={makePlaceholder('피치 상세')} />
     <Stack.Screen name="ReportAdmin" component={makePlaceholder('리포트 승인(관리자)')} />
-
-    {/* 게시판 */}
-    <Stack.Screen name="PostDetail" component={makePlaceholder('게시글 상세')} />
-    <Stack.Screen name="CommentDetail" component={makePlaceholder('댓글 상세')} />
-    <Stack.Screen name="WritePost" component={makePlaceholder('글쓰기')} />
-    <Stack.Screen name="EditPost" component={makePlaceholder('글 수정')} />
-
-    {/* 크루 — CrewMain은 탭(idx3). 상세/채팅만 push */}
-    <Stack.Screen name="CrewDetail" component={makePlaceholder('크루 상세')} />
-    <Stack.Screen name="CrewChat" component={makePlaceholder('크루 채팅')} />
 
     {/* 사용자 / 트래킹 / 기타 */}
     <Stack.Screen name="UserProfile" component={makePlaceholder('사용자 프로필')} />
@@ -48,5 +59,14 @@ export const MainNavigator: React.FC = () => (
     <Stack.Screen name="MapInput" component={makePlaceholder('지도 입력/편집')} />
     <Stack.Screen name="ImageEditor" component={makePlaceholder('이미지 에디터')} />
     <Stack.Screen name="NotificationList" component={makePlaceholder('알림')} />
+
+    {/* ── v2에서 제거 (파일 보존, 등록만 해제) ──────────────────────
+    <Stack.Screen name="PostDetail" component={makePlaceholder('게시글 상세')} />
+    <Stack.Screen name="CommentDetail" component={makePlaceholder('댓글 상세')} />
+    <Stack.Screen name="WritePost" component={makePlaceholder('글쓰기')} />
+    <Stack.Screen name="EditPost" component={makePlaceholder('글 수정')} />
+    <Stack.Screen name="CrewDetail" component={makePlaceholder('크루 상세')} />
+    <Stack.Screen name="CrewChat" component={makePlaceholder('크루 채팅')} />
+    ──────────────────────────────────────────────────────────── */}
   </Stack.Navigator>
 );

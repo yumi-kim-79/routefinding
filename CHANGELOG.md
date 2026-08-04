@@ -9,6 +9,139 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-04 — 앱 단순화 + 마이페이지 개편 + 등반일지 신규
+
+#### Changed — 4탭 체제로 축소 (웹·앱 공통)
+- 유지: **개념도 / 지도 / 루트제보 / 마이페이지**. 제거: 홈 · 게시판 · 크루
+- 화면 **파일은 보존**하고 라우팅만 해제 (되돌리기 쉽도록). 기존 URL은 `/map`으로 리다이렉트
+- 로그인 후 첫 화면 = 지도
+- 앱: `ReportListScreen`을 '루트제보' 탭으로 승격(기존엔 탭 없음)
+- 제거된 라우트 타입은 남겨둠 — 보존한 화면 파일이 참조하므로 지우면 타입체크가 깨진다
+
+#### Changed — 마이페이지 등급/포인트 전면 제거
+- 등급(Level) · 다음 등급까지 남은 점수 · 포인트(Point) 표시 제거
+- `ProfileWithCrown`(왕관 + 등급 테두리) → 신규 `Avatar`(단순 원형)로 교체
+  (마이프로필 · 프로필 헤더 · 제보 카드). ProfileWithCrown 파일은 보존
+- 웹 '내 게시글/댓글 프로필 일괄 갱신' 버튼 제거 (게시판이 빠짐)
+- `users.level` / `users.point`는 **Firestore에 그대로 둔다** — 타입에 `@deprecated`만 표시
+
+#### Added — 프로필 사진 변경 (앱)
+- `react-native-image-picker` 도입 + `services/profilePhoto.ts`
+- 경로는 웹과 동일 `profile_photos/{uid}.jpg`, 512x512로 리사이즈 후 업로드
+  (2026-08-03 Storage 한도 초과 경험 반영)
+
+#### Added — 등반일지 (신규 기능, 웹·앱)
+- 새 컬렉션 `users/{uid}/climbing_logs` — **날짜별 1건**
+  (같은 루트 재방문이 많아 루트당 1건인 `my_routes`로는 불가)
+- 필드는 사용자 스프레드시트와 1:1: 날짜(+종료일) / 장소 / 루트명 / 소요장비 /
+  등반 소요시간 / 참석자 / 등반내용 및 특이사항
+- 마이페이지 'MY ROUTE' 탭 → **'등반일지' 탭**으로 대체 (검색 + 작성/수정/삭제)
+- 개념도 목록의 ✎ 버튼 / 상세의 '등반일지 쓰기' 버튼 → 장소·루트명 자동 입력
+- 즐겨찾기(★, `my_routes`)는 개념도에 그대로 유지
+- 앱: 날짜는 `YYYY-MM-DD` 텍스트 입력 (date picker 의존성 추가 회피, [TBD])
+
+#### Added — iOS 사전 준비 (빌드는 여전히 보류 트랙)
+- `ios/RouteFinding/Info.plist`
+  - `NSLocationWhenInUseUsageDescription` **값이 빈 문자열**이던 것을 실제 문구로 채움
+    (빈 값은 App Store 심사 거부 사유)
+  - `NSPhotoLibraryUsageDescription` 추가 — 없으면 image-picker 사용 시 iOS에서 크래시
+- `docs/06_iOS_BUILD_NOTES.md`
+  - **§0 재시도 트리거 충족 기록**: RNFB 24.0.0 → 최신 **26.1.0**(2026-08-03 릴리스).
+    보류 사유였던 "생태계가 Xcode 26.x를 지원해야 함" 조건이 해소됐을 가능성이 높다.
+    단 메이저 2단계 업그레이드라 breaking change 확인 필수 — **임의 업그레이드 금지**
+  - **§0-1 v2 리뉴얼 반영분 체크리스트** 신설: Android 전용으로 쌓인 변경 중
+    iOS에서만 문제될 수 있는 항목(pod install 재실행, 사진 업로드 URI, 키보드 회피,
+    날짜 입력 등) 정리
+- 확인만 하고 손대지 않은 것: `GoogleService-Info.plist`(Android와 동일 프로젝트 ✅),
+  AppDelegate `[FIRApp configure]` ✅, App Check DeviceCheck 분기 ✅
+
+#### Added — 루트제보 좌표 입력 개선 (웹)
+- 위도/경도 칸에 **[📍 현재위치] · [🗺 지도에서 선택]** 버튼 배치
+  (지도 선택 기능은 원래 있었으나 화면 위쪽에 떨어져 있고 안내문구가
+   "어프로치 기록시 자동입력"이라 못 쓰는 것처럼 보였다)
+- **어프로치 실시간 기록 섹션 제거**, GPX 파일 업로드는 유지(사용자 결정)
+- 좌표를 지워버리던 `watch(trackingPath, ..., {immediate:true})` 제거
+
+#### Added — 개념도 사진 등록 + 라인 그리기 (웹)
+- 새 컬렉션 `concept_photos` — 사진 + 라인/텍스트를 **좌표(0~1 정규화)로 저장**.
+  원본 사진은 손대지 않아 나중에 선만 고치거나 지울 수 있다
+- `components/ConceptPhotoOverlay.vue` — 읽기전용 SVG 오버레이.
+  ResizeObserver로 컨테이너를 재서 썸네일/전체화면 어디서든 정확히 겹쳐 그린다
+- `components/ConceptPhotoEditor.vue` — 촬영(`capture="environment"`)/첨부 →
+  펜·텍스트·기본색 6종·되돌리기·전체지우기 → 저장
+- 개념도 **목록 카드에 📷 버튼**, **상세에 '📷 사진 등록' 버튼**
+- 승인 흐름: 등록 시 `pending` → 승인 전에는 **본인과 관리자만 조회**(보안 규칙이 보장) →
+  관리자가 **승인·추가 / 승인·기존 교체 / 반려** 선택. 본인은 승인 전까지 삭제 가능
+- Storage 경로는 기존 규칙(`route_images/{산}/{구역}/{루트}/{파일}`)에 맞춰
+  storage.rules 변경 불필요
+
+#### 🚨 배포 필요 — 사용자 조치
+- `firestore.rules`에 `users/{userId}/climbing_logs` 규칙을 추가했다. **배포 전에는 저장이 거부된다.**
+  ```
+  firebase deploy --only firestore:rules
+  ```
+- `firestore.rules`에 `concept_photos` 규칙도 추가했다(2026-08-04 2차). 같은 명령으로 함께 배포된다.
+
+#### 검증
+- `tsc --noEmit` 0 error / `eslint` 0 error(경고 23, 기존 컨벤션 범위)
+- 웹 SFC 컴파일 6개 파일 통과
+- ⏳ 미검증: 에뮬레이터 런타임, 웹 등반일지 저장(규칙 배포 후)
+
+
+### 📅 2026-08-03 — 개념도 리뉴얼 1단계: "찾아서 보기"
+
+> **방향 결정(사용자)**: 개념도를 **단순하게** 재설계.
+> 1단계 = 기존 개념도 찾아서 보기 / 2단계(P1) = 개념도 추가 + 사진 위 라인 그리기 + 사용자 간 공유.
+> 적용 범위: **RN 앱 v2 + 웹 동시**. 데이터는 **기존 컬렉션 그대로**(스키마 변경 0).
+
+#### Added — RN 앱 (`app/src`)
+- `types/concept.ts` — 개념도 모델 + 표시 헬퍼(`conceptImages`/`conceptTitle`/`conceptLengthLabel`/`conceptSearchIndex`)
+- `services/conceptService.ts` — `route_reports`+`bouldering_reports`의 `status=='approved'` 병합 조회.
+  단일 where만 사용(복합 색인 불필요) / 5분 TTL 캐시 / `Promise.allSettled`로 **부분 실패 허용**
+- `screens/route/hooks/useConcepts.ts` — 로딩·새로고침·검색(공백 AND 토큰)·타입 칩 상태
+- `screens/route/ConceptListScreen.tsx` — 플레이스홀더 → **실화면**. 검색 한 줄 + 전체 리스트 + 당겨서 새로고침
+- `screens/route/components/ConceptCard.tsx` — 썸네일 + "등반지 · 구역 · 루트명" + 타입/난이도/길이
+- `screens/route/ConceptDetailScreen.tsx` — 사진 캐러셀 + 기본정보 + 피치 목록 (`source` 미지정 시 두 컬렉션 순차 시도 = 딥링크 대비)
+- `screens/route/components/ConceptImageViewer.tsx` — 전체화면 뷰어(가로 스와이프, RN 빌트인 Modal — 외부 lib 0)
+
+#### Changed
+- `navigation/types.ts` — `ConceptDetail: { conceptId, source? }` 라우트 추가
+- `navigation/MainNavigator.tsx` — `ConceptDetail` 플레이스홀더 → 실화면 등록
+- 웹 `src/views/ConceptListView.vue` — **4단계(칩→등반지→구역→검색) → 1단계(검색 한 줄)** 로 단순화.
+  두 컬렉션 병합 로드 + 클라이언트 필터. 즐겨찾기/관리자 수정·삭제/이미지 뷰어/지도 클러스터 진입(`?ids=`)은 유지
+
+#### Docs
+- `docs/02_DATA_MODEL.md` — §6에 **실측 정정** 추가: 화면상의 "개념도"는 `concepts/{mountain}/routes`가 아니라
+  `route_reports`/`bouldering_reports`를 읽는다 (+ `pitches` 배열 필드 vs 서브컬렉션 구분)
+- `docs/04_WIREFRAMES.md` — 개념도 매핑 상태 ⏳ → ✅, 상세 화면 행 추가
+
+#### Fixed / Changed — 실데이터 검증 후 정책 변경 (같은 날 후속)
+
+> **실측**: 승인 루트가 **5,407건**. "50명 사용자 = 데이터도 작다"는 전제가 틀렸다.
+> 웹에서 전량 렌더 시 이미지 요청이 동시에 5천 건 발생 → 브라우저가 감당 못해
+> 썸네일이 전부 `@error` → `display:none` 으로 사라지는 증상 확인(사용자 스크린샷).
+
+- **웹 `ConceptListView.vue`**
+  - 전량 렌더 → **30개씩 무한 스크롤**(IntersectionObserver, rootMargin 600px)
+  - `<img loading="lazy" decoding="async">` 추가
+  - 이미지 로드 실패 시 `style.display='none'`(빈 회색 박스) → **'이미지 없음' 자리표시**로 대체
+- **검색 전 목록 비노출** (사용자 결정): 검색어가 없으면 목록을 그리지 않고
+  **Firestore 조회 자체를 첫 검색까지 지연** → 탭 진입만으로 발생하던 읽기 5,407회 → **0회**
+  - 검색 전 화면: 안내 문구 + 예시 칩(북한산/인수봉/파주/무의도)
+  - 지도 클러스터 진입(`?ids=`)은 예외로 검색 없이 즉시 표시(읽기 최대 10건)
+- **RN `useConcepts.ts` / `ConceptListScreen.tsx`** — 동일 정책 적용.
+  `startedRef` 가드로 첫 검색 시 1회만 로드, FlatList `initialNumToRender=10`/`windowSize=7`
+
+#### 🚨 [QUESTION] — 사용자 확인 필요
+1. **`firestore.rules`에 `bouldering_reports` 규칙 없음** → §9 전면 차단에 걸려 볼더링 조회가 실패할 수 있음.
+   클라이언트는 방어했으나 규칙 추가는 별도 PR + 승인 필요.
+2. 리뉴얼 2단계(사진 위 라인 그리기)용 라인 좌표 저장 위치·제스처 라이브러리 = 아직 [TBD].
+
+#### 검증
+- `tsc --noEmit` 통과(0 error) / `eslint` 0 error(경고 5, 기존 컨벤션 범위)
+- 웹 `ConceptListView.vue` SFC 컴파일 검증 통과
+- ⏳ **미검증**: 에뮬레이터 런타임 시각 검증 (다음 세션 첫 작업)
+
 ### 📅 2026-05-20 세션 종합
 
 > **하루 성과**: Sprint 2-1 핵심 본문 4개 탭 완료 + ⑤ MyProfileTab [D] intro 편집. Sprint 2-1 진행도 **~80%**(잔여: [F] 사진 업로드, [E] 동기화 분석, ⑥ HomeScreen 부가, ⑦ UserProfile).

@@ -6,6 +6,64 @@
 
 ---
 
+## 0. 🔔 재시도 트리거 — **충족됨** (2026-08-04 확인)
+
+§4 옵션 0의 트리거는 "RNFB 또는 firebase-ios-sdk 새 버전 출시"다. **이미 충족됐다.**
+
+| 패키지 | 보류 당시(2026-05-19) | 현재 최신(2026-08-04) |
+|---|---|---|
+| `@react-native-firebase/*` | 24.0.0 | **26.1.0** (24.1.0→25.0.0→26.0.0→26.1.0, 4차례 릴리스) |
+| react-native | 0.76.9 (설치본) | 0.86.2 |
+| react-native-image-picker | — | 8.2.1 (프로젝트는 ^7.2.3 — RN 0.76 호환 유지) |
+
+> 26.1.0은 2026-08-03 릴리스. 메이저가 두 번(25, 26) 올랐으므로
+> **firebase-ios-sdk도 크게 올라갔을 가능성이 높다** = Xcode 26.x 대응이 들어갔을 확률이 높다.
+> 다만 RNFB 24 → 26은 **메이저 2단계**라 breaking change 확인이 필수다. 임의 업그레이드 금지 —
+> 사용자 승인 후 별도 브랜치에서 진행할 것.
+
+**재개 시 첫 명령**
+```bash
+cd ~/StudioProjects/routefinding/app
+corepack yarn up '@react-native-firebase/*'          # 24 → 26
+# Podfile의 gRPC post_install 패치를 먼저 제거(주석 처리)한 뒤
+cd ios && pod install && cd ..
+yarn ios
+```
+
+---
+
+## 0-1. 🧩 v2 리뉴얼 반영분 — iOS 재개 시 확인할 것 (2026-08-04 기준)
+
+Android로만 개발이 진행되는 동안 쌓인, **iOS에서만 문제가 될 수 있는 항목들**이다.
+
+### 이미 처리해 둔 것 ✅
+| 항목 | 처리 |
+|---|---|
+| `NSLocationWhenInUseUsageDescription` **값이 빈 문자열**이었음 | 실제 문구로 채움. 빈 값은 **App Store 심사 거부 사유** |
+| `react-native-image-picker` 사진 권한 문구 없음 | `NSPhotoLibraryUsageDescription` 추가 (없으면 사진 선택 시 크래시) |
+| App Check provider 분기 | `services/firebase.ts`에서 이미 `deviceCheck`(iOS) / `playIntegrity`(Android) 분기됨 |
+| `GoogleService-Info.plist` | 존재, 프로젝트 `routefinding09-4b597`, 번들 ID `com.yusungyun.RouteFinding` — Android와 동일 프로젝트 ✅ |
+| AppDelegate Firebase 초기화 | `[FIRApp configure]` 있음 ✅ |
+
+### iOS 재개 시 해야 할 것 ⏳
+- [ ] **`pod install` 재실행** — `react-native-image-picker`가 2026-08-04에 추가됐다. Pod이 아직 안 깔려 있다
+- [ ] 프로필 사진 선택 → Storage 업로드 실기기 검증
+      (`services/profilePhoto.ts`의 `putFile`은 iOS에서 `file://` URI를 받는다. image-picker가 주는 URI 형식 확인 필요)
+- [ ] 등반일지 날짜 입력 — 현재 `YYYY-MM-DD` **텍스트 입력**이다.
+      iOS 키보드는 `numbers-and-punctuation`로 지정해 뒀으나, 실제 입력감 확인 후
+      date picker 도입 여부 결정 ([TBD] — 새 네이티브 의존성이 하나 더 늘어남)
+- [ ] 개념도 전체화면 뷰어(`ConceptImageViewer`) — `supportedOrientations` 지정돼 있으나 iOS 회전 동작 확인
+- [ ] `KeyboardAvoidingView` behavior 분기(`padding`/undefined) — iOS에서 폼 가림 확인
+      (마이프로필, 등반일지 작성 두 화면)
+- [ ] 지도 탭 구현 시 위치 권한 실제 요청 흐름 검증 (문구는 채워둠)
+- [ ] 카메라로 사진 촬영을 쓰게 되면 `NSCameraUsageDescription` 추가 필요 (현재는 라이브러리 선택만 사용)
+
+### iOS 무관 (Android와 동일 동작 확인됨)
+개념도 검색/목록/상세, 등반일지 CRUD, 마이페이지 3탭, 4탭 네비게이션 —
+전부 JS 레이어라 플랫폼 분기가 없다.
+
+---
+
 ## 1. 검증 환경 (재시도 시 비교 기준)
 
 | 항목 | 값 |

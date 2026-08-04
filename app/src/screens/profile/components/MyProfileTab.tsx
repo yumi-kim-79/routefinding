@@ -1,64 +1,97 @@
 /**
- * 마이프로필 탭 — v1 `widgets/my_profile_tab.dart` 1:1.
+ * 마이프로필 탭 — v2 리뉴얼 (2026-08-04).
  *
- * v1 실측 편집 가능 필드:
- *   - 한 줄 소개(intro): TextInput + "소개글 저장" → users/{uid}.update({intro})
- *   - 프로필 사진: image-picker + Storage 업로드 → [F]에서 추가 (현재는 read-only avatar)
+ * 변경(사용자 결정):
+ *   - **등급(level)·포인트(point)·왕관 표시 전부 제거.** 관련 계산(levelCalculator)도 미사용.
+ *   - **프로필 사진 변경 추가** (react-native-image-picker → Storage → users/{uid}.photoUrl)
+ *   - 한 줄 소개(intro) 편집은 유지
+ *   - 닉네임 / 이메일은 읽기 전용 (v1과 동일, 변경 기능 없음)
  *
- * 읽기 전용:
- *   - 닉네임 / 이메일 / 등급(+다음 등급까지 남은 점수, getRemainToNextLevel) / 포인트
- *
- * 닉네임·등급 변경은 v1에 없음 → v2.1+(MVP 제외, CLAUDE.md 1:1 보존).
+ * 사진 경로는 웹과 동일: `profile_photos/{uid}.jpg` (services/profilePhoto.ts)
  */
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { Text } from '../../../components/common/Text';
 import { Input } from '../../../components/common/Input';
 import { Button } from '../../../components/common/Button';
-import { ProfileWithCrown } from '../../../components/common/ProfileWithCrown';
+import { Avatar } from '../../../components/common/Avatar';
 import { useTheme } from '../../../theme';
 import { useAuthStore } from '../../../stores/authStore';
 import { useUserStore } from '../../../stores/userStore';
 import { useMyPage } from '../hooks/useMyPage';
-import {
-  getNextLevel,
-  getRemainToNextLevel,
-} from '../../../utils/levelCalculator';
+import { uploadProfilePhoto } from '../../../services/profilePhoto';
 
 export const MyProfileTab: React.FC = () => {
-  const { colors, spacing, radius } = useTheme();
+  const { colors, spacing } = useTheme();
   const email = useAuthStore((s) => s.user?.email);
   const { uid, profile, isLoading } = useMyPage();
   const updateProfile = useUserStore((s) => s.updateProfile);
 
   const [intro, setIntro] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  // v1: 프로필 스트림 도착 시 intro 컨트롤러 동기화 (사용자 수정 중에도 외부 변경 반영)
-  // 우리는 1-shot fetch라 profile 변경 시점에 한 번 반영.
   useEffect(() => {
-    if (profile?.intro !== undefined) {
-      setIntro(profile.intro);
-    } else if (profile && profile.intro === undefined) {
-      setIntro('');
-    }
+    setIntro(profile?.intro ?? '');
   }, [profile]);
+
+  /** 갤러리에서 사진 선택 → Storage 업로드 → users/{uid}.photoUrl 갱신 */
+  const onChangePhoto = async () => {
+    if (!uid) {
+      return;
+    }
+    const res = await launchImageLibrary({
+      mediaType: 'photo',
+      selectionLimit: 1,
+      // 원본 그대로 올리면 대역폭 낭비가 크다 (2026-08-03 Storage 한도 초과 경험)
+      maxWidth: 512,
+      maxHeight: 512,
+      quality: 0.8,
+    });
+
+    if (res.didCancel) {
+      return;
+    }
+    if (res.errorCode) {
+      Alert.alert('오류', res.errorMessage ?? '사진을 불러오지 못했습니다.');
+      return;
+    }
+    const localUri = res.assets?.[0]?.uri;
+    if (!localUri) {
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const url = await uploadProfilePhoto(uid, localUri);
+      await updateProfile(uid, { photoUrl: url });
+    } catch (e) {
+      Alert.alert(
+        '오류',
+        `사진 업로드 실패: ${e instanceof Error ? e.message : e}`,
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const onSaveIntro = async () => {
     if (!uid) {
       return;
     }
-    const trimmed = intro.trim();
     setSaving(true);
     try {
-      await updateProfile(uid, { intro: trimmed });
+      await updateProfile(uid, { intro: intro.trim() });
       Alert.alert('알림', '소개글이 저장되었습니다.');
     } catch (e) {
       Alert.alert(
@@ -80,62 +113,51 @@ export const MyProfileTab: React.FC = () => {
     );
   }
 
-  const level = profile?.level ?? '5.6';
-  const point = profile?.point ?? 0;
-  const nextLevel = getNextLevel(level);
-  const remain = getRemainToNextLevel(level, point);
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1 }}
+      style={styles.flex}
     >
       <ScrollView
         contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xl }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* 아바타 (편집 버튼은 [F] image-picker 도입 시 추가) */}
+        {/* 아바타 + 사진 변경 */}
         <View style={styles.avatarWrap}>
-          <ProfileWithCrown
-            photoUrl={profile?.photoUrl}
-            level={profile?.level}
-            nickname={profile?.nickname}
-            displayType="profile"
-            radius={44}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="프로필 사진 변경"
+            onPress={onChangePhoto}
+            disabled={uploading}
+          >
+            <Avatar
+              photoUrl={profile?.photoUrl}
+              nickname={profile?.nickname}
+              radius={44}
+            />
+            {uploading ? (
+              <View style={[styles.avatarOverlay, { borderRadius: 44 }]}>
+                <ActivityIndicator color={colors.onPrimary} />
+              </View>
+            ) : null}
+          </Pressable>
+
+          <Button
+            title={uploading ? '업로드 중…' : '사진 변경'}
+            variant="ghost"
+            size="sm"
+            onPress={onChangePhoto}
+            loading={uploading}
+            disabled={!uid}
+            style={styles.photoBtn}
           />
         </View>
 
-        {/* 읽기 전용 필드 */}
+        {/* 읽기 전용 */}
         <ReadOnlyField label="닉네임" value={profile?.nickname ?? ''} />
         <ReadOnlyField label="이메일" value={email ?? ''} />
 
-        {/* 등급 + 다음 등급까지 안내 (v1 _buildLevelField) */}
-        <View style={styles.fieldWrap}>
-          <Text variant="label" color="textSecondary" style={styles.label}>
-            등급(Level)
-          </Text>
-          <View
-            style={[
-              styles.fieldBox,
-              {
-                borderColor: colors.border,
-                backgroundColor: colors.surfaceVariant,
-                borderRadius: radius.md,
-              },
-            ]}
-          >
-            <Text variant="body">{level}</Text>
-            <Text variant="caption" color="textSecondary" style={styles.hint}>
-              {nextLevel
-                ? `다음 등급(${nextLevel})까지 ${remain ?? 0}점`
-                : '(최고 등급!)'}
-            </Text>
-          </View>
-        </View>
-
-        <ReadOnlyField label="포인트(Point)" value={String(point)} />
-
-        {/* 한 줄 소개 — 편집 가능 (v1 TextField + 저장 버튼) */}
+        {/* 한 줄 소개 — 편집 가능 */}
         <View style={styles.fieldWrap}>
           <Text variant="label" color="textSecondary" style={styles.label}>
             한 줄 소개
@@ -153,6 +175,11 @@ export const MyProfileTab: React.FC = () => {
             disabled={!uid}
           />
         </View>
+
+        <View style={{ height: spacing.md }} />
+        <Text variant="caption" color="textSecondary" style={styles.centerText}>
+          닉네임·이메일은 변경할 수 없습니다.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -185,8 +212,17 @@ const ReadOnlyField: React.FC<{ label: string; value: string }> = ({
 };
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  centerText: { textAlign: 'center' },
   avatarWrap: { alignItems: 'center', marginVertical: 12 },
+  avatarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  photoBtn: { marginTop: 8 },
   fieldWrap: { marginBottom: 16 },
   label: { marginBottom: 6 },
   fieldBox: {
@@ -195,5 +231,4 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 44,
   },
-  hint: { marginTop: 4 },
 });

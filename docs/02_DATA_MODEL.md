@@ -138,6 +138,50 @@ allow create, delete: if request.auth.uid == userId;
 
 ---
 
+## 1-2. 📔 users/{userId}/climbing_logs/{logId}   ← **v2 신규**
+
+등반일지 (서브컬렉션). v2 리뉴얼에서 추가 — 마이페이지 'MY ROUTE' 탭을 대체한다.
+
+> **왜 my_routes를 안 쓰고 새로 만들었나**: `my_routes`는 루트당 문서 1개(즐겨찾기)다.
+> 실제 등반기록은 같은 루트를 여러 번 가는 경우가 많아(예: 북한산 노적봉 2017.09.24 /
+> 2018.04.28 / 2018.05.13) **날짜별 1건**이어야 한다. 즐겨찾기(★)는 그대로 유지.
+
+필드는 사용자의 기존 스프레드시트(유성이_암벽등반기록)와 1:1로 맞췄다.
+
+```typescript
+interface ClimbingLog {
+  climbedAt: Timestamp;         // 등반일 (정렬 기준, 필수)
+  endedAt?: Timestamp | null;   // 종료일 — 1박 이상일 때만 (예: 2018.05.05~06)
+
+  place: string;                // 장소 "북한산 노적봉" (필수)
+  routeName?: string;           // 루트명 (여러 개면 자유 기입)
+  gear?: string;                // 소요장비 "퀵드로 12개, 캠1셋트"
+  duration?: string;            // 등반 소요시간 "9시~16시" (자유 문자열 — 기존 표기 보존)
+  partners?: string;            // 참석자
+  notes?: string;               // 등반내용 및 특이사항
+
+  conceptId?: string;           // 개념도에서 작성한 경우 원본 루트 연결
+  conceptSource?: 'route_reports' | 'bouldering_reports';
+
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
+
+### 보안 규칙 (v2에서 신규 추가 — 배포 필요)
+
+```
+match /users/{userId}/climbing_logs/{logId} {
+  allow read, create, update, delete:
+    if request.auth != null && request.auth.uid == userId;
+}
+```
+
+> `my_routes`와 달리 **update를 허용**한다 — 일지는 나중에 내용을 고칠 수 있어야 한다.
+> ⚠️ 이 규칙이 배포되기 전에는 저장이 permission-denied로 거부된다.
+
+---
+
 ## 2. 📋 posts/{postId}
 
 공용 게시판 글
@@ -395,6 +439,83 @@ allow update, delete: if false; // 수정/삭제 불가 (관리자만 콘솔에�
 ```
 
 > ⚠️ v2 개선점: create도 관리자만 허용하도록 변경 검토
+
+---
+
+### 📌 실측 정정 (2026-08-03) — 화면상의 "개념도"가 읽는 곳
+
+v1 `concept_list_screen.dart`와 웹 `ConceptListView.vue`가 실제로 읽는 컬렉션은
+`concepts/{mountain}/routes`가 **아니라** 아래 두 곳이다. v2 개념도 화면도 동일하게 읽는다.
+
+| 화면상 구분 | 실제 컬렉션 | 조건 |
+|---|---|---|
+| 리드   | `route_reports`      | `status == 'approved'` (+ `typeRoot == '리드'`) |
+| 볼더링 | `bouldering_reports` | `status == 'approved'` |
+
+- 사진: `imageUrls[]` 우선, 없으면 `imageUrl`
+- 피치: 문서의 **배열 필드** `pitches[]` (`{length, style, difficulty, imageUrls[]}`)
+  — `route_reports/{id}/pitches` 서브컬렉션(§5)과 **별개**이며 목록/상세는 배열 필드를 쓴다
+- 그 외 v1 실측 필드: `zone`, `overview`, `avgDifficulty`, `pioneer`, `equipment`, `directions`, `no`, `typeRoot`
+- `concepts/{mountain}/routes`는 현재 사실상 미사용 → 리뉴얼 범위 밖 (제거 여부는 [TBD])
+
+> 🚨 **[QUESTION] 보안 규칙 공백**: `firestore.rules`에 `bouldering_reports` 매치 블록이 없어
+> §9 전면 차단 규칙에 걸린다(= 볼더링 조회 permission-denied 가능).
+> v2 클라이언트는 한쪽 실패를 삼키고 나머지를 보여주도록 방어했으나(`conceptService.ts`),
+> 규칙 추가는 **별도 PR + 사용자 승인** 필요 (CLAUDE.md).
+
+---
+
+## 6-1. 🖼 concept_photos/{photoId}   ← **v2 신규**
+
+사용자가 개념도에 올린 사진 + 그 위에 그린 라인/텍스트.
+
+> **승인 흐름**(사용자 결정 2026-08-04): 올리면 `pending`.
+> 승인 전에는 **올린 본인과 관리자만** 조회된다(보안 규칙이 보장 — 클라이언트 필터 아님).
+> 관리자가 승인할 때 `add`(기존에 추가) / `replace`(기존 교체) 중 고른다.
+
+```typescript
+interface ConceptPhoto {
+  conceptId: string;                 // 대상 루트 문서 ID
+  conceptSource: 'route_reports' | 'bouldering_reports';
+  conceptTitle: string;              // "북한산 · 인수봉 · 서면슬랩" (표시용 스냅샷)
+
+  authorUid: string;
+  authorEmail?: string;
+
+  imageUrl: string;                  // Storage 다운로드 URL
+  storagePath: string;               // route_images/{산}/{구역}/{루트}/user_{uid}_{ts}.jpg
+
+  // 사진 위에 그린 것 — **좌표로 저장**(원본 이미지는 손대지 않는다)
+  //   좌표는 전부 0~1 정규화 → 썸네일/전체화면 어디서든 동일하게 겹쳐 그려진다
+  lines: { points: { x: number; y: number }[]; color: string }[];
+  texts: { x: number; y: number; text: string; color: string }[];
+
+  status: 'pending' | 'approved' | 'rejected';
+  applyMode?: 'add' | 'replace';     // 승인 시 관리자가 선택
+  rejectionReason?: string;
+  reviewedAt?: Timestamp;
+  reviewedBy?: string;
+
+  createdAt: Timestamp;
+}
+```
+
+승인 시 원본 개념도 문서(`route_reports`/`bouldering_reports`)의 `imageUrls`를
+`arrayUnion`(추가) 또는 통째 교체한다.
+
+### 보안 규칙 (v2 신규 추가 — 배포 필요)
+
+```
+match /concept_photos/{photoId} {
+  allow read:   if 인증됨 && (status=='approved' || 본인 || 관리자);
+  allow create: if 인증됨 && 본인 && status=='pending';   // 스스로 승인 못 함
+  allow update, delete: if 관리자 || (본인 && status != 'approved');
+}
+```
+
+> ⚠️ 승인 시 `bouldering_reports` 문서를 수정하는데, `firestore.rules`에는
+> 아직 `bouldering_reports` 매치 블록이 없다. 볼더링 개념도 사진 승인이
+> 실패하면 이 규칙부터 확인할 것.
 
 ---
 

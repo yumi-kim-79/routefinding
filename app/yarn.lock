@@ -3664,6 +3664,7 @@ __metadata:
     prettier: 2.8.8
     react: 18.3.1
     react-native: 0.76.9
+    react-native-image-picker: ^7.2.3
     react-native-safe-area-context: 4.14.1
     react-native-screens: 4.4.0
     react-test-renderer: 18.3.1
@@ -8548,6 +8549,16 @@ __metadata:
   version: 19.2.6
   resolution: "react-is@npm:19.2.6"
   checksum: aad99621b2e5c47ea715ab719a3caae60b6d2be828374dc5ad663372f4603ab26bde5f0c9f3efd6107ed9152dfff5f8f3df044121967a3280e00796e4c560635
+  languageName: node
+  linkType: hard
+
+"react-native-image-picker@npm:^7.2.3":
+  version: 7.2.3
+  resolution: "react-native-image-picker@npm:7.2.3"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 96d67516e8e1c1768c593ca1b0a507d5212d8ac5df2610ad9d6f38c188b8d0720966559867849f74b6c19d2500664ce17c907e5fa37ab72487abd363cf493e7d
   languageName: node
   linkType: hard
 

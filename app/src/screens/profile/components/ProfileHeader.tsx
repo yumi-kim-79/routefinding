@@ -1,11 +1,12 @@
 /**
  * 마이페이지 프로필 헤더 (v1 mypage_screen.dart 상단 영역 1:1).
- * users/{uid} → ProfileWithCrown(profile) + 닉네임 + 로그아웃.
+ * users/{uid} → Avatar(profile) + 닉네임 + 로그아웃.
+ * v2 리뉴얼(2026-08-04): 등급 왕관/테두리 제거 → 단순 원형 아바타.
  * 알림 아이콘(v1 notifications StreamBuilder)은 Phase 3.
  */
 import React from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
-import { ProfileWithCrown } from '../../../components/common/ProfileWithCrown';
+import { Avatar } from '../../../components/common/Avatar';
 import { Text } from '../../../components/common/Text';
 import { Button } from '../../../components/common/Button';
 import { useTheme } from '../../../theme';
@@ -47,11 +48,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       ]}
     >
       <View style={styles.row}>
-        <ProfileWithCrown
+        <Avatar
           photoUrl={profile?.photoUrl}
-          level={profile?.level}
           nickname={profile?.nickname}
-          displayType="profile"
           radius={32}
         />
         <View style={styles.info}>

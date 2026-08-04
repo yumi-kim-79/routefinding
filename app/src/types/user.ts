@@ -20,9 +20,13 @@ export interface UserProfile {
   // FCM
   fcmToken?: string;
 
-  // 등급 시스템 — 등반등급 문자열 ("5.15".."5.6"). ProfileWithCrown 색상 매핑에 사용.
+  /**
+   * @deprecated v2 리뉴얼(2026-08-04)에서 **등급/포인트 기능 전면 제거**.
+   * Firestore 문서에는 남아 있으나(기존 데이터 보호, 스키마 변경 금지)
+   * 화면에서는 더 이상 읽지 않는다. 새 코드에서 참조하지 말 것.
+   */
   level?: string;
-  // 누적 포인트 (v1 level.dart calcLevel 입력). 마이프로필 read-only 표시.
+  /** @deprecated 위와 동일 — 표시하지 않음. */
   point?: number;
 
   // 통계

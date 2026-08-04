@@ -41,7 +41,8 @@
 | `lib/map_screen.dart` | `app/src/screens/map/MapScreen.tsx` | 711 | ⏳ |
 | `lib/map_input_screen.dart` | `app/src/screens/map/MapInputScreen.tsx` + 컴포넌트 분해 | **1618** | ⏳ 🚨 |
 | `lib/route_screen.dart` | `app/src/screens/route/RouteListScreen.tsx` | - | ⏳ |
-| `lib/concept_list_screen.dart` | `app/src/screens/route/ConceptListScreen.tsx` | 595 | ⏳ |
+| `lib/concept_list_screen.dart` | `app/src/screens/route/ConceptListScreen.tsx` + `components/ConceptCard.tsx` + `hooks/useConcepts.ts` | 595 | ✅ v2 리뉴얼(단순화) |
+| (v1 generic_route_detail / 웹 ConceptDetailView) | `app/src/screens/route/ConceptDetailScreen.tsx` + `components/ConceptImageViewer.tsx` | - | ✅ v2 리뉴얼(보기 전용) |
 | `lib/generic_route_detail_screen.dart` | `app/src/screens/route/RouteDetailScreen.tsx` + 컴포넌트 분해 | **1402** | ⏳ 🚨 |
 | `lib/pitch_detail_screen.dart` | `app/src/screens/route/PitchDetailScreen.tsx` | - | ⏳ |
 
