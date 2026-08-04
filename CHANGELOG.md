@@ -9,6 +9,26 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-04 (7차) — 🐛 `react-native-svg` 버전 고정 (안드로이드 네이티브 빌드 실패 수정)
+
+#### Fixed — `assembleRelease`가 C++ 컴파일에서 실패하던 문제
+```
+RNSVGLayoutableShadowNode.cpp:31:52: error: no member named 'StyleSizeLength'
+  in namespace 'facebook::yoga'; did you mean 'StyleLength'?
+```
+- **원인**: Yoga가 RN 0.77에서 `StyleLength` → `StyleSizeLength`로 바뀌었고,
+  `react-native-svg`는 **15.11.2(2025-02-24)부터** 새 API를 쓴다. 우리는 RN 0.76.9다
+- **조치**: `react-native-svg` 15.15.5 → **15.11.1 고정** (캐럿 금지)
+- 실측 경계: 15.11.1까지 `StyleLength` ✅ / 15.11.2부터 `StyleSizeLength` ❌
+
+#### 배운 것 — `peerDependencies: "*"`는 호환을 보장하지 않는다
+`react-native-svg`도 `react-native-maps`도 peer가 `*`라 **설치와 `tsc`는 통과하고
+네이티브 빌드에서만 터진다.** 두 라이브러리 모두 RN 0.76을 쓰는 동안 버전을 올리면 안 된다.
+판별법: 패키지의 `devDependencies.react-native`가 우리보다 높으면 의심할 것
+(svg 15.15.5는 `^0.77.0`, 15.11.1은 `^0.77.0-rc.6`이라 이것만으로는 부족 —
+`common/cpp`의 실제 API 사용을 확인해야 한다).
+
+
 ### 📅 2026-08-04 (6차) — 루트제보 작성 화면 (웹 ReportView.vue 이식)
 
 > 4탭 중 마지막 플레이스홀더였던 루트제보를 실화면으로 교체.

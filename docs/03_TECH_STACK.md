@@ -90,7 +90,7 @@
 | 상태관리 | ✅ **Zustand 5.0.x** (2026-05-19 확정) | 단독개발+50명 규모 적합, 보일러플레이트 적음, RN/TS 친화. RTK는 과함 |
 | 영속(persist) | ❌ authStore 미적용 (Phase 1-4 결정 A) | Firebase Auth 네이티브 세션이 단일 출처. `@react-native-async-storage/async-storage`는 미사용이라 제거 — userStore 캐시 등 필요 시 **RN 0.76 호환 2.x**로 재도입 |
 | 디자인 시스템 | ✅ 자체 구축 (`src/theme/`) — **하이브리드** 확정 (2026-05-19) | v1 색상값 보존 + M3 스타일 토큰 구조. 폰트=시스템 기본. 다크=placeholder(Phase 5) |
-| 아이콘 | **인라인 SVG** (`react-native-svg` 15.15.5 + `components/common/AppIcon.tsx`) | ✅ **확정 2026-08-04**. 아이콘 폰트 라이브러리 대신 웹 `AppIcon.vue`의 path를 그대로 이식 — 웹·iOS·안드로이드가 같은 모양. react-native-svg는 개념도 라인 그리기에도 필요 |
+| 아이콘 | **인라인 SVG** (`react-native-svg` **15.11.1 고정** + `components/common/AppIcon.tsx`) | ✅ **확정 2026-08-04**. 아이콘 폰트 라이브러리 대신 웹 `AppIcon.vue`의 path를 그대로 이식 — 웹·iOS·안드로이드가 같은 모양. react-native-svg는 개념도 라인 그리기에도 필요 |
 | 알림 | `notifee/react-native` | 로컬 알림 (FCM 표시) |
 | 토스트 | `react-native-toast-message` | [TBD] |
 
@@ -136,6 +136,28 @@ AppDelegate의 `[GMSServices provideAPIKey:]`가 함께 있어야 한다.
 - 지도 **표시**는 모바일 SDK 과금 없음
 - ⚠️ 현재 등록된 SHA-1은 **debug 키** 것이다. release 서명 키를 구하면(P2)
   그 SHA-1도 같은 키에 추가해야 스토어 버전에서 지도가 나온다
+
+#### 🎨 `react-native-svg` 버전을 15.11.1로 고정하는 이유 (2026-08-04 실측)
+
+**캐럿(`^`) 금지.** 15.11.2 이상은 RN 0.76에서 **네이티브 빌드가 깨진다.**
+
+| react-native-svg | C++ Yoga API | RN 0.76.9에서 |
+|---|---|---|
+| ~ 15.11.1 | `yoga::StyleLength` | ✅ 빌드됨 |
+| 15.11.2 ~ (최신 15.15.x 포함) | `yoga::StyleSizeLength` | ❌ 컴파일 에러 |
+
+실제 에러 (안드로이드 `assembleRelease`):
+```
+RNSVGLayoutableShadowNode.cpp:31:52: error: no member named 'StyleSizeLength'
+  in namespace 'facebook::yoga'; did you mean 'StyleLength'?
+    style.setDimension(yoga::Dimension::Width, yoga::StyleSizeLength::percent(100));
+```
+Yoga가 RN 0.77에서 `StyleLength` → `StyleSizeLength`로 바뀌었고,
+react-native-svg는 15.11.2(2025-02-24)부터 새 API를 쓴다.
+
+> ⚠️ `peerDependencies`가 `*`라 **설치·타입체크는 통과하고 네이티브 빌드에서만 터진다.**
+> react-native-maps와 같은 종류의 함정이다. RN 0.76을 쓰는 동안
+> 두 라이브러리 모두 **버전을 올리지 말 것.** RN 업그레이드 때 함께 올린다.
 
 #### 📄 파일 선택 (GPX 업로드)
 
