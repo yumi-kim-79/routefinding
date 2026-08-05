@@ -81,6 +81,12 @@ export interface Concept {
   userId?: string;
 
   gpxUrl?: string;
+  /**
+   * v1 시절 어프로치 실시간 기록. v2에서 기록 기능은 없앴지만(웹 ReportView.vue 주석 참조)
+   * 옛 문서에는 배열이 남아 있어 **읽기 전용 폴백**으로 계속 그린다.
+   * 좌표가 문자열로 저장된 문서가 있어 union이다 — 사용 전 Number() 변환.
+   */
+  trackingPath?: Array<{ latitude: number | string; longitude: number | string }>;
   timestamp?: FirebaseFirestoreTypes.Timestamp;
 }
 

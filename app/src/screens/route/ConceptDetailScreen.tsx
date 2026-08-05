@@ -2,8 +2,10 @@
  * 개념도 상세 — 사진(캐러셀 → 탭하면 전체화면) + 기본 정보 + 피치 목록.
  *
  * v1 웹 ConceptDetailView.vue 대비 리뉴얼 시 제외한 것 (단순화 결정, 2026-08-03):
- *   - 어프로치 경로 지도 / 고도 프로필 / GPX 붙여넣기·업로드·공유
- *     → 지도·GPX는 별도 탭(루트 위치/트래킹) 소관. 여기서는 GPX가 있으면 존재만 표시.
+ *   - 고도 프로필 / GPX 붙여넣기·공유
+ *   - 어프로치 **실시간 기록(GPS 따라가기)** — 배터리·정확도 문제로 v2에서 제거
+ * 다만 첨부된 **GPX는 여기서 지도로 볼 수 있다** (2026-08-05).
+ *   첨부만 되고 볼 수 없으면 첨부의 의미가 없어서다 → `components/ApproachMapModal.tsx`.
  * 라인(선) 그리기·개념도 추가는 다음 단계(P1) — 이 화면이 그 뷰어 기반이 된다.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -37,6 +39,7 @@ import {
 } from '../../types/concept';
 import type { MainStackParamList } from '../../navigation/types';
 import { ConceptImageViewer } from './components/ConceptImageViewer';
+import { ApproachMapModal } from './components/ApproachMapModal';
 
 type Nav = NativeStackNavigationProp<MainStackParamList, 'ConceptDetail'>;
 type Rt = RouteProp<MainStackParamList, 'ConceptDetail'>;
@@ -78,6 +81,7 @@ export const ConceptDetailScreen: React.FC = () => {
     open: false,
     index: 0,
   });
+  const [approachOpen, setApproachOpen] = useState(false);
   /** 개념도 사진 등록 모달 (웹 상세의 '사진 등록' 버튼 대응) */
   const [photoOpen, setPhotoOpen] = useState(false);
   const favorites = useFavorites();
@@ -179,6 +183,21 @@ export const ConceptDetailScreen: React.FC = () => {
   const images = conceptImages(c);
   const imageWidth = width - spacing.md * 2;
   const author = c.writer ?? c.nickname ?? c.userId;
+  /** 첨부 GPX가 있거나, 옛 문서에 실시간 기록 배열이 남아 있으면 접근로를 볼 수 있다 */
+  const hasApproach = !!c.gpxUrl || (c.trackingPath?.length ?? 0) > 0;
+  // ⚠️ Number('')는 0이라 그냥 변환하면 좌표 없는 루트가 (0,0) 아프리카 앞바다에 찍힌다
+  const latNum = Number(c.latitude);
+  const lngNum = Number(c.longitude);
+  const routeCoord =
+    c.latitude !== undefined &&
+    c.longitude !== undefined &&
+    String(c.latitude).trim() !== '' &&
+    String(c.longitude).trim() !== '' &&
+    Number.isFinite(latNum) &&
+    Number.isFinite(lngNum) &&
+    (latNum !== 0 || lngNum !== 0)
+      ? { latitude: latNum, longitude: lngNum }
+      : null;
 
   return (
     <ScrollView
@@ -302,8 +321,24 @@ export const ConceptDetailScreen: React.FC = () => {
         <InfoRow label="번호" value={c.no} />
         <InfoRow label="작성자" value={author} />
         <InfoRow label="작성일" value={formatDate(c.timestamp)} />
-        <InfoRow label="접근로 GPX" value={c.gpxUrl ? '등록됨' : undefined} />
       </View>
+
+      {/*
+        접근로 — 첨부된 GPX(없으면 옛 trackingPath)를 지도로 본다.
+        예전처럼 '등록됨' 글자만 띄우면 첨부한 파일을 확인할 방법이 없다.
+      */}
+      {hasApproach ? (
+        <View style={[styles.section, { borderTopColor: colors.divider }]}>
+          <Text variant="title" style={styles.sectionTitle}>
+            접근로
+          </Text>
+          <Button
+            title={c.gpxUrl ? '접근로 보기 (GPX)' : '접근로 보기 (옛 기록)'}
+            variant="secondary"
+            onPress={() => setApproachOpen(true)}
+          />
+        </View>
+      ) : null}
 
       {/* 피치 목록 (리드) */}
       {c.type === '리드' && c.pitches && c.pitches.length > 0 ? (
@@ -376,6 +411,15 @@ export const ConceptDetailScreen: React.FC = () => {
         visible={photoOpen}
         concept={c}
         onClose={() => setPhotoOpen(false)}
+      />
+
+      <ApproachMapModal
+        visible={approachOpen}
+        gpxUrl={c.gpxUrl}
+        fallbackPath={c.trackingPath}
+        routeCoord={routeCoord}
+        title={conceptTitle(c)}
+        onClose={() => setApproachOpen(false)}
       />
     </ScrollView>
   );
