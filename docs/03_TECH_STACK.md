@@ -78,7 +78,7 @@
 | `@react-native-firebase/auth` | 인증 | P0 |
 | `@react-native-firebase/firestore` | DB | P0 |
 | `@react-native-firebase/storage` | 파일 저장 | P0 |
-| `@react-native-firebase/messaging` | FCM | P0 |
+| ~~`@react-native-firebase/messaging`~~ | FCM | — | ❌ **2026-08-05 제거.** 초기화만 하고 쓰는 곳이 없어 네이티브 SDK가 통째로 낭비됐다. 알림(Phase 3) 착수 시 다시 추가 |
 | `@react-native-firebase/app-check` | 앱 무결성 | P1 |
 
 > 📌 `firebase` (web SDK) 대신 **`@react-native-firebase/*`** 사용 (성능 + 네이티브 기능)

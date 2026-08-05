@@ -9,6 +9,26 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-05 (17차) — `@react-native-firebase/messaging` 제거 (사용자 승인)
+
+#### Removed — 쓰지 않는 FCM 모듈
+- `services/firebase.ts`가 `getMessaging(app)`을 호출해 export했지만 **참조하는 곳이 한 곳도 없었다**
+- 그런데도 **FCM 네이티브 SDK가 통째로 들어가고 앱 시작 때 초기화까지** 했다
+- 제거 대상: `package.json` 의존성 1줄, `firebase.ts`의 import·export 2줄
+- 현재 동작에 영향 **0** (쓰는 코드가 없었다)
+
+#### 되돌리는 법 (Phase 3에서 알림 붙일 때)
+```bash
+corepack yarn add @react-native-firebase/messaging@25.1.0   # RNFB 다른 패키지와 버전 일치 필수
+cd ios && pod install
+```
+`services/firebase.ts`에 import와 `export const messaging = getMessaging(app);` 복구.
+`google-services.json` / `GoogleService-Info.plist`는 **그대로 두었으므로 손댈 필요 없다.**
+
+#### 검증
+- `tsc --noEmit` 에러 0 (참조가 없었으므로 깨지는 곳도 없다)
+
+
 ### 📅 2026-08-05 (16차) — ⚡ 앱 경량화 (APK 59MB → 절반 이하 예상)
 
 > 기능은 그대로 두고 낭비만 걷어내는 것이 원칙. 실측으로 큰 것부터 잡았다.
