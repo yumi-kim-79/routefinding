@@ -82,12 +82,13 @@ min_version_*    = 2.1.0        → 2.0.x 사용자를 **완전히 막는다** (
 
 ---
 
-## 4. iOS 스토어 주소
+## 4. iOS 스토어 주소 — ✅ 설정 완료 (2026-08-06)
 
-App Store 숫자 ID 가 있어야 스토어 앱을 바로 열 수 있다.
-- App Store Connect 에 앱을 만들면 → `src/constants/version.ts` 의 `APP_STORE_ID` 에 넣는다
-- 앱을 다시 배포하고 싶지 않으면 → Remote Config `store_url_ios` 에 전체 주소를 넣는다
-  (예: `https://apps.apple.com/kr/app/id6501234567`)
+`APP_STORE_ID = '6764483929'` (`src/constants/version.ts`).
+App Store Connect → 앱 정보 → Apple ID 값이다.
+
+바꿔야 하면 **앱을 다시 배포하지 않고** Remote Config `store_url_ios` 에 전체 주소를 넣으면 된다:
+`https://apps.apple.com/kr/app/id6764483929`
 
 ---
 
