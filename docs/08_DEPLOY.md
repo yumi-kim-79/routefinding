@@ -231,6 +231,28 @@ open ~/StudioProjects/routefinding/app/ios/RouteFinding.xcworkspace
 - [ ] Apple Developer 계정 / 인증서 / 프로비저닝 프로파일
 - [ ] App Store Connect 앱 등록 (번들 ID **`com.yusung.routefinding`**)
 
+### 3-2-1. 📢 App Store 배포 시 **광고 때문에 반드시 챙길 것** (2026-08-05 추가)
+
+> 사용자 요청: "iOS 실제 배포할 때 따로 알려달라". 잊지 않도록 여기 남긴다.
+> AdMob 연동 자체는 끝났고 실기기에서 광고 노출까지 확인됐다(docs/10_ADMOB.md).
+
+- [ ] **`FORCE_TEST_ADS`를 `false`로** — `app/src/constants/ads.ts`.
+      지금은 연동 검증용으로 `true`라 **테스트 광고만 나가고 수익이 0이다.**
+      이걸 안 되돌리면 배포해도 한 푼도 안 벌린다. **가장 놓치기 쉬운 항목.**
+- [ ] **AdMob 앱을 App Store 앱과 연결** — AdMob → 앱 → 앱 설정 → '앱 스토어에 등록됨'.
+      지금은 미등록 상태라 광고 채워지는 양이 제한된다. 출시 후 연결해야 정상화된다.
+- [ ] **App Store Connect 앱 개인정보 설문**에 광고 항목을 답해야 심사를 통과한다.
+      AdMob은 기기 식별자·사용 데이터를 수집한다 → "제3자 광고" 관련 항목 체크.
+      (문항은 애플이 자주 바꾸므로 그때 화면을 보고 판단할 것)
+- [ ] **ATT(App Tracking Transparency) 결정** — 지금은 **요청하지 않는다**.
+      그래서 iOS는 비개인화 광고로 나가고 단가가 낮다.
+      넣기로 하면 `NSUserTrackingUsageDescription` 문구 + 첫 실행 팝업 + 심사 설명이 필요하다.
+      **넣지 않아도 심사에는 문제없다.** 수익을 올리고 싶을 때 별도 작업으로 진행.
+- [ ] **SKAdNetwork 항목(Info.plist)** — 광고 노출에는 필요 없고 전환 추적용이다.
+      광고를 **집행**할 때(우리가 광고주가 될 때) 의미가 생긴다. 지금은 생략해도 된다.
+- [ ] 심사 리뷰어가 보는 화면에 광고가 겹쳐 조작을 막지 않는지 확인
+      (배너는 하단 탭 위에 두었으므로 문제없을 것)
+
 ### 3-3. 하지 말 것
 
 - ❌ **RNFB 26으로 업그레이드** — New Architecture 필수. RN 업그레이드와 묶어 별도 진행
