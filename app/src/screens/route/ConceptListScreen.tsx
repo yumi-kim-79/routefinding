@@ -13,7 +13,7 @@
  * 데이터: 기존 컬렉션 그대로 (route_reports + bouldering_reports, status=='approved').
  *   스키마 변경 없음 — docs/02_DATA_MODEL.md 준수.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -24,6 +24,7 @@ import {
   View,
 } from 'react-native';
 import { Text } from '../../components/common/Text';
+import { Button } from '../../components/common/Button';
 import { useTheme } from '../../theme';
 import { ConceptCard } from './components/ConceptCard';
 import { ConceptPhotoEditor } from './components/ConceptPhotoEditor';
@@ -102,6 +103,35 @@ export const ConceptListScreen: React.FC = () => {
     warnings,
   } = useConcepts();
 
+  /**
+   * 검색 결과가 **한 등반지**(가능하면 한 구역)로 좁혀졌으면, 그 자리에서 제보할 수 있게 한다.
+   * 여러 등반지가 섞인 결과에서는 무엇을 채워야 할지 알 수 없으므로 버튼을 띄우지 않는다
+   * (엉뚱한 등반지로 채워 넣는 것보다 안 띄우는 편이 낫다).
+   */
+  const reportTarget = useMemo(() => {
+    if (filtered.length === 0) {
+      return null;
+    }
+    const mountains = new Set(filtered.map((c) => c.mountain).filter(Boolean));
+    if (mountains.size !== 1) {
+      return null;
+    }
+    const zones = new Set(filtered.map((c) => c.zone).filter(Boolean));
+    const withCoord = filtered.find(
+      (c) =>
+        String(c.latitude ?? '').trim() !== '' && String(c.longitude ?? '').trim() !== '',
+    );
+    const sameType = new Set(filtered.map((c) => c.type));
+    return {
+      mountain: [...mountains][0] as string,
+      zone: zones.size === 1 ? ([...zones][0] as string) : undefined,
+      // 같은 구역이면 좌표도 대개 비슷하다 — 시작점만 잡아준다(폼에서 고칠 수 있다)
+      latitude: zones.size === 1 && withCoord ? String(withCoord.latitude) : undefined,
+      longitude: zones.size === 1 && withCoord ? String(withCoord.longitude) : undefined,
+      typeRoot: sameType.size === 1 ? [...sameType][0] : undefined,
+    };
+  }, [filtered]);
+
   return (
     <View style={[styles.wrap, { backgroundColor: colors.background }]}>
       {/* 검색 한 줄 */}
@@ -164,6 +194,33 @@ export const ConceptListScreen: React.FC = () => {
               {filtered.length}개
             </Text>
           ) : null}
+        </View>
+      ) : null}
+
+      {/*
+        보고 있는 등반지·구역에 루트를 바로 제보한다 (2026-08-05 요청).
+        예전엔 홈으로 나가 루트제보 탭에서 등반지·구역·좌표를 처음부터 골라야 했다.
+      */}
+      {hasQuery && !loading && reportTarget ? (
+        <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.xs }}>
+          <Button
+            title={`${reportTarget.mountain}${
+              reportTarget.zone ? ` · ${reportTarget.zone}` : ''
+            }에 루트 제보`}
+            variant="secondary"
+            size="sm"
+            onPress={() =>
+              navigation.navigate('ReportWrite', {
+                prefill: {
+                  typeRoot: reportTarget.typeRoot,
+                  mountain: reportTarget.mountain,
+                  zone: reportTarget.zone,
+                  latitude: reportTarget.latitude,
+                  longitude: reportTarget.longitude,
+                },
+              })
+            }
+          />
         </View>
       ) : null}
 

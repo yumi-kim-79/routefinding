@@ -32,7 +32,7 @@ import { AppIcon } from '../../components/common/AppIcon';
 import { PickerModal } from '../../components/common/PickerModal';
 import { KeyboardAwareScroll } from '../../components/common/KeyboardAwareScroll';
 import { useTheme } from '../../theme';
-import { MAX_ROOT_IMAGES } from '../../types/routeReport';
+import { MAX_ROOT_IMAGES, type ReportPrefill } from '../../types/routeReport';
 import type { ConceptType } from '../../types/concept';
 import { useReportForm, type ReportFormEditTarget } from './hooks/useReportForm';
 import { ImageStrip } from './components/ImageStrip';
@@ -47,13 +47,22 @@ const TYPES: readonly ConceptType[] = ['리드', '볼더링'];
 interface ReportWriteScreenProps {
   /** 있으면 **수정 모드** (관리자 개념도 수정). 없으면 새 제보 */
   edit?: ReportFormEditTarget;
-  /** 수정 저장 후 호출 (화면 닫기) */
+  /**
+   * 개념도를 보다가 바로 제보할 때 미리 채우는 값 (등반지·구역·좌표).
+   * 탭으로 들어오면 없다.
+   */
+  prefill?: ReportPrefill;
+  /** 저장 후 호출 (화면 닫기). 스택으로 열렸을 때만 넘어온다 */
   onSaved?: () => void;
 }
 
-export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSaved }) => {
+export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({
+  edit,
+  prefill,
+  onSaved,
+}) => {
   const { colors, radius, spacing } = useTheme();
-  const f = useReportForm(edit);
+  const f = useReportForm(edit, prefill);
   const { form } = f;
 
   const [picker, setPicker] = useState<'mountain' | 'zone' | null>(null);
@@ -73,7 +82,10 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
       Alert.alert('수정 완료', '개념도가 수정되었습니다.');
       onSaved?.();
     } else {
-      Alert.alert('제보 저장 완료', '관리자 승인 후 개념도와 지도에 표시됩니다.');
+      // 개념도에서 열었으면 저장 후 보던 화면으로 돌려보낸다 (탭에서 열었으면 그대로 남는다)
+      Alert.alert('제보 저장 완료', '관리자 승인 후 개념도와 지도에 표시됩니다.', [
+        { text: '확인', onPress: () => onSaved?.() },
+      ]);
     }
   }, [edit, f.savedAt, onSaved]);
 

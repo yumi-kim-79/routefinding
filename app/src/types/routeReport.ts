@@ -59,6 +59,21 @@ export interface ReportForm {
   gpxName: string | null;
 }
 
+/**
+ * 개념도를 보다가 **그 자리에서** 루트를 제보할 때 미리 채워지는 값
+ * (2026-08-05 — 같은 바위에 루트를 추가하려고 홈으로 나갔다 오는 게 비효율적이라는 요청).
+ *
+ * ⚠️ 네비게이션 파라미터로 넘기므로 **직렬화 가능한 값만** 둔다 (문자열/기본형).
+ *    좌표도 폼과 같은 문자열로 넘긴다 — 폼이 문자열을 그대로 검증·저장한다.
+ */
+export interface ReportPrefill {
+  typeRoot?: ConceptType;
+  mountain?: string;
+  zone?: string;
+  latitude?: string;
+  longitude?: string;
+}
+
 /** 사진 최대 장수 — 웹과 동일 */
 export const MAX_ROOT_IMAGES = 8;
 export const MAX_PITCH_IMAGES = 4;

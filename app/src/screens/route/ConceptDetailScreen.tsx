@@ -324,6 +324,33 @@ export const ConceptDetailScreen: React.FC = () => {
       </View>
 
       {/*
+        이 개념도와 **같은 등반지·구역**에 루트를 하나 더 제보한다.
+        예전엔 홈으로 나가 루트제보 탭을 열고 등반지·구역·좌표를 처음부터 다시 골라야 했다
+        (2026-08-05 요청). 보던 화면에서 열면 그 값들이 이미 채워져 있다.
+      */}
+      <View style={[styles.section, { borderTopColor: colors.divider }]}>
+        <Button
+          title="이 구역에 루트 제보"
+          variant="secondary"
+          onPress={() =>
+            navigation.navigate('ReportWrite', {
+              prefill: {
+                typeRoot: c.type,
+                mountain: c.mountain,
+                zone: c.zone,
+                // 같은 바위면 좌표도 대개 같다 — 다르면 폼에서 고치면 된다
+                latitude: routeCoord ? String(routeCoord.latitude) : undefined,
+                longitude: routeCoord ? String(routeCoord.longitude) : undefined,
+              },
+            })
+          }
+        />
+        <Text variant="caption" color="textSecondary" style={styles.hint}>
+          등반지 · 구역 · 좌표가 자동으로 채워집니다
+        </Text>
+      </View>
+
+      {/*
         접근로 — 첨부된 GPX(없으면 옛 trackingPath)를 지도로 본다.
         예전처럼 '등록됨' 글자만 띄우면 첨부한 파일을 확인할 방법이 없다.
       */}
@@ -447,6 +474,7 @@ const styles = StyleSheet.create({
   },
   section: { marginTop: 20, paddingTop: 16, borderTopWidth: 1 },
   sectionTitle: { marginBottom: 8 },
+  hint: { marginTop: 6 },
   infoRow: { flexDirection: 'row', paddingVertical: 4 },
   infoLabel: { width: 96 },
   infoValue: { flex: 1 },

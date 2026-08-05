@@ -19,6 +19,7 @@ import {
   type LocalImage,
   type PitchInput,
   type ReportForm,
+  type ReportPrefill,
 } from '../../../types/routeReport';
 import type { ConceptType } from '../../../types/concept';
 import {
@@ -81,8 +82,30 @@ export interface ReportFormEditTarget {
   initial: ReportForm;
 }
 
-export function useReportForm(edit?: ReportFormEditTarget): UseReportFormResult {
-  const [form, setForm] = useState<ReportForm>(() => edit?.initial ?? emptyReportForm());
+/**
+ * 새 제보의 시작 상태.
+ * `prefill`은 개념도를 보다가 바로 제보할 때 넘어온다 — 등반지·구역·좌표가 이미 정해진 경우다.
+ * 빈 문자열은 무시한다(있는 값만 덮어써야 폼의 기본값이 살아 있다).
+ */
+function initialForm(prefill?: ReportPrefill): ReportForm {
+  const base = emptyReportForm(prefill?.typeRoot ?? '리드');
+  if (!prefill) {
+    return base;
+  }
+  return {
+    ...base,
+    mountain: prefill.mountain?.trim() || base.mountain,
+    zone: prefill.zone?.trim() || base.zone,
+    latitude: prefill.latitude?.trim() || base.latitude,
+    longitude: prefill.longitude?.trim() || base.longitude,
+  };
+}
+
+export function useReportForm(
+  edit?: ReportFormEditTarget,
+  prefill?: ReportPrefill,
+): UseReportFormResult {
+  const [form, setForm] = useState<ReportForm>(() => edit?.initial ?? initialForm(prefill));
   const [mountains, setMountains] = useState<string[]>([]);
   const [zones, setZones] = useState<string[]>([]);
   const [loadingLists, setLoadingLists] = useState(true);

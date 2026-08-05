@@ -20,6 +20,7 @@ import { ConceptDetailScreen } from '../screens/route/ConceptDetailScreen';
 import { ConceptEditScreen } from '../screens/route/ConceptEditScreen';
 import { ClimbingLogEditScreen } from '../screens/profile/ClimbingLogEditScreen';
 import { ReportDetailScreen } from '../screens/report/ReportDetailScreen';
+import { ReportWriteRoute } from '../screens/report/ReportWriteRoute';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
@@ -54,6 +55,13 @@ export const MainNavigator: React.FC = () => (
       name="ClimbingLogEdit"
       component={ClimbingLogEditScreen}
       options={{ title: '등반일지' }}
+    />
+
+    {/* 개념도를 보다가 그 자리에서 제보 (등반지·구역·좌표 자동 입력) */}
+    <Stack.Screen
+      name="ReportWrite"
+      component={ReportWriteRoute}
+      options={{ title: '루트 제보' }}
     />
 
     {/* 루트/리포트 */}

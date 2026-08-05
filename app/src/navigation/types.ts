@@ -9,6 +9,7 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { ConceptSource } from '../types/concept';
 import type { ReportCollection } from '../types/report';
+import type { ReportPrefill } from '../types/routeReport';
 
 /** 미인증 스택 (Splash는 RootNavigator가 isInitializing 중 직접 렌더) */
 export type AuthStackParamList = {
@@ -70,6 +71,12 @@ export type MainStackParamList = {
    * `collection`은 어느 컬렉션의 문서인지 힌트 — 목록에서 넘어올 땐 항상 채워진다.
    * 없으면 화면이 두 컬렉션을 순서대로 시도한다(딥링크 대비).
    */
+  /**
+   * 루트제보 작성 (스택). 탭의 작성 폼과 **같은 화면**이지만
+   * 개념도에서 열면 등반지·구역·좌표가 채워진 채로 열린다.
+   */
+  ReportWrite: { prefill?: ReportPrefill } | undefined;
+
   RouteDetail: { reportId: string; collection?: ReportCollection };
   ReportDetail: { reportId: string; collection?: ReportCollection };
   PitchDetail: { reportId: string; pitchId: string };

@@ -1,8 +1,13 @@
 /**
  * 개념도 사진 검토 카드 (제보 관리 상단) — 웹 MyPageView의 사진 승인 UI 대응.
  *
- * 관리자: 승인·추가 / 승인·교체 / 반려
+ * 관리자: 승인 / 반려 / 삭제 — **버튼은 이 셋뿐이다** (사용자 결정 2026-08-05).
  * 본인  : 승인 전 취소(삭제)
+ *
+ * ⚠️ 예전엔 '승인·추가'와 '승인·교체' 두 개였다. 교체는 **개념도의 기존 사진을 전부 지우고**
+ *    이 사진 하나만 남기는 동작이라, 버튼 두 개가 나란히 있으면 잘못 누르기 쉬웠다.
+ *    승인은 항상 **추가**(`'add'`)로 동작한다 — 되돌릴 수 있는 쪽이다.
+ *    사진을 정리해야 하면 개념도 수정 화면에서 지운다.
  */
 import React from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
@@ -37,15 +42,14 @@ export const ConceptPhotoCard: React.FC<ConceptPhotoCardProps> = ({
   const thumb = photo.flatUrl || photo.imageUrl;
   const rejected = photo.status === 'rejected';
 
-  const confirmApprove = (mode: ApplyMode) => {
+  const confirmApprove = () => {
     Alert.alert(
-      mode === 'replace' ? '기존 사진 교체' : '기존 사진에 추가',
-      mode === 'replace'
-        ? '개념도의 기존 사진을 모두 지우고 이 사진 하나로 바꿉니다. 계속할까요?'
-        : '개념도의 기존 사진에 이 사진을 추가합니다. 계속할까요?',
+      '사진 승인',
+      '개념도에 이 사진을 추가합니다. 계속할까요?',
       [
         { text: '취소', style: 'cancel' },
-        { text: '승인', onPress: () => onApprove(photo, mode) },
+        // 'add' 고정 — 기존 사진을 지우는 'replace'는 실수 위험이 커서 버튼에서 뺐다
+        { text: '승인', onPress: () => onApprove(photo, 'add') },
       ],
     );
   };
@@ -108,22 +112,12 @@ export const ConceptPhotoCard: React.FC<ConceptPhotoCardProps> = ({
           <>
             <Pressable
               accessibilityRole="button"
-              onPress={() => confirmApprove('add')}
-              style={[styles.btn, { borderColor: colors.primary, borderRadius: radius.sm }]}
-            >
-              <AppIcon name="plus" size={14} color={colors.primary} />
-              <Text variant="caption" color="primary">
-                승인·추가
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => confirmApprove('replace')}
+              onPress={confirmApprove}
               style={[styles.btn, { borderColor: colors.primary, borderRadius: radius.sm }]}
             >
               <AppIcon name="check" size={14} color={colors.primary} />
               <Text variant="caption" color="primary">
-                승인·교체
+                승인
               </Text>
             </Pressable>
             <Pressable
