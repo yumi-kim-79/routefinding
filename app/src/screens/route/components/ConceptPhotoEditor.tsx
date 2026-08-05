@@ -45,6 +45,7 @@ import { ConceptPhotoOverlay } from '../../../components/common/ConceptPhotoOver
 import { useTheme } from '../../../theme';
 import type { Concept } from '../../../types/concept';
 import {
+  FONT_RATIO,
   PHOTO_COLORS,
   type NormPoint,
   type PhotoLine,
@@ -148,9 +149,45 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   );
 
   // PanResponder 콜백은 생성 시점 값을 가둔다 → 변하는 값은 ref로 읽는다
-  const live = useRef({ tool, color, textValue });
-  live.current = { tool, color, textValue };
+  const live = useRef({ tool, color, textValue, texts, stage });
+  live.current = { tool, color, textValue, texts, stage };
   const strokeRef = useRef<NormPoint[]>([]);
+  /** 지금 끌고 있는 글자의 인덱스 (없으면 null) */
+  const dragTextRef = useRef<number | null>(null);
+
+  /**
+   * 찍힌 지점에 글자가 있는지 찾는다 (있으면 그 인덱스).
+   *
+   * 글자 크기는 세로의 4%(FONT_RATIO)이고 가로 폭은 글자 수에 비례한다.
+   * 정확한 텍스트 측정 API가 없어 **글자당 폭 ≈ 글꼴 크기의 0.6배**로 근사한다.
+   * 손가락이 굵으니 최소 잡기 범위를 따로 둔다.
+   */
+  const hitTestText = useCallback((p: NormPoint): number | null => {
+    const { texts: list, stage: box } = live.current;
+    const fontH = FONT_RATIO; // 세로 기준 정규화 높이
+    let bestIndex = -1;
+    let bestDist = Number.POSITIVE_INFINITY;
+
+    list.forEach((t, i) => {
+      const fontPx = box.h * FONT_RATIO;
+      const halfW = Math.max(
+        0.035,
+        (fontPx * 0.6 * Math.max(1, t.text.length)) / 2 / Math.max(1, box.w),
+      );
+      const halfH = Math.max(0.03, fontH * 0.75);
+      const dx = Math.abs(p.x - t.x);
+      const dy = Math.abs(p.y - t.y);
+      if (dx <= halfW && dy <= halfH) {
+        // 여러 개가 겹치면 중심이 가까운 것을 고른다
+        const d = dx * dx + dy * dy;
+        if (d < bestDist) {
+          bestDist = d;
+          bestIndex = i;
+        }
+      }
+    });
+    return bestIndex >= 0 ? bestIndex : null;
+  }, []);
 
   const responder = useMemo(
     () =>
@@ -174,6 +211,13 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
 
           const p = toContent(e.nativeEvent.locationX, e.nativeEvent.locationY);
           if (live.current.tool === 'text') {
+            // 이미 찍어둔 글자를 눌렀다면 **새로 만들지 않고 그 글자를 잡는다**
+            // (잘못 찍었을 때 끌어서 옮길 수 있어야 한다 — 2026-08-05 요청)
+            const hit = hitTestText(p);
+            if (hit !== null) {
+              dragTextRef.current = hit;
+              return;
+            }
             const t = live.current.textValue.trim();
             if (!t) {
               Alert.alert('넣을 글자를 먼저 입력해 주세요.');
@@ -192,6 +236,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
 
           // 두 손가락 → 확대·이동. 그리는 중이었다면 그 획은 버린다(손가락 하나 더 얹은 건 그릴 의도가 아니다)
           if (touches.length >= 2) {
+            dragTextRef.current = null;
             if (strokeRef.current.length > 0) {
               strokeRef.current = [];
               setDrawing(null);
@@ -220,6 +265,16 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
             return;
           }
 
+          // 잡고 있는 글자가 있으면 손가락을 따라 옮긴다
+          if (dragTextRef.current !== null) {
+            const p = toContent(e.nativeEvent.locationX, e.nativeEvent.locationY);
+            const idx = dragTextRef.current;
+            setTexts((prev) =>
+              prev.map((t, i) => (i === idx ? { ...t, x: p.x, y: p.y } : t)),
+            );
+            return;
+          }
+
           if (live.current.tool === 'text' || strokeRef.current.length === 0) {
             return;
           }
@@ -237,6 +292,10 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
 
         onPanResponderRelease: () => {
           gesture.current.dist = 0;
+          if (dragTextRef.current !== null) {
+            dragTextRef.current = null;
+            return;
+          }
           if (strokeRef.current.length === 0) {
             return;
           }
@@ -249,11 +308,12 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
         },
         onPanResponderTerminate: () => {
           gesture.current.dist = 0;
+          dragTextRef.current = null;
           strokeRef.current = [];
           setDrawing(null);
         },
       }),
-    [applyView, toContent],
+    [applyView, hitTestText, toContent],
   );
 
   // ── 사진 선택 ─────────────────────────────────────────────────────────
@@ -543,7 +603,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
               <Text variant="caption" color="textSecondary" style={styles.hint}>
                 {tool === 'line'
                   ? '한 손가락으로 끌면 선이 그려집니다 · 두 손가락으로 확대·이동'
-                  : '글자를 입력한 뒤 사진에서 위치를 누르세요 · 두 손가락으로 확대·이동'}
+                  : '글자를 입력한 뒤 위치를 누르세요 · 찍은 글자는 끌어서 옮길 수 있습니다'}
               </Text>
 
               <Button
