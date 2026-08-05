@@ -9,6 +9,38 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-06 (30차) — 🖼️ 앱 아이콘 (양쪽 다 없었다)
+
+> TestFlight 업로드가 **아이콘 없음**으로 거부되면서 드러났다.
+> ```
+> Missing required icon file … 120x120 …
+> Missing Info.plist value 'CFBundleIconName'
+> ```
+> 확인해 보니 **안드로이드도 React Native 기본 아이콘(초록 로봇)** 이 그대로 들어가 있었다.
+> Play 스토어 목록 이미지는 v1 것이 남아 있어서 지금까지 아무도 몰랐다 — 그대로 냈으면
+> **홈 화면에 초록 로봇이 떴을 것이다.**
+
+#### Added
+- `assets/app-icon-1024.png` — **아이콘의 단일 소스** (사용자 제공, 1024x1024 RGB)
+- `tools/make_app_icons.py` — 원본 하나에서 iOS 1개 + Android 20개를 만든다
+- `docs/12_APP_ICON.md` — 구조와 함정 기록
+
+#### 생성물
+- **iOS**: `AppIcon.png` 1024 한 장 + 단일 크기 `Contents.json` (Xcode 14+ 방식).
+  나머지 크기는 Xcode가 빌드 때 만든다. **알파 채널 없이 RGB** 로 저장 — 있으면 애플이 거부한다
+- **Android**: `ic_launcher` / `ic_launcher_round` 5종씩 + **적응형 아이콘**
+  (`mipmap-anydpi-v26` + `drawable-*/ic_launcher_foreground` + 배경색 `#31322B` 실측)
+
+#### ⚠️ 적응형 아이콘 함정 (docs/12 §4)
+1. 원본을 66/108 로 줄여 **투명** 캔버스에 얹었더니 원본이 자기 배경색을 품고 있어
+   **가운데 네모 자국**이 보였다
+2. 그럼 꽉 채우면? → 안 된다. 적응형은 **바깥 19.4%가 잘릴 수 있는데**
+   원본 여백은 위 **12.7%** · 아래 **15%** 라 **산 꼭대기와 'FINDING' 글자가 잘린다**
+3. 해결: 전경을 **배경색으로 채우고** 원본에서 **내용만 잘라내(bbox)** 안전영역(58%)에 배치.
+   덤으로 좌우가 치우쳐 있던 것(좌 18.7% / 우 26.0%)도 가운데로 맞춰졌다
+- `<monochrome>` 은 **일부러 뺐다** — 전경이 불투명이라 테마 아이콘이 통짜 사각형이 된다
+
+
 ### 📅 2026-08-06 (29차) — 출시 설정 마무리 (실광고 전환 · App Check · RC API 정정)
 
 #### Changed — `FORCE_TEST_ADS` **true → false**
