@@ -538,6 +538,16 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
           <>
             {/* 캔버스 — 화면의 대부분을 차지한다 */}
             <View style={styles.area} onLayout={onAreaLayout}>
+              {/*
+                ⚠️ **캔버스 크기를 잰 뒤에만 사진을 올린다** (2026-08-05 실측).
+                   `area`는 첫 렌더에서 1x1이고 onLayout이 돌아야 실제 크기가 된다.
+                   그 사이에 <Image>가 먼저 마운트되면 iOS가 **1px 크기로 디코딩한 비트맵을
+                   캐시**해 두고, 뷰가 커진 뒤에도 그걸 확대해 쓴다 → 모자이크처럼 뭉개진다.
+                   나갔다 다시 첨부하면 그땐 이미 크기가 잡혀 있어 정상으로 보였다
+                   (매번 같은 패턴이던 이유).
+                   `key`에 크기를 넣어, 혹시 나중에 크기가 바뀌어도 다시 디코딩하게 한다.
+              */}
+              {area.w > 1 ? (
               <View
                 style={[styles.stageBox, { width: stage.w, height: stage.h }]}
                 {...responder.panHandlers}
@@ -562,6 +572,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
                     ]}
                   >
                     <Image
+                      key={`${photoUri}:${Math.round(stage.w)}x${Math.round(stage.h)}`}
                       source={{ uri: photoUri }}
                       style={{ width: stage.w, height: stage.h }}
                       resizeMode="cover"
@@ -576,6 +587,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
                   </Animated.View>
                 </View>
               </View>
+              ) : null}
 
               {zoomed ? (
                 <Pressable
