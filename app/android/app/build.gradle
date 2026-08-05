@@ -91,10 +91,36 @@ android {
         applicationId "com.yusung.routefinding"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        /*
+         * ⚠️ v1(Flutter)이 같은 패키지명으로 이미 스토어에 있다 (v1.2.3).
+         *    Play는 **더 큰 versionCode** 만 받는다. v1 최신 빌드보다 확실히 크게 잡되,
+         *    v1 긴급 패치를 낼 여지를 남기려고 100부터 시작한다(문서 08 §2-3).
+         *    실제 값은 gradle.properties 에서 덮어쓸 수 있다.
+         */
+        versionCode (project.findProperty('ROUTEFINDING_VERSION_CODE') ?: '100') as Integer
+        versionName project.findProperty('ROUTEFINDING_VERSION_NAME') ?: '2.0.0'
     }
     signingConfigs {
+        /*
+         * 출시용 서명. **비밀번호를 저장소에 두지 않는다.**
+         *   → `~/.gradle/gradle.properties` (홈 디렉터리, git 밖)에 적는다:
+         *       ROUTEFINDING_UPLOAD_STORE_FILE=/절대/경로/routefinding-upload.jks
+         *       ROUTEFINDING_UPLOAD_KEY_ALIAS=upload
+         *       ROUTEFINDING_UPLOAD_STORE_PASSWORD=***
+         *       ROUTEFINDING_UPLOAD_KEY_PASSWORD=***
+         *
+         * ⚠️ v1과 **같은 키**여야 한다. 키가 다르면 Play가 업로드를 거부하고 되돌릴 수 없다.
+         *    값이 없으면 아래 release 블록이 debug 키로 떨어지며 **경고를 찍는다**
+         *    (실기기 확인용으로는 쓸 수 있지만 Play에는 못 올린다).
+         */
+        release {
+            if (project.hasProperty('ROUTEFINDING_UPLOAD_STORE_FILE')) {
+                storeFile file(ROUTEFINDING_UPLOAD_STORE_FILE)
+                storePassword ROUTEFINDING_UPLOAD_STORE_PASSWORD
+                keyAlias ROUTEFINDING_UPLOAD_KEY_ALIAS
+                keyPassword ROUTEFINDING_UPLOAD_KEY_PASSWORD
+            }
+        }
         debug {
             storeFile file('debug.keystore')
             storePassword 'android'
@@ -107,9 +133,13 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // 업로드 키가 설정돼 있으면 그걸 쓰고, 없으면 debug 키로 떨어진다(경고 출력).
+            if (project.hasProperty('ROUTEFINDING_UPLOAD_STORE_FILE')) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.warn('⚠️  출시 서명 키가 없어 debug 키로 서명합니다 — Play Console에 올릴 수 없습니다. (docs/08_DEPLOY.md §2-2)')
+                signingConfig signingConfigs.debug
+            }
             minifyEnabled enableProguardInReleaseBuilds
             // 코드가 줄면 그에 딸린 리소스도 줄인다 (minify와 세트로만 동작한다)
             shrinkResources enableProguardInReleaseBuilds

@@ -9,6 +9,37 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-05 (27차) — 🚀 Play Store 출시 준비 (대상 API 35 · 서명 · 버전 · AAB)
+
+> 안드로이드 광고까지 실기기 확인 완료. 이제 스토어에 올릴 수 있는 상태로 만든다.
+
+#### Changed — 대상 API 34 → **35** (안 올리면 업로드 자체가 거부된다)
+Play는 2025-08-31부터 **대상 API 35 이상**만 받는다. compileSdk는 이미 35라 **툴체인 변경 없음**.
+- ⚠️ Android 15의 **edge-to-edge 강제**를 `styles.xml`의
+  `android:windowOptOutEdgeToEdgeEnforcement=true`로 일단 껐다.
+  이번 출시의 목적은 "Play가 받아주게 만드는 것"이지 화면을 바꾸는 게 아니다.
+  **API 36에서는 이 플래그가 무시되므로** 그때 정식 대응해야 한다(docs/08 §2-6).
+
+#### Added — 출시 서명 설정 (값만 채우면 되는 상태)
+`app/build.gradle`에 release 서명 블록. 비밀번호는 **저장소가 아니라 `~/.gradle/gradle.properties`**에 둔다.
+값이 없으면 debug 키로 떨어지며 **경고를 찍는다** — 실기기 확인은 되지만 Play에는 못 올린다.
+
+#### Changed — 버전
+`versionCode 1 / versionName "1.0"` → **`100` / `"2.0.0"`** (v1은 빌드 39, v1.2.3).
+`-PROUTEFINDING_VERSION_CODE=101` 처럼 CLI/프로퍼티로 덮어쓸 수 있다.
+
+#### 확인 — Play Console '권장 조치 3건'은 **전부 v1(Flutter) 것**
+셋 다 `출시 이름: RouteFinding v1.2.3` 태그가 붙어 있다.
+- `play-services-safetynet` → v2 의존성에 **없음**. App Check는 Play Integrity를 쓴다
+- 넓은 화면 관련 2건 → v2 매니페스트에 `screenOrientation` 고정 없음
+**v2를 올리면 셋 다 사라진다.**
+
+#### ⛔ 남은 차단 요소 — **업로드 서명 키**
+v1이 같은 패키지명(`com.yusung.routefinding`)으로 이미 스토어에 있다.
+**같은 키로 서명해야** 업데이트가 된다. 키 위치가 불명 → docs/08 §2-2의 확인 순서를 따를 것.
+Play 앱 서명이 켜져 있으면 업로드 키 재설정 요청이 가능하다(승인까지 며칠).
+
+
 ### 📅 2026-08-05 (26차) — 🔥 release APK가 실행 즉시 죽던 문제 (R8 규칙)
 
 > iOS는 광고까지 정상. **안드로이드 release만 설치 직후 바로 종료**됐다.

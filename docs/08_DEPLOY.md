@@ -75,6 +75,10 @@ firebase hosting:rollback               # 직전 버전으로
 - 루트제보 작성 (위도/경도 입력 포함)
 - 관리자 승인 흐름
 
+### 2-1-1. ✅ 기능 완성 (2026-08-05)
+2-1의 빈 화면들은 모두 채워졌다 — 지도 · 루트제보 작성 · 개념도 사진/라인 · 관리자 승인 흐름 · GPX 접근로 · AdMob 배너.
+남은 배포 차단 요소는 **서명 키(2-2)와 versionCode(2-3)** 둘뿐이다.
+
 ### 2-2. 🚨 서명 키가 없다 — **가장 위험한 항목**
 
 현재 `android/app/build.gradle`:
@@ -96,54 +100,106 @@ buildTypes {
       켜져 있으면 업로드 키 분실 시 재설정 요청이 가능하다. 꺼져 있는데 키를 잃었다면
       **같은 패키지명으로는 영영 업데이트할 수 없다** (새 앱으로 올려야 함)
 
-키를 찾은 뒤 설정:
+#### 키를 찾은 뒤 — **gradle 쪽 작업은 이미 끝나 있다** (2026-08-05)
+`app/build.gradle`에 release 서명 블록을 넣어 두었다. **값만 채우면 된다.**
+비밀번호는 저장소가 아니라 **홈 디렉터리**에 적는다 (git에 들어갈 일이 없다):
+
 ```properties
-# android/gradle.properties  (⚠️ git에 커밋하지 말 것)
-ROUTEFINDING_UPLOAD_STORE_FILE=routefinding-upload.jks
+# ~/.gradle/gradle.properties   ← 저장소 밖!
+ROUTEFINDING_UPLOAD_STORE_FILE=/Users/yusungyun/keys/routefinding-upload.jks
 ROUTEFINDING_UPLOAD_KEY_ALIAS=upload
 ROUTEFINDING_UPLOAD_STORE_PASSWORD=***
 ROUTEFINDING_UPLOAD_KEY_PASSWORD=***
 ```
-```gradle
-// android/app/build.gradle
-signingConfigs {
-    release {
-        if (project.hasProperty('ROUTEFINDING_UPLOAD_STORE_FILE')) {
-            storeFile file(ROUTEFINDING_UPLOAD_STORE_FILE)
-            storePassword ROUTEFINDING_UPLOAD_STORE_PASSWORD
-            keyAlias ROUTEFINDING_UPLOAD_KEY_ALIAS
-            keyPassword ROUTEFINDING_UPLOAD_KEY_PASSWORD
-        }
-    }
-}
-buildTypes {
-    release {
-        signingConfig signingConfigs.release   // debug → release
-    }
-}
+
+값이 없으면 release 빌드는 **debug 키로 서명되고 경고를 찍는다**:
+`⚠️ 출시 서명 키가 없어 debug 키로 서명합니다 — Play Console에 올릴 수 없습니다.`
+실기기 확인용으로는 쓸 수 있지만 **Play에는 못 올린다.**
+
+#### 키가 어디 있는지 모를 때 — 확인 순서
+1. **Play Console → 설정 → 앱 서명**
+   - "Play 앱 서명 사용 중"이면 → **업로드 키 재설정 요청이 가능하다.**
+     새 키를 만들고 `keytool -export -rfc` 로 인증서를 뽑아 Google에 제출한다(승인까지 며칠).
+   - 이 화면 자체가 없으면(구형 앱) → 업로드 키 = 앱 서명 키다. **잃으면 복구 불가**,
+     같은 패키지명으로는 영영 업데이트할 수 없다.
+2. **맥 안을 뒤진다**: `find ~ -name "*.jks" -o -name "*.keystore" 2>/dev/null`
+   Flutter 프로젝트라면 `android/key.properties` 나 `android/app/*.jks` 에 있었을 가능성이 크다.
+3. **v1 프로젝트 폴더 / 예전 백업 / 다른 PC**도 확인한다.
+
+### 2-3. ✅ 버전 — 기본값 설정 완료 (2026-08-05)
+
+`versionCode 100` / `versionName "2.0.0"` 이 기본값이다 (v1 빌드 39보다 충분히 크고,
+v1 긴급 패치 여지도 남긴다). **Play Console에서 v1의 실제 최신 versionCode를 확인**하고
+100보다 크면 아래로 덮어쓴다:
+
+```properties
+# ~/.gradle/gradle.properties 또는 CLI
+ROUTEFINDING_VERSION_CODE=101
+ROUTEFINDING_VERSION_NAME=2.0.1
+```
+```bash
+./gradlew bundleRelease -PROUTEFINDING_VERSION_CODE=101
 ```
 
-### 2-3. 🚨 버전이 v1보다 낮다
+### 2-3-1. ✅ 대상 API 34 → 35 (2026-08-05)
 
-```gradle
-versionCode 1        // v1은 이미 빌드 39 → Play Console이 거부
-versionName "1.0"    // v1이 1.2.3 → 사용자에게 다운그레이드로 보임
-```
-v1의 실제 최신 빌드 번호를 Play Console에서 확인하고 **그보다 큰 값**으로 올려야 한다.
-(예: `versionCode 40`, `versionName "2.0.0"`)
-v1 긴급 패치를 낼 여지를 두려면 여유 있게 잡는 편이 낫다 (예: 100).
+Play는 **2025-08-31부터 대상 API 35 이상**만 받는다. 34로는 업로드 자체가 거부된다.
+`android/build.gradle`의 `targetSdkVersion = 35` 로 올렸다 (compileSdk는 이미 35, 툴체인 변경 없음).
 
-### 2-4. 빌드 명령 (위 세 가지 해결 후)
+⚠️ **Android 15 edge-to-edge 강제**: targetSdk 35 앱은 화면 가장자리까지 그리기가 강제돼
+상태바·네비바 아래로 내용이 들어간다. 이번 출시는 "Play가 받아주게 만드는 것"이 목적이라
+`styles.xml`에 `android:windowOptOutEdgeToEdgeEnforcement=true` 로 **일단 껐다.**
+실기기(Android 15 이상)에서 헤더·하단 탭이 잘리지 않는지 확인할 것.
+
+### 2-6. ⏳ 대상 API 36 — **2026-08-31까지** (별도 작업)
+
+그날 이후 업데이트를 내려면 **API 36**이 필요하다. 지금 못 올린 이유:
+
+| 필요한 것 | 현재 | 필요 |
+|---|---|---|
+| Gradle | 8.10.2 | 8.11+ |
+| AGP | 8.6.0 (RN 0.76.9 기본) | 8.9+ |
+| compileSdk | 35 | 36 |
+| edge-to-edge | opt-out으로 회피 중 | **opt-out이 무시됨 → 정식 대응 필요** |
+
+RN 0.77+로 올리면 Gradle·AGP·Kotlin이 함께 올라가므로 **RN 업그레이드와 묶어서** 하는 편이
+낫다. 그때 `react-native-google-mobile-ads`도 15.x로 같이 올린다(docs/10_ADMOB.md §5).
+
+### 2-7. Play Console 권장 조치 3건 — **v1 것이다**
+
+콘솔에 뜬 3건은 모두 `출시 이름: RouteFinding v1.2.3` 태그가 붙어 있다. v2에는 해당 없음:
+
+| 경고 | v2 상태 |
+|---|---|
+| `play-services-safetynet` 심각한 SDK 메모 | ✅ 의존성에 없음. App Check는 **Play Integrity**를 쓴다 (`services/firebase.ts`) |
+| 더 넓은 화면이 표시되지 않을 수 있음 | ✅ 매니페스트에 `screenOrientation` 고정 없음 |
+| 더 넓은 화면용 지원 중단 API 사용 | ✅ v1(Flutter) 코드 문제 |
+
+**v2를 올리면 셋 다 자연히 사라진다.**
+
+### 2-4. 빌드 명령
 
 ```bash
 cd ~/StudioProjects/routefinding/app
-yarn install
-cd android && ./gradlew clean bundleRelease   # AAB (Play Store 업로드용)
+corepack yarn install
+
+cd android
+./gradlew clean
+
+# Play Store 업로드용 AAB  ← 서명 키가 설정돼 있어야 의미가 있다
+./gradlew bundleRelease
 # 산출물: android/app/build/outputs/bundle/release/app-release.aab
 
-# 실기기 확인용 APK
+# 실기기 확인용 APK (서명 키 없어도 됨)
 ./gradlew assembleRelease
+# 산출물: android/app/build/outputs/apk/release/app-release.apk
 ```
+
+**업로드 전 확인** — debug 키로 서명된 AAB는 Play가 거부한다. 서명 주체를 직접 본다:
+```bash
+keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab | head -20
+```
+`CN=Android Debug` 가 보이면 **아직 debug 키다.** §2-2를 먼저 해결할 것.
 
 ### 2-4-1. ⚡ APK 크기 최적화 (2026-08-05 적용)
 
