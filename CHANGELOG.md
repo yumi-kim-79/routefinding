@@ -9,6 +9,35 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-05 (26차) — 🔥 release APK가 실행 즉시 죽던 문제 (R8 규칙)
+
+> iOS는 광고까지 정상. **안드로이드 release만 설치 직후 바로 종료**됐다.
+> 16차에서 R8을 켠 뒤 **실기기에서 release를 돌려본 적이 없었다** — 이번이 첫 검증이었고 바로 터졌다.
+
+#### 크래시
+```
+java.lang.NoSuchFieldError: no type "Lcom/facebook/react/fabric/Binding;" found
+  and so no field "mBinding" could be found in class "FabricUIManager"
+→ TypeError: Cannot read property 'ScreenStack' of undefined
+```
+
+#### 원인 — `includedescriptorclasses` 누락
+`-keepclassmembers` 만 쓰면 R8은 **필드는 남기되 그 필드의 "타입 클래스"는 지워도 된다**고 본다.
+`mBinding`은 남았는데 그 타입인 `com.facebook.react.fabric.Binding`이 사라져,
+**C++(JNI)에서 필드를 찾지 못하고** 앱이 시작하자마자 죽었다.
+New Architecture(Fabric)는 자바 필드를 네이티브에서 직접 읽으므로 이 옵션이 필수다.
+
+#### Fixed — `app/proguard-rules.pro`
+- `-keepclassmembers` → **`-keepclassmembers,includedescriptorclasses`** (DoNotStrip · native 메서드)
+- Fabric/TurboModule/runtime/uimanager/bridge 패키지를 `includedescriptorclasses`로 보존
+- `com.swmansion.rnscreens`(크래시에 함께 등장) · `safeareacontext` · `io.invertase.googlemobileads` 추가
+- **실패 기록과 원인을 파일 맨 위에 주석으로 남겼다** (같은 함정을 다시 밟지 않도록)
+
+#### 안 되면
+`app/build.gradle`의 `enableProguardInReleaseBuilds = false`.
+APK가 10MB 남짓 커지지만 확실히 동작한다. (ABI 축소 30.5MB는 그대로 유지된다)
+
+
 ### 📅 2026-08-05 (25차) — 배너가 안 보이던 문제 · APK 크기 실측 확인
 
 #### 실측 — ABI 축소는 먹었다
