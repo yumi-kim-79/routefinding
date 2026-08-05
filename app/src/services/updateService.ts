@@ -46,7 +46,14 @@ export interface UpdateInfo {
 const DEFAULT_MESSAGE =
   '새 버전이 나왔습니다.\n더 안정적으로 쓰시려면 업데이트해 주세요.';
 
-/** 기준값이 비어 있으면 "안내 안 함"으로 동작하도록 0.0.0 을 기본으로 둔다 */
+/**
+ * 기준값이 비어 있으면 "안내 안 함"으로 동작하도록 0.0.0 을 기본으로 둔다.
+ *
+ * ⚠️ 이 기본값은 **안전판이지 핵심이 아니다.** 아래 `prepare()` 의 `defaultConfig` 설정은
+ *    RNFB 내부에서 비동기 호출을 발사만 하고 기다리지 않으므로(setter 는 await 할 수 없다),
+ *    첫 읽기가 기본값 반영 전에 일어날 수 있다. 그래서 `readInfo()` 는 **빈 값이면
+ *    아무도 막지 않도록** 짜여 있다 — 값이 없어서 사용자를 가두는 일은 생기지 않는다.
+ */
 const DEFAULTS: Record<string, string> = {
   min_version_android: '0.0.0',
   min_version_ios: '0.0.0',
@@ -98,18 +105,19 @@ let ready: Promise<void> | undefined;
 /**
  * 기본값 심기 + 캐시 활성화 (네트워크를 기다리지 않는다).
  *
- * ⚠️ `setDefaults` / `setConfigSettings` 는 RNFB 25.1.0 의 **모듈러 함수로는 없다**
- *    (모듈러 export 목록에 activate/fetchConfig/getString 등만 있다).
- *    인스턴스 메서드로 호출하는 것이 정상 경로다 — deprecated 네임스페이스 API가 아니다.
+ * ⚠️ RNFB 25.1.0 의 모듈러 API에는 `setDefaults` / `setConfigSettings` **함수가 없다.**
+ *    (모듈러 export 는 activate / fetchConfig / getString 등뿐이다)
+ *    Firebase JS SDK 와 같은 방식으로 **프로퍼티에 대입**하는 것이 정상 경로다.
+ *    필드명도 `fetchTimeoutMillis` 다 — `fetchTimeMillis` 는 읽기 전용 값(마지막 조회 시각)이다.
  */
 async function prepare(): Promise<void> {
   const rc = getRemoteConfig();
-  await rc.setConfigSettings({
+  rc.settings = {
     // 개발 중에는 콘솔에서 바꾼 값이 바로 보여야 한다. 배포는 1시간 캐시.
     minimumFetchIntervalMillis: __DEV__ ? 0 : 60 * 60 * 1000,
-    fetchTimeMillis: 10 * 1000,
-  });
-  await rc.setDefaults(DEFAULTS);
+    fetchTimeoutMillis: 10 * 1000,
+  };
+  rc.defaultConfig = DEFAULTS;
   await activate(rc); // 지난 실행에서 받아 둔 값이 있으면 즉시 쓴다
 }
 

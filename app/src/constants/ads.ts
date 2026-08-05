@@ -44,9 +44,10 @@ const REAL_BANNER = Platform.select({
  * 구글 테스트 광고는 **항상 100% 채워진다.** 그래서 테스트로 한 번 띄워 보면
  * (a)인지 (b)인지 바로 갈린다. 배너가 보이면 연동은 정상이고 기다리면 되는 것이다.
  *
- * ✅ 확인이 끝나면 **이 값을 `false`로 되돌린다** (그래야 수익이 잡힌다).
+ * ✅ **확인 완료 (2026-08-06)** — iOS·Android 양쪽 실기기에서 테스트 배너 노출을 확인했다.
+ *    연동은 정상이므로 실광고로 되돌린다. 다시 검증할 일이 있으면 `true` 로 바꿔 빌드하면 된다.
  */
-export const FORCE_TEST_ADS = true;
+export const FORCE_TEST_ADS = false;
 
 /** 화면에서 쓸 배너 단위 ID (개발 빌드거나 실제 ID가 없으면 테스트 광고) */
 export const BANNER_AD_UNIT_ID =

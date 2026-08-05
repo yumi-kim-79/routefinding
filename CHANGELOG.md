@@ -9,6 +9,39 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-06 (29차) — 출시 설정 마무리 (실광고 전환 · App Check · RC API 정정)
+
+#### Changed — `FORCE_TEST_ADS` **true → false**
+iOS·Android 양쪽 실기기에서 테스트 배너 노출을 확인했다. 연동이 정상이므로 실광고로 되돌린다.
+(다시 검증할 일이 있으면 `true` 로 바꿔 빌드하면 된다)
+
+#### Fixed — Remote Config 설정 API를 잘못 쓰고 있었다
+`rc.setConfigSettings()` / `rc.setDefaults()` 로 호출했는데 **RNFB 25.1.0 모듈러 타입에는 없다.**
+Firebase JS SDK 와 같이 **프로퍼티 대입**이 정상 경로다:
+```ts
+rc.settings = { minimumFetchIntervalMillis, fetchTimeoutMillis };
+rc.defaultConfig = DEFAULTS;
+```
+필드명도 `fetchTimeoutMillis` 다 — `fetchTimeMillis` 는 **읽기 전용**(마지막 조회 시각)이라 헷갈리기 쉽다.
+⚠️ 이 setter 들은 내부에서 비동기 호출을 발사만 하고 기다리지 않는다(await 할 수 없다).
+   그래서 기본값이 반영되기 전에 첫 읽기가 일어날 수 있고, `readInfo()` 는 **빈 값이면
+   아무도 막지 않도록** 짜여 있다 — 값이 없어서 사용자를 가두는 일은 없다.
+
+#### 콘솔 설정 완료 (사용자 작업)
+| 항목 | 상태 |
+|---|---|
+| Remote Config 매개변수 4개 게시 | ✅ `min_version_* = 0.0.0`, `latest_version_* = 2.0.0` |
+| Google Maps API 키 — 앱 서명 SHA-1 추가 | ✅ 기존 디버그 키는 유지한 채 추가 |
+| App Check Android (Play Integrity) | ✅ 이미 등록됨 |
+| **App Check iOS (DeviceCheck)** | ✅ **새로 등록** — 키 ID `3DYU55M5LV`, 팀 ID `32A9772B3Z` |
+
+> iOS App Check 가 비어 있던 것은 **스토어에서만 드러났을 함정**이다.
+> 개발 중에는 debug provider 를 쓰기 때문에 지금까지 아무 증상이 없었다.
+
+#### Added
+- `.gitignore` 에 `*.p8` (Apple DeviceCheck 개인키). 키 파일은 저장소 밖 `~/keys/` 에 보관·백업
+
+
 ### 📅 2026-08-06 (28차) — 🔔 업데이트 안내 (Remote Config + 밀어서 스토어로)
 
 > **첫 배포에 반드시 들어가야 하는 기능이라 다른 출시 준비보다 먼저 넣었다.**

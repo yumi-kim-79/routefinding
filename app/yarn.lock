@@ -2901,6 +2901,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-firebase/remote-config@npm:25.1.0":
+  version: 25.1.0
+  resolution: "@react-native-firebase/remote-config@npm:25.1.0"
+  dependencies:
+    react-native-fetch-api: ^3.0.0
+    text-encoding: ^0.7.0
+    web-streams-polyfill: ^4.2.0
+  peerDependencies:
+    "@react-native-firebase/analytics": 25.1.0
+    "@react-native-firebase/app": 25.1.0
+  checksum: 9ea052bc08674b61bc65ac1b4278bb6de1e68377b75a795154ed6115f23a49a03f49cfd1b0206f9145920707dd4e4c1b6d3e56f016328969fd025b562c8e034b
+  languageName: node
+  linkType: hard
+
 "@react-native-firebase/storage@npm:25.1.0":
   version: 25.1.0
   resolution: "@react-native-firebase/storage@npm:25.1.0"
@@ -3680,6 +3694,7 @@ __metadata:
     "@react-native-firebase/app-check": 25.1.0
     "@react-native-firebase/auth": 25.1.0
     "@react-native-firebase/firestore": 25.1.0
+    "@react-native-firebase/remote-config": 25.1.0
     "@react-native-firebase/storage": 25.1.0
     "@react-native/babel-preset": 0.76.9
     "@react-native/eslint-config": 0.76.9
@@ -8324,6 +8339,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"p-defer@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "p-defer@npm:3.0.0"
+  checksum: ac3b0976a1c76b67cca1a34e00f7299b0cc230891f820749686aa84f8947326bbe0f8e3b7d9ca511578ee06f0c1a6e0ff68c8e9c325eac455f09d99f91697161
+  languageName: node
+  linkType: hard
+
 "p-limit@npm:^2.0.0, p-limit@npm:^2.2.0":
   version: 2.3.0
   resolution: "p-limit@npm:2.3.0"
@@ -8723,6 +8745,15 @@ __metadata:
   version: 19.2.6
   resolution: "react-is@npm:19.2.6"
   checksum: aad99621b2e5c47ea715ab719a3caae60b6d2be828374dc5ad663372f4603ab26bde5f0c9f3efd6107ed9152dfff5f8f3df044121967a3280e00796e4c560635
+  languageName: node
+  linkType: hard
+
+"react-native-fetch-api@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "react-native-fetch-api@npm:3.0.0"
+  dependencies:
+    p-defer: ^3.0.0
+  checksum: f10f435060551c470711ba0b3663e3d49c7701aae84ea645d66992d756b13e923fb5762b324d3583d85c1c0def4138b9cc3f686bab1c1bc10d3ad82dc7175c99
   languageName: node
   linkType: hard
 
@@ -9846,6 +9877,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"text-encoding@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "text-encoding@npm:0.7.0"
+  checksum: b6109a843fb1b8748b32e1ecd6df74d370f46c13ac136bcb6ca15db70209bb0b8ec1f296ebb4b0dd9961150e205dcc044b89f8cf7657f6faef78c7569a2a81bc
+  languageName: node
+  linkType: hard
+
 "text-segmentation@npm:^1.0.3":
   version: 1.0.3
   resolution: "text-segmentation@npm:1.0.3"
@@ -10247,6 +10285,13 @@ __metadata:
   dependencies:
     defaults: ^1.0.3
   checksum: 814e9d1ddcc9798f7377ffa448a5a3892232b9275ebb30a41b529607691c0491de47cba426e917a4d08ded3ee7e9ba2f3fe32e62ee3cd9c7d3bafb7754bd553c
+  languageName: node
+  linkType: hard
+
+"web-streams-polyfill@npm:^4.2.0":
+  version: 4.3.0
+  resolution: "web-streams-polyfill@npm:4.3.0"
+  checksum: 99b398a8decc5db0d5a3450e736a43f970106b0626257e0afec149113b08ea4913140de3d27315649bc85edcd24cb37b9d477c1b71bed65b5150edc06ceb55f9
   languageName: node
   linkType: hard
 
