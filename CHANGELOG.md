@@ -9,6 +9,38 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-06 (28차) — 🔔 업데이트 안내 (Remote Config + 밀어서 스토어로)
+
+> **첫 배포에 반드시 들어가야 하는 기능이라 다른 출시 준비보다 먼저 넣었다.**
+> 이 코드가 없는 버전을 설치한 사용자에게는 나중에 무슨 수를 써도 안내를 띄울 수 없다.
+
+#### Added
+- `@react-native-firebase/remote-config@25.1.0` (다른 RNFB 패키지와 버전 일치)
+- `services/updateService.ts` — Remote Config 로 최소/최신 버전을 받아 판단
+  - **앱 시작을 붙잡지 않는다**: 캐시로 즉시 판단 → 새 값은 백그라운드로 받아 재판단
+  - 실패해도 앱은 그대로 동작 (기본값 `0.0.0` = 아무도 막지 않음)
+  - 버전 비교는 **마디별 숫자**로 한다 — 문자열 비교는 `'2.10.0' < '2.9.0'` 이라 틀린다
+- `components/common/UpdateGate.tsx` — **밀어서** 스토어로 이동
+  - 강제 업데이트는 앱을 막는 화면이다. 버튼은 잘못 눌러도 지나가지만 밀기는 의도가 있어야 한다
+  - 80% 이상 밀면 끝까지 붙는다 (끝까지 미는 사람이 드물다)
+  - `market://` 실패 시 `https://play.google.com/...` 으로 되돌린다
+  - 제스처는 RN 내장 `PanResponder` (gesture-handler 미사용 — 이 저장소 방침)
+- `hooks/useUpdateGate.ts` — '나중에'는 **이번 실행 동안만** 숨긴다. 재시작하면 다시 뜬다
+
+#### Changed — 버전의 단일 소스
+`app/package.json` 의 `version` **하나만** 올리면 된다.
+- Android `versionName` → gradle 이 package.json 을 읽는다
+- 앱 안 판단 기준 `APP_VERSION` → 같은 파일을 읽는다
+- ⚠️ iOS `MARKETING_VERSION` 은 Xcode 에서 손으로 맞춘다(빌드 시점에 JSON 을 못 읽는다)
+
+#### 콘솔 설정 · 확인 방법
+`docs/11_UPDATE_GATE.md` 에 매개변수 표와 절차를 정리했다.
+**첫 출시 권장값은 `min_version_* = 0.0.0`** — 처음부터 높게 잡으면 전원이 앱을 못 쓴다.
+
+#### 검증
+- `tsc --noEmit`: remote-config **모듈 미설치 에러만** (yarn install 후 사라짐) / `eslint` 에러 0
+
+
 ### 📅 2026-08-05 (27차) — 🚀 Play Store 출시 준비 (대상 API 35 · 서명 · 버전 · AAB)
 
 > 안드로이드 광고까지 실기기 확인 완료. 이제 스토어에 올릴 수 있는 상태로 만든다.

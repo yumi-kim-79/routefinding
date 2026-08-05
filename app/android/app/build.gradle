@@ -103,7 +103,13 @@ android {
          *    반드시 값을 **먼저** 정수로 만든 뒤 넘긴다.
          */
         versionCode Integer.parseInt(project.findProperty('ROUTEFINDING_VERSION_CODE') ?: '100')
-        versionName project.findProperty('ROUTEFINDING_VERSION_NAME') ?: '2.0.0'
+        /*
+         * versionName 의 **단일 소스는 `app/package.json` 의 version** 이다.
+         * 앱 안에서 업데이트 여부를 판단할 때도 같은 값을 쓴다(src/constants/version.ts).
+         * 두 곳을 따로 관리하면 언젠가 어긋나고, 그러면 업데이트 안내가 오작동한다.
+         */
+        versionName project.findProperty('ROUTEFINDING_VERSION_NAME')
+            ?: new groovy.json.JsonSlurper().parse(file("$rootDir/../package.json")).version
     }
     signingConfigs {
         /*
