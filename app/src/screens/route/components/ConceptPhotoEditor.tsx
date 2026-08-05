@@ -1,26 +1,30 @@
 /**
- * 개념도 사진 등록 + 라인/텍스트 그리기 (모달) — 웹 `ConceptPhotoEditor.vue` 이식.
+ * 개념도 사진 등록 + 라인/텍스트 그리기 (전체화면 편집기) — 웹 `ConceptPhotoEditor.vue` 이식.
  *
  * 흐름 (웹과 동일):
  *   1) 사진 촬영 또는 앨범에서 첨부
  *   2) 사진 위에 선을 긋거나 글자를 찍는다 (기본색 6종 · 되돌리기 · 전체 지우기)
  *   3) 등록 → 원본 + 합성본 업로드 + `concept_photos` 문서 생성 (status: 'pending')
  *
- * 좌표는 0~1 정규화로 저장한다 (`types/conceptPhoto.ts` 규약 — 웹과 동일).
- * 원본 사진은 손대지 않으므로 나중에 선만 고치거나 지울 수 있다.
+ * ── 화면 구성 (2026-08-05 전면 개편) ─────────────────────────────────────
+ *  사진이 작아 라인을 정확히 긋기 어렵다는 피드백을 받아 **캔버스를 화면 전체로** 키웠다.
+ *   · 스크롤을 없앴다 — 스크롤과 그리기 제스처가 서로를 잡아먹는다
+ *   · **두 손가락 = 확대·이동, 한 손가락 = 그리기**. 확대한 상태에서도 그릴 수 있다
+ *   · 도구·색상 바는 항상 아래에 떠 있어 확대 중에도 바꿀 수 있다
  *
- * ⚠️ 승인 전에는 올린 본인과 관리자만 볼 수 있다 (firestore.rules).
- *
- * ── 웹과 다른 점 ────────────────────────────────────────────────────────
- *  · 그리기 입력: 웹은 pointer 이벤트 + setPointerCapture, 앱은 RN 내장 `PanResponder`.
- *    (웹에서 필요했던 `draggable=false`/`dragstart` 차단 같은 함정은 RN엔 없다)
- *  · 합성: 웹은 canvas, 앱은 `react-native-view-shot`으로 화면에 그려진 그대로 캡처한다.
- *    캡처 해상도가 화면 폭 기준이라 원본보다 작아질 수 있다 [TBD] 실사용 후 화질 확인.
+ * ── 좌표 규약 (중요) ────────────────────────────────────────────────────
+ *  좌표는 **사진 박스 기준 0~1 정규화**다(웹과 동일).
+ *  ⚠️ 그래서 캔버스는 **사진의 실제 종횡비와 정확히 같아야** 한다.
+ *     예전엔 4:3 고정이라 위아래 검은 여백까지 좌표 범위에 들어갔고,
+ *     같은 데이터를 웹에서 열면 선이 어긋났다 (2026-08-05 정정).
+ *  ⚠️ 확대/이동 중에 찍힌 화면 좌표는 **역변환**해서 사진 좌표로 되돌린다.
+ *     (아래 `toContent` — 변환식 s = c + (p - c)·k + t 의 역)
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Image,
   Modal,
   PanResponder,
@@ -29,16 +33,15 @@ import {
   View,
   type LayoutChangeEvent,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { cameraOptions, libraryOptions } from '../../../constants/image';
 import { captureRef } from 'react-native-view-shot';
+import { cameraOptions, libraryOptions } from '../../../constants/image';
 import { Text } from '../../../components/common/Text';
 import { Input } from '../../../components/common/Input';
 import { Button } from '../../../components/common/Button';
 import { AppIcon } from '../../../components/common/AppIcon';
 import { ConceptPhotoOverlay } from '../../../components/common/ConceptPhotoOverlay';
-import { KeyboardAwareScroll } from '../../../components/common/KeyboardAwareScroll';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme';
 import type { Concept } from '../../../types/concept';
 import {
@@ -58,6 +61,16 @@ interface ConceptPhotoEditorProps {
 
 type Tool = 'line' | 'text';
 
+const MIN_SCALE = 1;
+const MAX_SCALE = 6;
+
+function touchDistance(t: { pageX: number; pageY: number }[]): number {
+  return Math.hypot(t[0].pageX - t[1].pageX, t[0].pageY - t[1].pageY);
+}
+function touchCenter(t: { pageX: number; pageY: number }[]): { cx: number; cy: number } {
+  return { cx: (t[0].pageX + t[1].pageX) / 2, cy: (t[0].pageY + t[1].pageY) / 2 };
+}
+
 export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   visible,
   concept,
@@ -65,10 +78,11 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   onSaved,
 }) => {
   const { colors, radius, spacing } = useTheme();
-  // Modal은 SafeAreaView 바깥이라 노치·상태바에 헤더가 가린다 (iOS에서 X 버튼이 안 눌리던 원인)
   const insets = useSafeAreaInsets();
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  /** 사진 원본 종횡비 (가로/세로). 캔버스를 여기에 맞춰야 좌표가 웹과 일치한다 */
+  const [aspect, setAspect] = useState(4 / 3);
   const [tool, setTool] = useState<Tool>('line');
   const [color, setColor] = useState<string>(PHOTO_COLORS[0]);
   const [textValue, setTextValue] = useState('');
@@ -78,67 +92,87 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   const [history, setHistory] = useState<Tool[]>([]);
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState('');
-  const [stage, setStage] = useState({ w: 1, h: 1 });
+
+  /** 캔버스가 놓일 수 있는 최대 영역 */
+  const [area, setArea] = useState({ w: 1, h: 1 });
+  /** 실제 사진 박스 크기 (종횡비를 지킨 결과) */
+  const stage = useMemo(() => {
+    const byWidth = { w: area.w, h: area.w / aspect };
+    return byWidth.h <= area.h ? byWidth : { w: area.h * aspect, h: area.h };
+  }, [area, aspect]);
 
   const stageRef = useRef<View | null>(null);
-  // PanResponder 콜백은 생성 시점 값을 가둬버리므로, 변하는 값은 ref로 읽는다
-  const live = useRef({ tool, color, textValue, stage });
-  live.current = { tool, color, textValue, stage };
+
+  // ── 확대/이동 ─────────────────────────────────────────────────────────
+  const scaleA = useRef(new Animated.Value(1)).current;
+  const txA = useRef(new Animated.Value(0)).current;
+  const tyA = useRef(new Animated.Value(0)).current;
+  const view = useRef({ k: 1, tx: 0, ty: 0 });
+  const gesture = useRef({ dist: 0, k: 1, tx: 0, ty: 0, cx: 0, cy: 0 });
+  const [zoomed, setZoomed] = useState(false);
+
+  const applyView = useCallback(
+    (k: number, tx: number, ty: number) => {
+      const maxX = Math.max(0, (stage.w * k - stage.w) / 2);
+      const maxY = Math.max(0, (stage.h * k - stage.h) / 2);
+      const nx = Math.min(maxX, Math.max(-maxX, tx));
+      const ny = Math.min(maxY, Math.max(-maxY, ty));
+      view.current = { k, tx: nx, ty: ny };
+      scaleA.setValue(k);
+      txA.setValue(nx);
+      tyA.setValue(ny);
+      setZoomed(k > 1.01);
+    },
+    [scaleA, stage.h, stage.w, txA, tyA],
+  );
+
+  const resetView = useCallback(() => applyView(1, 0, 0), [applyView]);
+
+  /**
+   * 캔버스 안의 화면 좌표 → 사진 좌표(0~1).
+   * 변환은 `s = c + (p - c)·k + t` 이므로 역은 `p = c + (s - c - t)/k`.
+   */
+  const toContent = useCallback(
+    (sx: number, sy: number): NormPoint => {
+      const { k, tx, ty } = view.current;
+      const cx = stage.w / 2;
+      const cy = stage.h / 2;
+      const px = cx + (sx - cx - tx) / k;
+      const py = cy + (sy - cy - ty) / k;
+      return {
+        x: Math.min(1, Math.max(0, px / stage.w)),
+        y: Math.min(1, Math.max(0, py / stage.h)),
+      };
+    },
+    [stage.h, stage.w],
+  );
+
+  // PanResponder 콜백은 생성 시점 값을 가둔다 → 변하는 값은 ref로 읽는다
+  const live = useRef({ tool, color, textValue });
+  live.current = { tool, color, textValue };
   const strokeRef = useRef<NormPoint[]>([]);
-
-  const reset = useCallback(() => {
-    setPhotoUri(null);
-    setLines([]);
-    setTexts([]);
-    setDrawing(null);
-    setHistory([]);
-    setTextValue('');
-    setProgress('');
-  }, []);
-
-  const closeAll = useCallback(() => {
-    reset();
-    onClose();
-  }, [onClose, reset]);
-
-  /** 사진 선택 — 촬영 / 앨범 */
-  const pickPhoto = useCallback((from: 'camera' | 'library') => {
-    void (async () => {
-      const res =
-        from === 'camera'
-          ? await launchCamera(cameraOptions())
-          : await launchImageLibrary(libraryOptions(1));
-      if (res.didCancel || !res.assets?.[0]?.uri) {
-        return;
-      }
-      setPhotoUri(res.assets[0].uri as string);
-      // 사진을 바꾸면 기존에 그린 건 의미가 없다 (웹과 동일)
-      setLines([]);
-      setTexts([]);
-      setHistory([]);
-      setDrawing(null);
-    })();
-  }, []);
-
-  /** 화면 좌표 → 0~1 정규화 */
-  const norm = useCallback((x: number, y: number): NormPoint => {
-    const { w, h } = live.current.stage;
-    return {
-      x: Math.min(1, Math.max(0, x / w)),
-      y: Math.min(1, Math.max(0, y / h)),
-    };
-  }, []);
 
   const responder = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
 
         onPanResponderGrant: (e) => {
-          const { locationX, locationY } = e.nativeEvent;
-          const p = norm(locationX, locationY);
+          const touches = e.nativeEvent.touches;
+          if (touches.length >= 2) {
+            gesture.current = {
+              dist: touchDistance(touches as never),
+              k: view.current.k,
+              tx: view.current.tx,
+              ty: view.current.ty,
+              ...touchCenter(touches as never),
+            };
+            return;
+          }
 
+          const p = toContent(e.nativeEvent.locationX, e.nativeEvent.locationY);
           if (live.current.tool === 'text') {
             const t = live.current.textValue.trim();
             if (!t) {
@@ -153,22 +187,56 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
           setDrawing({ points: [p], color: live.current.color });
         },
 
-        onPanResponderMove: (e) => {
+        onPanResponderMove: (e, g) => {
+          const touches = e.nativeEvent.touches;
+
+          // 두 손가락 → 확대·이동. 그리는 중이었다면 그 획은 버린다(손가락 하나 더 얹은 건 그릴 의도가 아니다)
+          if (touches.length >= 2) {
+            if (strokeRef.current.length > 0) {
+              strokeRef.current = [];
+              setDrawing(null);
+            }
+            const d = touchDistance(touches as never);
+            if (gesture.current.dist === 0) {
+              gesture.current = {
+                dist: d,
+                k: view.current.k,
+                tx: view.current.tx,
+                ty: view.current.ty,
+                ...touchCenter(touches as never),
+              };
+              return;
+            }
+            const c = touchCenter(touches as never);
+            const k = Math.min(
+              MAX_SCALE,
+              Math.max(MIN_SCALE, (gesture.current.k * d) / gesture.current.dist),
+            );
+            applyView(
+              k,
+              gesture.current.tx + (c.cx - gesture.current.cx),
+              gesture.current.ty + (c.cy - gesture.current.cy),
+            );
+            return;
+          }
+
           if (live.current.tool === 'text' || strokeRef.current.length === 0) {
             return;
           }
-          const { locationX, locationY } = e.nativeEvent;
-          const p = norm(locationX, locationY);
+          // 한 손가락 → 그리기 (확대 상태에서도 사진 좌표로 정확히 되돌려 기록한다)
+          const p = toContent(e.nativeEvent.locationX, e.nativeEvent.locationY);
           const last = strokeRef.current[strokeRef.current.length - 1];
           // 같은 자리 반복만 걸러낸다. 임계값이 크면 곡선이 각진다 (웹과 같은 0.0015)
-          if (Math.hypot(p.x - last.x, p.y - last.y) < 0.0015) {
+          if (Math.hypot(p.x - last.x, p.y - last.y) < 0.0015 / view.current.k) {
             return;
           }
           strokeRef.current = [...strokeRef.current, p];
           setDrawing({ points: strokeRef.current, color: live.current.color });
+          void g;
         },
 
         onPanResponderRelease: () => {
+          gesture.current.dist = 0;
           if (strokeRef.current.length === 0) {
             return;
           }
@@ -180,12 +248,63 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
           setDrawing(null);
         },
         onPanResponderTerminate: () => {
+          gesture.current.dist = 0;
           strokeRef.current = [];
           setDrawing(null);
         },
       }),
-    [norm],
+    [applyView, toContent],
   );
+
+  // ── 사진 선택 ─────────────────────────────────────────────────────────
+  const pickPhoto = useCallback(
+    (from: 'camera' | 'library') => {
+      void (async () => {
+        const res =
+          from === 'camera'
+            ? await launchCamera(cameraOptions())
+            : await launchImageLibrary(libraryOptions(1));
+        const asset = res.assets?.[0];
+        if (res.didCancel || !asset?.uri) {
+          return;
+        }
+        setPhotoUri(asset.uri);
+        // 캔버스를 사진 종횡비에 맞춰야 좌표가 웹과 일치한다
+        if (asset.width && asset.height) {
+          setAspect(asset.width / asset.height);
+        } else {
+          Image.getSize(
+            asset.uri,
+            (w, h) => setAspect(w / h),
+            () => setAspect(4 / 3),
+          );
+        }
+        // 사진을 바꾸면 기존에 그린 건 의미가 없다 (웹과 동일)
+        setLines([]);
+        setTexts([]);
+        setHistory([]);
+        setDrawing(null);
+        resetView();
+      })();
+    },
+    [resetView],
+  );
+
+  const reset = useCallback(() => {
+    setPhotoUri(null);
+    setLines([]);
+    setTexts([]);
+    setDrawing(null);
+    setHistory([]);
+    setTextValue('');
+    setProgress('');
+    resetView();
+  }, [resetView]);
+
+  const closeAll = useCallback(() => {
+    reset();
+    onClose();
+  }, [onClose, reset]);
 
   const undo = useCallback(() => {
     setHistory((prev) => {
@@ -205,9 +324,9 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
     setHistory([]);
   }, []);
 
-  const onStageLayout = useCallback((e: LayoutChangeEvent) => {
+  const onAreaLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
-    setStage({ w: Math.max(1, width), h: Math.max(1, height) });
+    setArea({ w: Math.max(1, width), h: Math.max(1, height) });
   }, []);
 
   const save = useCallback(() => {
@@ -220,7 +339,9 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
         let flatUri: string | null = null;
         if (lines.length > 0 || texts.length > 0) {
           setProgress('라인 합성 중…');
-          // 화면에 그려진 사진+오버레이를 그대로 굽는다
+          // ⚠️ 확대 상태로 캡처하면 잘린 그림이 구워진다 → 반드시 원래 배율로 되돌린 뒤 캡처
+          resetView();
+          await new Promise((r) => setTimeout(r, 60));
           flatUri = await captureRef(stageRef, { format: 'jpg', quality: 0.92 });
         }
         await submitConceptPhoto({
@@ -241,7 +362,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
         setProgress('');
       }
     })();
-  }, [closeAll, concept, lines, onSaved, photoUri, saving, texts]);
+  }, [closeAll, concept, lines, onSaved, photoUri, resetView, saving, texts]);
 
   if (!concept) {
     return null;
@@ -250,194 +371,199 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   const allLines = drawing ? [...lines, drawing] : lines;
   const canUndo = history.length > 0;
 
+  const toolBtn = (active: boolean) => [
+    styles.toolBtn,
+    {
+      borderRadius: radius.md,
+      borderColor: active ? colors.primary : colors.border,
+      backgroundColor: active ? colors.primary : colors.surface,
+    },
+  ];
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={closeAll}>
-      <View style={[styles.wrap, { backgroundColor: colors.background }]}>
-        <View
-          style={[
-            styles.header,
-            {
-              borderBottomColor: colors.divider,
-              padding: spacing.md,
-              paddingTop: spacing.md + insets.top,
-            },
-          ]}
-        >
+      <View style={[styles.wrap, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+        {/* 헤더 — 캔버스를 최대한 넓게 쓰려고 한 줄로 압축했다 */}
+        <View style={[styles.header, { borderBottomColor: colors.divider }]}>
           <Pressable accessibilityRole="button" onPress={closeAll} hitSlop={10} disabled={saving}>
             <AppIcon name="x" size={22} color={colors.textPrimary} />
           </Pressable>
-          <View style={styles.headerMid}>
-            <Text variant="title">개념도 사진 등록</Text>
-            <Text variant="caption" color="textSecondary" numberOfLines={1}>
+          <View style={styles.flex}>
+            <Text variant="label" numberOfLines={1}>
               {conceptPhotoTitle(concept)}
             </Text>
           </View>
-          <View style={styles.headerRight} />
+          {photoUri ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => pickPhoto('library')}
+              hitSlop={8}
+              disabled={saving}
+            >
+              <Text variant="caption" color="primary">
+                사진 변경
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
-        <KeyboardAwareScroll
-          contentContainerStyle={{ padding: spacing.md }}
-          // 그리는 중에는 스크롤이 개입하지 않도록
-          scrollEnabled={!drawing}
-        >
-          {!photoUri ? (
-            <View style={{ rowGap: spacing.sm }}>
-              <Button title="사진 촬영" onPress={() => pickPhoto('camera')} size="lg" />
-              <Button
-                title="앨범에서 첨부"
-                variant="secondary"
-                onPress={() => pickPhoto('library')}
-                size="lg"
-              />
-              <Text variant="caption" color="textSecondary">
-                개념도 사진을 올린 뒤, 사진 위에 등반 라인을 그릴 수 있습니다.
-              </Text>
+        {!photoUri ? (
+          <View style={[styles.pick, { padding: spacing.md }]}>
+            <Button title="사진 촬영" onPress={() => pickPhoto('camera')} size="lg" />
+            <Button
+              title="앨범에서 첨부"
+              variant="secondary"
+              onPress={() => pickPhoto('library')}
+              size="lg"
+            />
+            <Text variant="caption" color="textSecondary">
+              개념도 사진을 올린 뒤, 사진 위에 등반 라인을 그릴 수 있습니다.
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* 캔버스 — 화면의 대부분을 차지한다 */}
+            <View style={styles.area} onLayout={onAreaLayout}>
+              <View
+                style={[styles.stageBox, { width: stage.w, height: stage.h }]}
+                {...responder.panHandlers}
+              >
+                <View
+                  ref={stageRef}
+                  collapsable={false}
+                  style={[styles.stageBox, { width: stage.w, height: stage.h }]}
+                >
+                  <Animated.View
+                    style={[
+                      styles.stageBox,
+                      {
+                        width: stage.w,
+                        height: stage.h,
+                        transform: [
+                          { translateX: txA },
+                          { translateY: tyA },
+                          { scale: scaleA },
+                        ],
+                      },
+                    ]}
+                  >
+                    <Image
+                      source={{ uri: photoUri }}
+                      style={{ width: stage.w, height: stage.h }}
+                      resizeMode="cover"
+                      fadeDuration={0}
+                    />
+                    <ConceptPhotoOverlay
+                      lines={allLines}
+                      texts={texts}
+                      width={stage.w}
+                      height={stage.h}
+                    />
+                  </Animated.View>
+                </View>
+              </View>
+
+              {zoomed ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={resetView}
+                  style={[styles.resetBtn, { backgroundColor: colors.surface, borderRadius: radius.full }]}
+                >
+                  <Text variant="caption" color="primary">
+                    원래 크기
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
-          ) : (
-            <>
-              {/* 도구 */}
-              <View style={styles.toolbar}>
-                {(['line', 'text'] as const).map((t) => {
-                  const on = tool === t;
-                  return (
+
+            {/* 도구 바 — 확대 중에도 언제든 바꿀 수 있게 항상 떠 있다 */}
+            <View style={[styles.bar, { backgroundColor: colors.surface, paddingBottom: insets.bottom }]}>
+              {tool === 'text' ? (
+                <View style={styles.textRow}>
+                  <Input
+                    placeholder="넣을 글자 (예: 1P, 슬랩)"
+                    value={textValue}
+                    onChangeText={setTextValue}
+                    maxLength={20}
+                  />
+                </View>
+              ) : null}
+
+              <View style={styles.toolRow}>
+                <Pressable accessibilityRole="button" onPress={() => setTool('line')} style={toolBtn(tool === 'line')}>
+                  <AppIcon name="line" size={16} color={tool === 'line' ? colors.onPrimary : colors.textSecondary} />
+                  <Text variant="caption" color={tool === 'line' ? 'onPrimary' : 'textSecondary'}>
+                    선
+                  </Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" onPress={() => setTool('text')} style={toolBtn(tool === 'text')}>
+                  <AppIcon name="type" size={16} color={tool === 'text' ? colors.onPrimary : colors.textSecondary} />
+                  <Text variant="caption" color={tool === 'text' ? 'onPrimary' : 'textSecondary'}>
+                    글자
+                  </Text>
+                </Pressable>
+
+                <View style={styles.colors}>
+                  {PHOTO_COLORS.map((c) => (
                     <Pressable
-                      key={t}
+                      key={c}
                       accessibilityRole="button"
-                      onPress={() => setTool(t)}
+                      accessibilityLabel={`색상 ${c}`}
+                      onPress={() => setColor(c)}
                       style={[
-                        styles.toolBtn,
+                        styles.swatch,
                         {
-                          borderRadius: radius.md,
-                          borderColor: on ? colors.primary : colors.border,
-                          backgroundColor: on ? colors.primary : colors.surface,
+                          backgroundColor: c,
+                          borderColor: color === c ? colors.primary : colors.border,
+                          borderWidth: color === c ? 3 : 1,
                         },
                       ]}
-                    >
-                      <AppIcon
-                        name={t === 'line' ? 'line' : 'type'}
-                        size={16}
-                        color={on ? colors.onPrimary : colors.textSecondary}
-                      />
-                      <Text variant="caption" color={on ? 'onPrimary' : 'textSecondary'}>
-                        {t === 'line' ? '선' : '글자'}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                    />
+                  ))}
+                </View>
+
                 <Pressable
                   accessibilityRole="button"
                   onPress={undo}
                   disabled={!canUndo}
-                  style={[
-                    styles.toolBtn,
-                    { borderRadius: radius.md, borderColor: colors.border, opacity: canUndo ? 1 : 0.45 },
-                  ]}
+                  style={[styles.iconBtn, { opacity: canUndo ? 1 : 0.4 }]}
                 >
-                  <AppIcon name="undo" size={16} color={colors.textSecondary} />
-                  <Text variant="caption" color="textSecondary">
-                    되돌리기
-                  </Text>
+                  <AppIcon name="undo" size={19} color={colors.textSecondary} />
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   onPress={clearAll}
                   disabled={!canUndo}
-                  style={[
-                    styles.toolBtn,
-                    { borderRadius: radius.md, borderColor: colors.border, opacity: canUndo ? 1 : 0.45 },
-                  ]}
+                  style={[styles.iconBtn, { opacity: canUndo ? 1 : 0.4 }]}
                 >
-                  <AppIcon name="trash" size={16} color={colors.error} />
-                  <Text variant="caption" color="textSecondary">
-                    전체 지우기
-                  </Text>
+                  <AppIcon name="trash" size={19} color={colors.error} />
                 </Pressable>
               </View>
 
-              {/* 색 */}
-              <View style={styles.colors}>
-                {PHOTO_COLORS.map((c) => (
-                  <Pressable
-                    key={c}
-                    accessibilityRole="button"
-                    accessibilityLabel={`색상 ${c}`}
-                    onPress={() => setColor(c)}
-                    style={[
-                      styles.swatch,
-                      {
-                        backgroundColor: c,
-                        borderColor: color === c ? colors.primary : colors.border,
-                        borderWidth: color === c ? 3 : 2,
-                      },
-                    ]}
-                  />
-                ))}
-              </View>
-
-              {tool === 'text' ? (
-                <Input
-                  placeholder="넣을 글자 (예: 1P, 슬랩)"
-                  value={textValue}
-                  onChangeText={setTextValue}
-                  maxLength={20}
-                />
-              ) : null}
-
-              {/* 캔버스 */}
-              <View
-                ref={stageRef}
-                collapsable={false}
-                onLayout={onStageLayout}
-                style={[styles.stage, { borderRadius: radius.md }]}
-                {...responder.panHandlers}
-              >
-                <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="contain" />
-                <ConceptPhotoOverlay
-                  lines={allLines}
-                  texts={texts}
-                  width={stage.w}
-                  height={stage.h}
-                />
-              </View>
-
-              <Text variant="caption" color="textSecondary" style={{ marginTop: spacing.xs }}>
+              <Text variant="caption" color="textSecondary" style={styles.hint}>
                 {tool === 'line'
-                  ? '사진 위에서 손가락을 끌면 선이 그려집니다.'
-                  : '글자를 입력한 뒤 사진에서 위치를 누르세요.'}
+                  ? '한 손가락으로 끌면 선이 그려집니다 · 두 손가락으로 확대·이동'
+                  : '글자를 입력한 뒤 사진에서 위치를 누르세요 · 두 손가락으로 확대·이동'}
               </Text>
 
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => pickPhoto('library')}
-                style={{ paddingVertical: spacing.sm }}
-              >
-                <Text variant="caption" color="primary">
-                  다른 사진으로 바꾸기
-                </Text>
-              </Pressable>
-            </>
-          )}
-
-          <Button
-            title={saving ? progress || '저장 중…' : '등록 (승인 요청)'}
-            onPress={save}
-            disabled={saving || !photoUri}
-            loading={saving}
-            size="lg"
-            style={{ marginTop: spacing.md }}
-          />
-          {saving ? (
-            <View style={styles.savingRow}>
-              <ActivityIndicator color={colors.primary} />
-              <Text variant="caption" color="textSecondary">
-                업로드 중입니다. 화면을 벗어나지 마세요.
-              </Text>
+              <Button
+                title={saving ? progress || '저장 중…' : '등록 (승인 요청)'}
+                onPress={save}
+                disabled={saving}
+                loading={saving}
+                size="lg"
+              />
+              {saving ? (
+                <View style={styles.savingRow}>
+                  <ActivityIndicator color={colors.primary} />
+                  <Text variant="caption" color="textSecondary">
+                    업로드 중입니다. 화면을 벗어나지 마세요.
+                  </Text>
+                </View>
+              ) : null}
             </View>
-          ) : null}
-          <Text variant="caption" color="textSecondary" style={styles.notice}>
-            등록하면 관리자 승인 후 개념도에 반영됩니다. 승인 전에는 본인에게만 보입니다.
-          </Text>
-        </KeyboardAwareScroll>
+          </>
+        )}
       </View>
     </Modal>
   );
@@ -445,32 +571,33 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
 
 const styles = StyleSheet.create({
   wrap: { flex: 1 },
+  flex: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
     columnGap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerMid: { flex: 1 },
-  headerRight: { width: 22 },
-  toolbar: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
+  pick: { rowGap: 10 },
+  area: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' },
+  stageBox: { overflow: 'hidden' },
+  resetBtn: { position: 'absolute', top: 10, right: 10, paddingHorizontal: 12, paddingVertical: 6 },
+  bar: { paddingHorizontal: 12, paddingTop: 8, rowGap: 8 },
+  textRow: { marginBottom: -8 },
+  toolRow: { flexDirection: 'row', alignItems: 'center', columnGap: 6, flexWrap: 'wrap' },
   toolBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    columnGap: 5,
-    paddingHorizontal: 12,
+    columnGap: 4,
+    paddingHorizontal: 10,
     paddingVertical: 7,
     borderWidth: 1,
   },
-  colors: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-  swatch: { width: 28, height: 28, borderRadius: 14 },
-  stage: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    backgroundColor: '#111',
-    overflow: 'hidden',
-  },
-  photo: { width: '100%', height: '100%' },
-  savingRow: { flexDirection: 'row', alignItems: 'center', columnGap: 8, marginTop: 8 },
-  notice: { marginTop: 10, textAlign: 'center' },
+  colors: { flexDirection: 'row', columnGap: 6, marginHorizontal: 4 },
+  swatch: { width: 24, height: 24, borderRadius: 12 },
+  iconBtn: { padding: 6 },
+  hint: { textAlign: 'center' },
+  savingRow: { flexDirection: 'row', alignItems: 'center', columnGap: 8, justifyContent: 'center' },
 });
