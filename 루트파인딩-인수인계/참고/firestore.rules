@@ -1,0 +1,171 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ═══════════════════════════════════════════════════════════════
+    // RouteFinding v2 — 4탭 체제 (개념도 / 지도 / 루트제보 / 마이페이지)
+    // 정리일: 2026-08-04
+    //
+    // 관리자 = yusung790926@gmail.com  (TODO: Custom Claims로 이전)
+    // ═══════════════════════════════════════════════════════════════
+
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email == 'yusung790926@gmail.com';
+    }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // 1) users/{userId} — 프로필 (닉네임 / 사진 / 한 줄 소개 / FCM 토큰)
+    //
+    // ⚠️ 변경: 기존 `allow read: if true` → 로그인 필요.
+    //    이메일·FCM 토큰이 들어 있는 문서가 누구에게나 열려 있었다.
+    //    웹·앱 모두 로그인 후에만 프로필을 읽으므로 동작에는 영향이 없다.
+    match /users/{userId} {
+      allow read:  if isSignedIn();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // 1-1) 즐겨찾기 (개념도 ★ 버튼)
+    match /users/{userId}/my_routes/{routeId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+
+    // 1-2) 등반일지 — 날짜별 1건. 나중에 고칠 수 있어야 하므로 update 포함.
+    match /users/{userId}/climbing_logs/{logId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // 2) route_reports — 자연암벽(리드). 개념도·지도·루트제보의 원천 데이터.
+    //
+    //   읽기: 승인된 루트는 비로그인도 조회 가능(웹 지도/개념도 공개용).
+    //         그 외에는 작성자 본인 또는 관리자.
+    match /route_reports/{reportId} {
+      allow read:
+        if resource.data.status == 'approved'
+        || isOwner(resource.data.authorUid)
+        || isAdmin();
+
+      allow create:
+        if isSignedIn()
+        && request.resource.data.authorUid == request.auth.uid;
+
+      // 승인된 건 작성자가 못 고친다 (관리자만)
+      allow update, delete:
+        if (isOwner(resource.data.authorUid) && resource.data.status != 'approved')
+        || isAdmin();
+    }
+
+    match /route_reports/{reportId}/pitches/{pitchId} {
+      allow read: if isSignedIn();
+      allow create:
+        if isSignedIn()
+        && (
+          request.resource.data.authorUid == request.auth.uid
+          || get(/databases/$(database)/documents/route_reports/$(reportId)).data.authorUid == request.auth.uid
+          || isAdmin()
+        );
+      allow update, delete:
+        if isOwner(resource.data.authorUid)
+        || get(/databases/$(database)/documents/route_reports/$(reportId)).data.authorUid == request.auth.uid
+        || isAdmin();
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // 3) bouldering_reports — 인공벽/볼더링. route_reports와 동일 정책.
+    match /bouldering_reports/{reportId} {
+      allow read:
+        if resource.data.status == 'approved'
+        || isOwner(resource.data.authorUid)
+        || isAdmin();
+
+      allow create:
+        if isSignedIn()
+        && request.resource.data.authorUid == request.auth.uid;
+
+      allow update, delete:
+        if (isOwner(resource.data.authorUid) && resource.data.status != 'approved')
+        || isAdmin();
+    }
+
+    match /bouldering_reports/{reportId}/pitches/{pitchId} {
+      allow read: if isSignedIn();
+      allow create:
+        if isSignedIn()
+        && (
+          request.resource.data.authorUid == request.auth.uid
+          || get(/databases/$(database)/documents/bouldering_reports/$(reportId)).data.authorUid == request.auth.uid
+          || isAdmin()
+        );
+      allow update, delete:
+        if isOwner(resource.data.authorUid)
+        || get(/databases/$(database)/documents/bouldering_reports/$(reportId)).data.authorUid == request.auth.uid
+        || isAdmin();
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // 4) concept_photos — 개념도 사진 + 그 위에 그린 라인/텍스트 (v2 신규)
+    //
+    //   승인 전(pending)에는 **올린 본인과 관리자만** 조회된다.
+    //   create에서 status를 'pending'으로 강제해 스스로 승인하는 것을 막는다.
+    match /concept_photos/{photoId} {
+      allow read:
+        if isSignedIn()
+        && (
+          resource.data.status == 'approved'
+          || resource.data.authorUid == request.auth.uid
+          || isAdmin()
+        );
+
+      allow create:
+        if isSignedIn()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // 승인된 건 본인도 못 고친다 (관리자만)
+      allow update, delete:
+        if isAdmin()
+        || (isOwner(resource.data.authorUid) && resource.data.status != 'approved');
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // 5) notifications — FCM 알림 히스토리 (앱 Phase 3에서 사용 예정)
+    match /notifications/{notificationId} {
+      allow read, update, delete: if isOwner(resource.data.receiverId);
+      allow create: if isSignedIn();
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // 6) 그 외 모든 경로 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 제거한 규칙 (2026-08-04) — 해당 기능이 v2에서 빠졌거나 미사용
+    //
+    //   announcements            공지사항(웹)      — 코드 참조 0
+    //   posts_summary            게시판 개요       — 코드 참조 0
+    //   user_drafts              제보 초안         — 코드 참조 0
+    //   users/{uid}/my_comments  내 댓글           — 코드 참조 0
+    //   users/{uid}/comments     내 댓글           — 코드 참조 0
+    //   concepts/{산}/routes     구 개념도         — 실제로는 route_reports를 쓴다
+    //   posts + comments + replies + likes         — 게시판 제거
+    //   crews/**                                   — 크루 제거
+    //   {path=**}/comments, {path=**}/likes        — 위 기능 전용 와일드카드
+    //   route_gpx/**             Storage 경로가 Firestore 규칙에 잘못 들어가 있었다.
+    //                            (storage.rules에 같은 규칙이 이미 있어 영향 없음)
+    //   조회수/좋아요용 request.writeFields 규칙
+    //                            rules v2에 없는 API라 항상 거부되던 죽은 규칙.
+    //                            게시판 제거와 함께 삭제.
+    //
+    // 데이터는 지워지지 않는다. 게시판·크루를 되살릴 때 규칙만 다시 넣으면 된다.
+    // ═══════════════════════════════════════════════════════════════
+  }
+}
