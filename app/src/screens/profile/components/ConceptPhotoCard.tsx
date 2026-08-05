@@ -139,11 +139,12 @@ export const ConceptPhotoCard: React.FC<ConceptPhotoCardProps> = ({
           </>
         ) : null}
 
-        {isMine ? (
+        {/* 관리자는 승인·반려와 별개로 삭제할 수 있어야 한다 (스팸·중복 정리) */}
+        {isMine || isAdmin ? (
           <Pressable
             accessibilityRole="button"
             onPress={() =>
-              Alert.alert('등록 취소', '이 사진 등록을 취소할까요?', [
+              Alert.alert(isMine ? '등록 취소' : '사진 삭제', '이 사진 등록을 삭제할까요?', [
                 { text: '아니요', style: 'cancel' },
                 { text: '취소하기', style: 'destructive', onPress: () => onDelete(photo) },
               ])
@@ -152,7 +153,7 @@ export const ConceptPhotoCard: React.FC<ConceptPhotoCardProps> = ({
           >
             <AppIcon name="trash" size={14} color={colors.textSecondary} />
             <Text variant="caption" color="textSecondary">
-              등록 취소
+              {isMine ? '등록 취소' : '삭제'}
             </Text>
           </Pressable>
         ) : null}

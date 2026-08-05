@@ -14,6 +14,7 @@ import { Alert, StyleSheet, View } from 'react-native';
 import { deleteDoc, doc, updateDoc } from '@react-native-firebase/firestore';
 import { Button } from '../../../components/common/Button';
 import { db } from '../../../services/firebase';
+import { clearConceptCache } from '../../../services/conceptService';
 import type { Report } from '../../../types/report';
 
 interface ReportActionsProps {
@@ -45,6 +46,7 @@ export const ReportActions: React.FC<ReportActionsProps> = ({
         onPress: async () => {
           try {
             await deleteDoc(doc(db, report.collection, report.reportId));
+            clearConceptCache();
             // snapshot 구독이 자동으로 목록에서 제거. 별도 토스트 생략.
           } catch (e) {
             Alert.alert(
@@ -65,7 +67,9 @@ export const ReportActions: React.FC<ReportActionsProps> = ({
       await updateDoc(doc(db, report.collection, report.reportId), {
         status: 'approved',
       });
-      // 승인 → approved 필터에 의해 자동 제거
+      // 승인되면 개념도·지도에 나와야 하므로 목록 캐시를 버린다
+      clearConceptCache();
+      // 승인 → 관리자 쿼리(draft/pending)에서 빠져 목록에서 자동 제거
     } catch (e) {
       Alert.alert('오류', `승인 실패: ${e instanceof Error ? e.message : e}`);
     }

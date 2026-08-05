@@ -9,7 +9,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,10 +25,7 @@ import { RemoteImage } from '../../components/common/RemoteImage';
 import { Button } from '../../components/common/Button';
 import { ConceptPhotoEditor } from './components/ConceptPhotoEditor';
 import { ConceptPhotoStrip } from './components/ConceptPhotoStrip';
-import { useAuthStore } from '../../stores/authStore';
-import { isAdminEmail } from '../../constants/admin';
 import { useFavorites } from './hooks/useFavorites';
-import { deleteReport } from '../../services/reportService';
 import { useTheme } from '../../theme';
 import { formatDate } from '../../utils/date';
 import {
@@ -84,7 +80,6 @@ export const ConceptDetailScreen: React.FC = () => {
   });
   /** 개념도 사진 등록 모달 (웹 상세의 '사진 등록' 버튼 대응) */
   const [photoOpen, setPhotoOpen] = useState(false);
-  const isAdmin = isAdminEmail(useAuthStore((st) => st.user?.email));
   const favorites = useFavorites();
   /**
    * 수정 화면에서 돌아오면 다시 읽는다.
@@ -238,44 +233,11 @@ export const ConceptDetailScreen: React.FC = () => {
         style={styles.logBtn}
       />
 
-      {/* 관리자 전용 — 수정 / 삭제 (웹 개념도 목록의 관리자 버튼과 동일) */}
-      {isAdmin ? (
-        <View style={styles.adminRow}>
-          <Button
-            title="수정"
-            variant="secondary"
-            onPress={() =>
-              navigation.navigate('ConceptEdit', { conceptId: c.id, source: c.source })
-            }
-            style={styles.adminBtn}
-          />
-          <Button
-            title="삭제"
-            variant="ghost"
-            onPress={() =>
-              Alert.alert(
-                '개념도 삭제',
-                `"${c.routeName ?? '이름 없음'}"을(를) 정말 삭제할까요?\n되돌릴 수 없습니다.`,
-                [
-                  { text: '취소', style: 'cancel' },
-                  {
-                    text: '삭제',
-                    style: 'destructive',
-                    onPress: () => {
-                      void deleteReport(c.source, c.id)
-                        .then(() => navigation.goBack())
-                        .catch((e: unknown) =>
-                          Alert.alert('삭제 실패', e instanceof Error ? e.message : String(e)),
-                        );
-                    },
-                  },
-                ],
-              )
-            }
-            style={styles.adminBtn}
-          />
-        </View>
-      ) : null}
+      {/*
+        ⚠️ 관리자 수정/삭제 버튼을 **여기서 뺐다** (2026-08-05).
+           개념도를 보다가 실수로 삭제하는 사고가 실제로 났다. Firestore 문서 삭제는 되돌릴 수 없다.
+           수정·삭제는 **개념도 목록 카드**에서만 한다(그쪽은 대상이 카드로 명확히 구분된다).
+      */}
 
       {/* 사진 (개념도 본체) */}
       {images.length > 0 ? (

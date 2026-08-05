@@ -69,7 +69,13 @@ function subscribeReports(
   );
 }
 
-/** 관리자용: 승인 대기/반려/임시 상태의 **모든** 제보 (작성자 무관) */
+/**
+ * 관리자용: **아직 처리하지 않은** 제보만 (작성자 무관).
+ *
+ * 승인·반려하면 status가 바뀌어 이 쿼리에서 빠지므로 **목록에서 자동으로 사라진다**
+ * (사용자 요청 2026-08-05 — 처리한 건이 계속 쌓여 보이던 문제).
+ * 반려된 건은 **올린 사람 본인**의 구독에는 계속 잡혀 사유를 확인할 수 있다.
+ */
 function subscribeAdminReports(
   coll: ReportCollection,
   setItems: (rows: Report[] | null) => void,
@@ -77,7 +83,7 @@ function subscribeAdminReports(
 ): () => void {
   const q = query(
     collection(db, coll),
-    where('status', 'in', ['draft', 'pending', 'rejected']),
+    where('status', 'in', ['draft', 'pending']),
   );
   return onSnapshot(
     q,

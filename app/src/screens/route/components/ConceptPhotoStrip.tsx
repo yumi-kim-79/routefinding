@@ -1,7 +1,11 @@
 /**
  * 개념도 상세에 등록된 사진 + 라인 오버레이 (웹 ConceptDetailView의 사진 목록 대응).
  *
- * · 승인된 사진은 모두, 승인 대기는 **올린 본인과 관리자만** 보인다 (규칙과 동일)
+ * · **승인된 사진은 여기 그리지 않는다.** 승인되는 순간 개념도 `imageUrls`에 들어가
+ *   위쪽 캐러셀에 나오므로, 여기서도 그리면 같은 사진이 두 번 보인다.
+ *   더 나쁜 건 관리자가 개념도에서 그 사진을 지워도 **여기 남아 안 지워진 것처럼 보이는 것**이다
+ *   (2026-08-05 사용자 확인). 웹은 아직 중복 표시한다 — 웹도 같이 고쳐야 한다
+ * · 즉 여기 보이는 건 **아직 처리되지 않은(승인 대기/반려) 사진**뿐이다
  * · 관리자는 여기서 바로 승인·추가 / 승인·교체 / 반려할 수 있다
  * · 오버레이는 저장된 0~1 정규화 좌표로 그린다 — 사진 크기와 무관하게 정확히 겹친다
  */
@@ -39,10 +43,15 @@ export const ConceptPhotoStrip: React.FC<ConceptPhotoStripProps> = ({ conceptId,
     if (!uid) {
       return;
     }
-    return subscribeConceptPhotosFor(conceptId, uid, isAdmin, setPhotos, (msg) =>
+    return subscribeConceptPhotosFor(
+      conceptId,
+      uid,
+      isAdmin,
+      (rows) => setPhotos(rows.filter((p) => p.status !== 'approved')),
+      (msg) =>
       // 실패해도 상세 화면 나머지는 그대로 보여준다
-      // eslint-disable-next-line no-console
-      console.warn('[concept_photos] 상세 구독 실패:', msg),
+        // eslint-disable-next-line no-console
+        console.warn('[concept_photos] 상세 구독 실패:', msg),
     );
   }, [conceptId, isAdmin, uid]);
 
@@ -81,7 +90,7 @@ export const ConceptPhotoStrip: React.FC<ConceptPhotoStripProps> = ({ conceptId,
 
   return (
     <View style={{ marginTop: spacing.md }}>
-      <Text variant="title">등록된 사진 ({photos.length})</Text>
+      <Text variant="title">검토 중인 사진 ({photos.length})</Text>
 
       {photos.map((p) => {
         const pending = p.status === 'pending';
