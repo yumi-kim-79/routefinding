@@ -59,7 +59,14 @@ react {
 /**
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */
-def enableProguardInReleaseBuilds = false
+/**
+ * R8(코드 축소·난독화) 사용 여부.
+ *
+ * 켜면 release APK의 dex가 9.1MB → 5~6MB 수준으로 준다.
+ * ⚠️ 리플렉션을 쓰는 라이브러리가 깨질 수 있어 `proguard-rules.pro`에 keep 규칙을 둔다.
+ *    문제가 생기면 **이 값 하나만 false로 되돌리면** 즉시 원상복구된다 (2026-08-05).
+ */
+def enableProguardInReleaseBuilds = true
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -104,7 +111,26 @@ android {
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
+            // 코드가 줄면 그에 딸린 리소스도 줄인다 (minify와 세트로만 동작한다)
+            shrinkResources enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+
+            /*
+             * ⚡ 실기기용 ABI만 담는다 (2026-08-05 실측).
+             *
+             *   측정: release APK 59MB 중 네이티브 라이브러리가 58MB,
+             *         그중 x86 16.2MB + x86_64 15.6MB = **31.8MB(55%)**가
+             *         **에뮬레이터 전용**이라 실기기에서는 한 번도 쓰이지 않는다.
+             *
+             *   → arm64-v8a(요즘 폰 전부) + armeabi-v7a(구형)만 담아 절반 이하로 줄인다.
+             *
+             *   ⚠️ debug 빌드는 건드리지 않았다. 에뮬레이터 개발은 그대로 된다.
+             *      (Apple Silicon 맥의 에뮬레이터는 arm64라 release도 그대로 돌아간다.
+             *       Intel 맥 에뮬레이터에서 release를 돌려야 한다면 x86_64를 다시 추가할 것)
+             */
+            ndk {
+                abiFilters "arm64-v8a", "armeabi-v7a"
+            }
         }
     }
 }

@@ -9,6 +9,46 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-05 (16차) — ⚡ 앱 경량화 (APK 59MB → 절반 이하 예상)
+
+> 기능은 그대로 두고 낭비만 걷어내는 것이 원칙. 실측으로 큰 것부터 잡았다.
+
+#### 실측 — release APK 59MB의 구성
+| 항목 | 크기 | 판정 |
+|---|---|---|
+| `lib/` 네이티브 | **58.0MB** | 이 중 **x86 16.2 + x86_64 15.6 = 31.8MB(55%)가 에뮬레이터 전용** |
+| `classes*.dex` | 9.1MB | 코드 축소가 꺼져 있었다 |
+| JS 번들 | 0.9MB | 문제 없음 |
+| 리소스 | 0.4MB | 문제 없음 |
+
+#### Changed — ABI 필터 (가장 큰 절감, 기능 영향 0)
+- release는 **`arm64-v8a` + `armeabi-v7a`만** 담는다. x86 계열은 실기기가 쓰지 않는다
+- **debug는 건드리지 않았다** — 에뮬레이터 개발 그대로.
+  Apple Silicon 맥 에뮬레이터는 arm64라 release도 정상 동작
+
+#### Changed — R8 코드 축소 + 리소스 축소
+- `enableProguardInReleaseBuilds = false` → **`true`** (dex 9.1MB → 5~6MB 기대)
+- `shrinkResources`도 함께 (minify와 세트로만 동작)
+- `proguard-rules.pro` 작성: RN JNI 진입점, Firebase/GMS, 이 앱의 네이티브 모듈 6개
+  (지도·SVG·캡처·사진·위치·문서선택) keep
+- **되돌리기는 플래그 하나** — 문제가 생기면 `false`로 바꾸면 즉시 원복
+
+#### 검토했으나 손대지 않은 것
+| 항목 | 판단 |
+|---|---|
+| 라우팅 해제된 보존 화면(게시판·크루 등) | **이미 번들에 없다.** 아무도 import하지 않아 Metro가 넣지 않는다 — 파일만 남은 상태가 의도대로 동작 중 |
+| `react-native-screens` (src에서 직접 참조 0) | `@react-navigation/native-stack`이 내부적으로 쓴다. **제거하면 안 된다** |
+| JS 번들 0.9MB / 아이콘 에셋 16KB | 이미 작다 |
+| `console.*` 제거 | 하지 않았다. release 로그가 원격 진단에 실제로 쓰이고 있다 |
+| 앱 시작 경로 | App Check 1회 + 인증 구독뿐. 이미 가볍다 (지도 5,400건 로딩은 15차에서 캐시 우선으로 해결) |
+
+#### [QUESTION] — `@react-native-firebase/messaging`
+`services/firebase.ts`에서 `getMessaging(app)`을 호출해 export하지만 **쓰는 곳이 한 곳도 없다.**
+FCM 네이티브 SDK가 통째로 들어가고 앱 시작 때 초기화까지 한다.
+Phase 3 예정 기능이라 임의로 빼지 않았다 — 지금 빼면 용량·시작 시간이 더 줄고,
+Phase 3에서 다시 넣는 비용은 작다. **사용자 확인 필요.**
+
+
 ### 📅 2026-08-05 (15차) — 🐛 첫 사진 첨부 모자이크 — 진짜 원인은 레이아웃 타이밍
 
 > 14차에서 `maxWidth` 탓으로 보고 iOS에서 뺐지만 **증상이 그대로였다.** 오진이었다.

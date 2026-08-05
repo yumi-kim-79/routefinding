@@ -145,6 +145,36 @@ cd android && ./gradlew clean bundleRelease   # AAB (Play Store 업로드용)
 ./gradlew assembleRelease
 ```
 
+### 2-4-1. ⚡ APK 크기 최적화 (2026-08-05 적용)
+
+**실측 — 최적화 전 release APK 59MB의 구성**
+
+| 항목 | 크기 | 비고 |
+|---|---|---|
+| `lib/` (네이티브) | 58.0MB | 이 중 **x86 16.2 + x86_64 15.6 = 31.8MB가 에뮬레이터 전용** |
+| `classes*.dex` | 9.1MB | 코드 축소를 끄고 있었다 |
+| `assets/` (JS 번들) | 0.9MB | 문제 없음 |
+| `res/` | 0.4MB | 문제 없음 |
+
+**적용한 것**
+
+1. **ABI 필터** — release는 `arm64-v8a` + `armeabi-v7a`만 담는다.
+   x86 계열은 실기기에서 한 번도 쓰이지 않는다. **debug는 그대로**라 에뮬레이터 개발에 지장 없다
+   (Apple Silicon 맥의 에뮬레이터는 arm64라 release도 그대로 돈다.
+   Intel 맥 에뮬레이터에서 release를 돌려야 하면 `x86_64`를 다시 추가할 것)
+2. **R8 코드 축소 + 리소스 축소** — `enableProguardInReleaseBuilds = true`.
+   리플렉션을 쓰는 것들(RN JNI, Firebase, 네이티브 모듈 6개)은 `proguard-rules.pro`에 keep 규칙을 뒀다
+
+**되돌리기** — 문제가 생기면 `android/app/build.gradle`의
+`enableProguardInReleaseBuilds`를 `false`로 바꾸면 코드 축소만 즉시 꺼진다.
+증상은 보통 "특정 화면만 죽는다"로 나타난다.
+
+**검증 방법** — 빌드 후 크기와 구성을 직접 확인:
+```bash
+ls -lh app/build/outputs/apk/release/app-release.apk
+unzip -l app/build/outputs/apk/release/app-release.apk | grep "lib/" | awk '{print $4}' | cut -d/ -f2 | sort -u
+```
+
 ### 2-5. 출시 전 체크리스트
 - [ ] `versionCode` > 스토어 최신값
 - [ ] release 서명 키 = v1과 동일
