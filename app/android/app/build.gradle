@@ -116,21 +116,17 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
 
             /*
-             * ⚡ 실기기용 ABI만 담는다 (2026-08-05 실측).
+             * ⚠️ **여기에 `ndk { abiFilters }` 를 쓰면 안 된다** (2026-08-05 실측).
              *
-             *   측정: release APK 59MB 중 네이티브 라이브러리가 58MB,
-             *         그중 x86 16.2MB + x86_64 15.6MB = **31.8MB(55%)**가
-             *         **에뮬레이터 전용**이라 실기기에서는 한 번도 쓰이지 않는다.
+             *   16차에 여기에 2개 ABI만 적었는데, 빌드된 APK는 **4개를 그대로 담고 있었다**
+             *   (65MB 중 lib 55.8MB, x86 15.5 + x86_64 15.0 = 30.5MB가 에뮬레이터 전용).
              *
-             *   → arm64-v8a(요즘 폰 전부) + armeabi-v7a(구형)만 담아 절반 이하로 줄인다.
+             *   AGP는 defaultConfig 의 abiFilters 와 buildType 의 abiFilters 를
+             *   **합집합으로 합친다.** RN gradle 플러그인이 `reactNativeArchitectures`를
+             *   읽어 defaultConfig 에 4개를 넣으므로 여기서 2개로 "좁힐" 방법이 없다.
              *
-             *   ⚠️ debug 빌드는 건드리지 않았다. 에뮬레이터 개발은 그대로 된다.
-             *      (Apple Silicon 맥의 에뮬레이터는 arm64라 release도 그대로 돌아간다.
-             *       Intel 맥 에뮬레이터에서 release를 돌려야 한다면 x86_64를 다시 추가할 것)
+             *   → ABI는 **`gradle.properties`의 `reactNativeArchitectures`**에서 정한다.
              */
-            ndk {
-                abiFilters "arm64-v8a", "armeabi-v7a"
-            }
         }
     }
 }

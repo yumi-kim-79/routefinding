@@ -9,6 +9,45 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-05 (24차) — ⚡ APK 경량화가 **실제로는 안 먹고 있었다** (16차 정정)
+
+> 22~23차 AdMob 빌드가 성공해서 APK를 열어 봤더니 **65MB**였다. 16차에서 "절반 이하로
+> 줄어들 것"이라고 적어 둔 게 **검증 없는 예상**이었고, 실제로는 **한 바이트도 안 줄고 있었다.**
+
+#### 실측 — release APK 65MB의 구성
+| 항목 | 크기 |
+|---|---|
+| `lib/` 네이티브 | **55.8MB** |
+| ↳ x86 | 15.5MB ← 에뮬레이터 전용 |
+| ↳ x86_64 | 15.0MB ← 에뮬레이터 전용 |
+| ↳ arm64-v8a | 14.7MB |
+| ↳ armeabi-v7a | 10.5MB |
+| `classes*.dex` | 14.9MB (R8은 정상 동작 중) |
+
+**x86 + x86_64 = 30.5MB(47%)가 실기기에서 절대 쓰이지 않는 코드다.**
+
+#### Fixed — 왜 안 먹었나
+16차는 `buildTypes.release { ndk { abiFilters "arm64-v8a", "armeabi-v7a" } }` 로 좁히려 했다.
+그런데 **AGP는 `defaultConfig`의 abiFilters와 `buildType`의 abiFilters를 합집합으로 합친다.**
+RN gradle 플러그인이 `reactNativeArchitectures`(4개)를 읽어 defaultConfig에 넣으므로,
+release에 2개를 적어도 결과는 **4개 그대로**다. buildType에서는 좁힐 수가 없다.
+
+- `gradle.properties`: `reactNativeArchitectures=armeabi-v7a,arm64-v8a` (x86 계열 제거)
+- `app/build.gradle`: 효과 없는 `ndk { abiFilters }` 블록 제거 + **왜 여기 쓰면 안 되는지** 주석으로 남김
+
+#### 예상 효과
+65MB → **약 35MB** (x86 계열 30.5MB 제거). 이번엔 빌드 후 **실제 크기를 확인한다.**
+
+#### ⚠️ 에뮬레이터
+Apple Silicon 맥의 에뮬레이터는 arm64라 그대로 동작한다.
+Intel 맥 에뮬레이터(x86_64)가 필요하면 CLI로 되돌린다:
+`./gradlew assembleDebug -PreactNativeArchitectures=x86_64`
+
+#### 참고 — R8 경고는 정상
+`play-services-auth-21.5.0`의 `Invalid stack map table …` 수십 줄은 구글 라이브러리의
+알려진 경고다. 빌드는 성공하고 동작에도 영향이 없다.
+
+
 ### 📅 2026-08-05 (23차) — 🔧 AdMob 안드로이드 빌드 실패 수정 (15.8.3 → 14.7.2)
 
 > 22차에서 고른 15.8.3으로 **안드로이드 release 빌드가 깨졌다.** 원인은 우리 코드가 아니라
