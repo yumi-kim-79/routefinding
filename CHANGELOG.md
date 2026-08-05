@@ -9,6 +9,39 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-05 (23차) — 🔧 AdMob 안드로이드 빌드 실패 수정 (15.8.3 → 14.7.2)
+
+> 22차에서 고른 15.8.3으로 **안드로이드 release 빌드가 깨졌다.** 원인은 우리 코드가 아니라
+> **광고 SDK가 요구하는 Kotlin 버전**이었다. iOS는 영향 없었다.
+
+#### 무엇이 깨졌나
+```
+:react-native-google-mobile-ads:compileReleaseKotlin FAILED
+e: play-services-ads-24.6.0-api.jar!/META-INF/….kotlin_module
+   was compiled with an incompatible version of Kotlin.
+   metadata 2.1.0, expected 1.9.0
+e: ReactNativeGoogleMobileAdsAdHelper.kt:37 Unresolved reference: let
+```
+`play-services-ads` **24.x는 내부가 Kotlin 2.1로 컴파일**돼 있는데, 우리 컴파일러는
+RN 0.76.9 기본인 **1.9.25**다. `kotlin.Unit`조차 못 읽으니 `let` 같은 stdlib 함수까지
+미해결로 뜬다 — 뒤의 수십 줄은 **증상이고 첫 줄이 원인**이다.
+
+#### Fixed
+- `react-native-google-mobile-ads` **15.8.3 → 14.7.2** (Android GMA 24.6 → **23.6.0**, Kotlin 1.9 호환)
+- 코드 변경 없음 — 쓰는 API(`BannerAd`/`ANCHORED_ADAPTIVE_BANNER`/`TestIds`/`initialize`)가 14.x에도 전부 있다
+- 광고 ID·배치·초기화 방식은 22차 그대로
+
+#### Kotlin을 2.1로 올리지 않은 이유
+RN 0.76.9의 gradle 플러그인이 Kotlin 1.9.24에 맞춰 배포되고,
+`react-native-screens`(kt 71) · `safe-area-context`(18) · `documents/picker`(9)가
+전부 K2로 다시 컴파일된다. **광고 하나 때문에 안드로이드 툴체인 전체를 흔들** 수는 없다.
+→ RN 0.77+로 올릴 때 Kotlin 2.x가 기본이 되므로 그때 RNGMA도 15.x로 함께 올린다.
+
+#### 교훈 (docs/10_ADMOB.md §5에 기록)
+`peerDependencies`는 호환을 보장하지 않는다 — 이번엔 **패키지가 아니라 그 패키지가 끌어오는
+구글 SDK**가 툴체인 버전을 요구했다. **전이 의존성이 요구하는 컴파일러 버전**까지 봐야 한다.
+
+
 ### 📅 2026-08-05 (22차) — 📢 AdMob 배너 (iOS · Android 동일)
 
 > v1은 안드로이드만 광고가 나가고 있었다. v2는 **같은 코드로 양쪽 다** 넣는다.

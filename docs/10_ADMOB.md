@@ -9,7 +9,7 @@
 
 | 항목 | 상태 |
 |---|---|
-| 패키지 (`react-native-google-mobile-ads@15.8.3`) | `package.json`에 고정 ✅ (설치 명령은 §4) |
+| 패키지 (`react-native-google-mobile-ads@14.7.2`) | `package.json`에 고정 ✅ (설치 명령은 §4) |
 | 배너 컴포넌트 · 초기화 · 배치(4개 화면) | 구현 완료 ✅ |
 | iOS Podfile 링크 설정 | 완료 ✅ |
 | **iOS 앱 ID / 배너 단위 ID** | ✅ 실제 값 적용 (2026-08-05) |
@@ -93,25 +93,56 @@ cd ios && pod install          # GoogleMobileAds + UMP pod 추가 (필수)
 
 ---
 
-## 5. 버전을 15.8.3으로 고정한 이유
+## 5. 버전을 14.7.2로 고정한 이유 — **실제로 깨져 보고 내린 결정**
 
-이 저장소는 "peerDependencies가 `*`여도 호환을 보장하지 않는다"는 걸 여러 번 겪었다
-(react-native-svg 15.11.2 = RN 0.77 전용, react-native-maps 1.26.1 = RN 0.81 전용).
-그래서 이번에도 **실제로 확인하고** 골랐다.
+처음엔 최신 15.8.3을 골랐다가 **안드로이드 빌드가 깨졌다.** 원인은 우리 코드가 아니라
+**구글 광고 SDK가 요구하는 Kotlin 버전**이었다.
 
-| 확인한 것 | 15.8.3 | 우리 프로젝트 | 판정 |
+```
+:react-native-google-mobile-ads:compileReleaseKotlin FAILED
+e: play-services-ads-24.6.0-api.jar!/META-INF/….kotlin_module
+   was compiled with an incompatible version of Kotlin.
+   The binary version of its metadata is 2.1.0, expected version is 1.9.0.
+e: …/ReactNativeGoogleMobileAdsAdHelper.kt:37:52 Unresolved reference: let
+```
+
+읽는 법: `play-services-ads` **24.x**는 내부가 Kotlin 2.1로 컴파일돼 있다.
+우리 프로젝트의 Kotlin 컴파일러는 **1.9.25**(RN 0.76.9 기본)라 2.1 메타데이터를 못 읽는다.
+그래서 `kotlin.Unit`조차 로드하지 못하고 `let` 같은 **stdlib 기본 함수까지 미해결**로 뜬다.
+(뒤쪽 `Unresolved reference` 수십 줄은 원인이 아니라 **증상**이다 — 첫 줄이 진짜 원인이다.)
+
+| RNGMA | Android GMA SDK | Kotlin 요구 | 판정 |
 |---|---|---|---|
-| Android `minSdk` | 23 | 24 | ✅ |
+| 15.x 전체 | 24.1 ~ 24.6 | **2.1** | ❌ 우리 툴체인과 불가 |
+| **14.7.2** | **23.6.0** | 1.9 | ✅ 선택 |
+
+### 왜 Kotlin을 2.1로 올리지 않았나
+
+올리는 쪽이 "정공법"처럼 보이지만 대가가 크다.
+
+- RN 0.76.9의 gradle 플러그인은 Kotlin **1.9.24**에 맞춰 배포된다. 강제로 2.1을 얹으면
+  플러그인 자체가 설정 단계에서 깨질 수 있다.
+- 같이 다시 컴파일되는 Kotlin 모듈이 더 있다:
+  `react-native-screens`(71개) · `react-native-safe-area-context`(18개) ·
+  `@react-native-documents/picker`(9개). K2 컴파일러는 더 엄격해서 어디가 터질지 모른다.
+- 광고 하나 붙이자고 **안드로이드 툴체인 전체를 흔드는** 셈이 된다.
+
+→ **RN을 0.77+로 올릴 때 Kotlin 2.x가 기본이 되므로, 그때 RNGMA도 15.x로 같이 올린다.**
+  (그전까지 23.6.0으로도 광고 노출·수익에는 문제가 없다.)
+
+### 14.7.2가 우리 환경에 맞는지 확인한 것
+
+| 확인 항목 | 14.7.2 | 우리 프로젝트 | 판정 |
+|---|---|---|---|
+| Android `minSdk` | 21 | 24 | ✅ |
 | Android `compileSdk` | 34 | 35 | ✅ |
-| iOS 배포 타깃 (GMA 12.11 요구) | iOS 15+ | 15.1 | ✅ |
-| Android 네이티브 패키지 클래스 | `TurboReactPackage` | RN 0.76.9에 존재 | ✅ |
-| RN 최소 버전 (CHANGELOG) | 0.65+ | 0.76.9 | ✅ |
+| iOS 배포 타깃 (GMA 11.13 요구) | iOS 12+ | 15.1 | ✅ |
+| New Architecture | `codegenConfig` 있음 (Fabric/TurboModule) | 양쪽 다 켜짐 | ✅ |
+| 우리가 쓰는 JS API | `BannerAd` · `BannerAdSize.ANCHORED_ADAPTIVE_BANNER` · `TestIds.BANNER` · `mobileAds().initialize()` | 전부 존재 | ✅ |
 
-16.x는 2025-10 이후 릴리스로 RN·TS 의존성을 통째로 올린 버전이라, 급할 이유가 없어 보류했다.
-올릴 때는 **New Architecture가 양쪽 다 켜져 있다**는 점(iOS Fabric pod, `newArchEnabled=true`)을
-같이 확인해야 한다.
-
----
+> 📌 교훈(또 확인됨): `peerDependencies`는 호환을 보장하지 않는다.
+>   이번엔 **패키지가 아니라 패키지가 끌어오는 구글 SDK**가 툴체인을 요구했다.
+>   버전을 고를 때는 **전이 의존성이 요구하는 컴파일러 버전**까지 봐야 한다.
 
 ## 6. 배너를 넣은 자리
 
