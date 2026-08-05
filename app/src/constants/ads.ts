@@ -27,8 +27,10 @@ export const ADMOB_PUBLISHER_ID = 'pub-4653853586463291';
  * [TODO] AdMob 콘솔에서 배너 단위를 만들고 아래 두 값을 채운다. 비워두면 테스트 광고가 나온다.
  */
 const REAL_BANNER = Platform.select({
-  android: '', // 예: 'ca-app-pub-4653853586463291/1234567890'
-  ios: '', //     예: 'ca-app-pub-4653853586463291/0987654321'
+  // [TODO] 안드로이드 배너 단위 ID — AdMob 콘솔에서 만든 뒤 여기에 넣는다.
+  //        비어 있는 동안 안드로이드는 테스트 광고가 나간다(수익 0, 동작은 정상).
+  android: '',
+  ios: 'ca-app-pub-4653853586463291/6926725756',
   default: '',
 });
 
