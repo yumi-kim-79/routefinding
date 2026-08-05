@@ -96,8 +96,13 @@ android {
          *    Play는 **더 큰 versionCode** 만 받는다. v1 최신 빌드보다 확실히 크게 잡되,
          *    v1 긴급 패치를 낼 여지를 남기려고 100부터 시작한다(문서 08 §2-3).
          *    실제 값은 gradle.properties 에서 덮어쓸 수 있다.
+         *
+         * ⚠️ `versionCode (X) as Integer` 로 쓰면 안 된다 — Groovy는 이걸
+         *    "versionCode(X) 를 호출하고 그 **결과**를 캐스팅" 으로 읽어서
+         *    문자열이 그대로 들어가고 `Value is null` 로 터진다 (2026-08-05 실측).
+         *    반드시 값을 **먼저** 정수로 만든 뒤 넘긴다.
          */
-        versionCode (project.findProperty('ROUTEFINDING_VERSION_CODE') ?: '100') as Integer
+        versionCode Integer.parseInt(project.findProperty('ROUTEFINDING_VERSION_CODE') ?: '100')
         versionName project.findProperty('ROUTEFINDING_VERSION_NAME') ?: '2.0.0'
     }
     signingConfigs {
