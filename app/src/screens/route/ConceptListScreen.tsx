@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import { Text } from '../../components/common/Text';
 import { Button } from '../../components/common/Button';
+import { AdBanner } from '../../components/common/AdBanner';
 import { useTheme } from '../../theme';
 import { ConceptCard } from './components/ConceptCard';
 import { ConceptPhotoEditor } from './components/ConceptPhotoEditor';
@@ -327,6 +328,9 @@ export const ConceptListScreen: React.FC = () => {
           removeClippedSubviews
         />
       )}
+      {/* 하단 탭 바로 위 배너 */}
+      <AdBanner />
+
       <ConceptPhotoEditor
         visible={photoTarget !== null}
         concept={photoTarget}

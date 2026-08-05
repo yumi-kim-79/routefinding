@@ -20,6 +20,7 @@ import { ProfileHeader } from './components/ProfileHeader';
 import { MyReportsTab } from './components/MyReportsTab';
 import { ClimbingLogTab } from './components/ClimbingLogTab';
 import { MyProfileTab } from './components/MyProfileTab';
+import { AdBanner } from '../../components/common/AdBanner';
 
 // v2 리뉴얼 3탭
 const TABS = [
@@ -78,6 +79,8 @@ export const MyPageScreen: React.FC = () => {
       <View style={styles.body}>
         <Active />
       </View>
+
+      <AdBanner />
     </Screen>
   );
 };

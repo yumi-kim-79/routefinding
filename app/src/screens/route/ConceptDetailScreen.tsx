@@ -25,6 +25,7 @@ import { db } from '../../services/firebase';
 import { Text } from '../../components/common/Text';
 import { RemoteImage } from '../../components/common/RemoteImage';
 import { Button } from '../../components/common/Button';
+import { AdBanner } from '../../components/common/AdBanner';
 import { ConceptPhotoStrip } from './components/ConceptPhotoStrip';
 import { useFavorites } from './hooks/useFavorites';
 import { useTheme } from '../../theme';
@@ -424,6 +425,11 @@ export const ConceptDetailScreen: React.FC = () => {
         </View>
       ) : null}
 
+      {/* 내용 끝 배너 — 스크롤을 다 내린 자리라 읽는 것을 방해하지 않는다 */}
+      <View style={styles.adSlot}>
+        <AdBanner />
+      </View>
+
       <ConceptImageViewer
         visible={viewer.open}
         images={images}
@@ -466,6 +472,7 @@ const styles = StyleSheet.create({
   section: { marginTop: 20, paddingTop: 16, borderTopWidth: 1 },
   sectionTitle: { marginBottom: 8 },
   hint: { marginTop: 6 },
+  adSlot: { marginTop: 20 },
   infoRow: { flexDirection: 'row', paddingVertical: 4 },
   infoLabel: { width: 96 },
   infoValue: { flex: 1 },

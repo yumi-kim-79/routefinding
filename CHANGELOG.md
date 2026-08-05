@@ -9,6 +9,45 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-05 (22차) — 📢 AdMob 배너 (iOS · Android 동일)
+
+> v1은 안드로이드만 광고가 나가고 있었다. v2는 **같은 코드로 양쪽 다** 넣는다.
+> 자세한 설정·ID 교체 방법은 **`docs/10_ADMOB.md`**.
+
+#### Added
+- `react-native-google-mobile-ads@15.8.3` (package.json 고정 — 설치는 `yarn install` 필요)
+- `constants/ads.ts` — 광고 단위 ID를 **한 곳에서만** 관리.
+  `__DEV__`에서는 실제 ID를 넣어도 **항상 테스트 광고**가 나간다
+  (자기 광고를 자기가 클릭하면 무효 트래픽으로 계정이 정지될 수 있다)
+- `services/adsService.ts` — **첫 배너가 붙을 때** 한 번만 초기화.
+  앱 시작에 얹지 않는다 — 시작 속도를 개선해 둔 상태(16차)를 되돌리는 셈이 된다
+- `components/common/AdBanner.tsx` — `ANCHORED_ADAPTIVE_BANNER`(기기 폭에 맞는 높이).
+  **로드 전·실패 시 높이 0** — 빈 회색 띠가 남으면 화면이 잘린 것처럼 보인다.
+  실패는 전부 삼킨다(광고 때문에 앱 기능이 막히면 안 된다)
+- 배너 배치: 개념도 목록 / 지도 / 마이페이지 하단(탭 바로 위), 개념도 상세는 스크롤 맨 끝
+
+#### Changed
+- `ios/Podfile`: `$RNGoogleMobileAdsAsStaticFramework = true`
+  — 이 Podfile은 RNFB 때문에 `use_frameworks! :linkage => :static`을 쓰는데,
+  RNGMA podspec 기본값은 `static_framework = false`라 그대로 두면 링크가 어긋난다
+- `app.json`: `react-native-google-mobile-ads.android_app_id / ios_app_id`
+  (빌드 시 AndroidManifest `meta-data` / Info.plist `GADApplicationIdentifier`로 자동 주입 —
+  RNFB가 `firebase.json`을 읽는 방식과 동일. **고치면 `pod install` 재실행 필수**)
+
+#### ⚠️ 아직 테스트 ID다
+받은 값 `pub-4653853586463291`은 **게시자 ID**로, 광고 요청 주소가 아니다. 필요한 건 두 가지:
+- **앱 ID** `ca-app-pub-…**~**…` (물결) → `app.json`
+- **배너 단위 ID** `ca-app-pub-…**/**… ` (슬래시) → `constants/ads.ts`
+iOS와 Android는 AdMob 콘솔에서 **서로 다른 앱**이다(iOS 번들 ID `com.yusung.routefinding`).
+
+#### 버전 고정 근거 (peerDependencies는 믿을 수 없다 — 전례 다수)
+minSdk 23≤24 · compileSdk 34≤35 · iOS 15+(GMA 12.11) ≤ 15.1 배포 타깃 ·
+`TurboReactPackage`(RN 0.76.9에 존재) · CHANGELOG상 RN 최소 0.65 — 전부 확인.
+
+#### 검증
+- `tsc --noEmit`: 광고 파일 3곳의 **모듈 미설치 에러만** 남는다 (`yarn install` 후 사라짐)
+
+
 ### 📅 2026-08-05 (21차) — '사진 등록 · 라인 그리기'를 루트제보의 사진 첨부 자리로
 
 > 개념도 상세에 **'사진 등록 · 라인 그리기'**와 **'이 구역에 루트 제보'**가 나란히 있으니

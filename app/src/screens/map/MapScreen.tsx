@@ -42,6 +42,7 @@ import { useMapRoutes, type RouteCluster } from './hooks/useMapRoutes';
 import { MapFilterBar } from './components/MapFilterBar';
 import { RouteMarker } from './components/RouteMarker';
 import { RouteDetailSheet } from './components/RouteDetailSheet';
+import { AdBanner } from '../../components/common/AdBanner';
 import { ClusterListModal } from './components/ClusterListModal';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
@@ -226,6 +227,9 @@ export const MapScreen: React.FC = () => {
         onClose={() => setClusterRoutes(null)}
         onOpenDetail={openDetail}
       />
+
+      {/* 하단 탭 바로 위 배너 — 지도는 절대배치 위에 있으므로 마지막 자식으로 둔다 */}
+      <AdBanner />
     </View>
   );
 };

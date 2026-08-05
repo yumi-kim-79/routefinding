@@ -25,6 +25,20 @@ prepare_react_native_project!
 # ─────────────────────────────────────────────────────────────────────────
 $RNFirebaseAsStaticFramework = true
 
+# ─────────────────────────────────────────────────────────────────────────
+# AdMob (react-native-google-mobile-ads) — 2026-08-05
+#
+# 이 Podfile은 위 RNFB 때문에 `use_frameworks! :linkage => :static`을 쓴다.
+# RNGoogleMobileAds의 podspec 기본값은 `static_framework = false`라서, 그대로 두면
+# 링크 방식이 어긋나 심볼을 못 찾는 일이 생긴다. RNFB와 **같은 방식으로 맞춰 준다.**
+#
+# 앱 ID(GADApplicationIdentifier)는 여기가 아니라 **app.json**에서 읽어
+# CocoaPods가 심어 놓는 빌드 스크립트가 Info.plist에 넣는다 (RNFB의 firebase.json과 같은 방식).
+#   → app.json 의 "react-native-google-mobile-ads".ios_app_id
+#   ⚠️ app.json을 고친 뒤에는 반드시 `pod install`을 다시 돌려야 반영된다.
+# ─────────────────────────────────────────────────────────────────────────
+$RNGoogleMobileAdsAsStaticFramework = true
+
 # USE_FRAMEWORKS 환경변수로 재정의 가능. 기본값 static.
 linkage = ENV['USE_FRAMEWORKS'] || 'static'
 Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
