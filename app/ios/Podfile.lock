@@ -1215,9 +1215,6 @@ PODS:
   - Firebase/Firestore (12.15.0):
     - Firebase/CoreOnly
     - FirebaseFirestore (~> 12.15.0)
-  - Firebase/Messaging (12.15.0):
-    - Firebase/CoreOnly
-    - FirebaseMessaging (~> 12.15.0)
   - Firebase/Storage (12.15.0):
     - Firebase/CoreOnly
     - FirebaseStorage (~> 12.15.0)
@@ -1266,20 +1263,6 @@ PODS:
     - gRPC-Core (~> 1.69.0)
     - leveldb-library (~> 1.22)
     - nanopb (~> 3.30910.0)
-  - FirebaseInstallations (12.15.0):
-    - FirebaseCore (~> 12.15.0)
-    - GoogleUtilities/Environment (~> 8.1)
-    - GoogleUtilities/UserDefaults (~> 8.1)
-    - PromisesObjC (~> 2.4)
-  - FirebaseMessaging (12.15.0):
-    - FirebaseCore (~> 12.15.0)
-    - FirebaseInstallations (~> 12.15.0)
-    - GoogleDataTransport (~> 10.1)
-    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
-    - GoogleUtilities/Environment (~> 8.1)
-    - GoogleUtilities/Reachability (~> 8.1)
-    - GoogleUtilities/UserDefaults (~> 8.1)
-    - nanopb (~> 3.30910.0)
   - FirebaseSharedSwift (12.15.0)
   - FirebaseStorage (12.15.0):
     - FirebaseAppCheckInterop (~> 12.15.0)
@@ -1292,9 +1275,6 @@ PODS:
   - glog (0.3.5)
   - Google-Maps-iOS-Utils (6.1.0):
     - GoogleMaps (~> 9.0)
-  - GoogleDataTransport (10.1.1):
-    - nanopb (~> 3.30910.0)
-    - PromisesObjC (~> 2.4)
   - GoogleMaps (9.4.0):
     - GoogleMaps/Maps (= 9.4.0)
   - GoogleMaps/Maps (9.4.0)
@@ -3289,30 +3269,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - RNFBApp
     - Yoga
-  - RNFBMessaging (25.1.0):
-    - DoubleConversion
-    - Firebase/Messaging (= 12.15.0)
-    - FirebaseCoreExtension
-    - glog
-    - hermes-engine
-    - RCT-Folly (= 2024.10.14.00)
-    - RCTRequired
-    - RCTTypeSafety
-    - React-Core
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - RNFBApp
-    - Yoga
   - RNFBStorage (25.1.0):
     - DoubleConversion
     - Firebase/Storage (= 12.15.0)
@@ -3504,7 +3460,6 @@ DEPENDENCIES:
   - "RNFBAppCheck (from `../node_modules/@react-native-firebase/app-check`)"
   - "RNFBAuth (from `../node_modules/@react-native-firebase/auth`)"
   - "RNFBFirestore (from `../node_modules/@react-native-firebase/firestore`)"
-  - "RNFBMessaging (from `../node_modules/@react-native-firebase/messaging`)"
   - "RNFBStorage (from `../node_modules/@react-native-firebase/storage`)"
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
@@ -3525,12 +3480,9 @@ SPEC REPOS:
     - FirebaseCoreInternal
     - FirebaseFirestore
     - FirebaseFirestoreInternal
-    - FirebaseInstallations
-    - FirebaseMessaging
     - FirebaseSharedSwift
     - FirebaseStorage
     - Google-Maps-iOS-Utils
-    - GoogleDataTransport
     - GoogleMaps
     - GoogleUtilities
     - "gRPC-C++"
@@ -3691,8 +3643,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-firebase/auth"
   RNFBFirestore:
     :path: "../node_modules/@react-native-firebase/firestore"
-  RNFBMessaging:
-    :path: "../node_modules/@react-native-firebase/messaging"
   RNFBStorage:
     :path: "../node_modules/@react-native-firebase/storage"
   RNScreens:
@@ -3720,14 +3670,11 @@ SPEC CHECKSUMS:
   FirebaseCoreInternal: 6ab6a02c94446c026d2cf35cf5383842ebaa4992
   FirebaseFirestore: 55d10a70baf9eb77fb2d6cd059dde508d28b5bcc
   FirebaseFirestoreInternal: dd4800b1a2f0ca15c496092e9eaf037e89e34281
-  FirebaseInstallations: eb29ccbf64eaedf86fd5b2ccc7fabde567660b52
-  FirebaseMessaging: 40017d7bc8457ee295b0f41d480a80fdabc9994e
   FirebaseSharedSwift: 3f5c2758484d32099d693f269f110d3249c3f7e3
   FirebaseStorage: 949f0a5a8d8a77fff68ec8733057dc76a0e08179
   fmt: 01b82d4ca6470831d1cc0852a1af644be019e8f6
   glog: 08b301085f15bcbb6ff8632a8ebaf239aae04e6a
   Google-Maps-iOS-Utils: 0a484b05ed21d88c9f9ebbacb007956edd508a96
-  GoogleDataTransport: a24e58982ab3ba2f64d79613e027fe7f57e88539
   GoogleMaps: 0608099d4870cac8754bdba9b6953db543432438
   GoogleUtilities: 766ace00c6b10d8148408f329d10c4f051931850
   "gRPC-C++": cc207623316fb041a7a3e774c252cf68a058b9e8
@@ -3805,7 +3752,6 @@ SPEC CHECKSUMS:
   RNFBAppCheck: 71d9c6228b6878ed11dfd3d3ce2cf0a140bf53a1
   RNFBAuth: d599edaa8b17d2a45b31b2e4c564f886d00e2cd2
   RNFBFirestore: da7c3258f45baff35b1bfdfc73bf1dd6280d5070
-  RNFBMessaging: 9b7133e1c3f7e48b6fb6d3f43bf7e5ed2e172669
   RNFBStorage: 71b2f8f0cbbef8fbfae80e0a44de40a8740b5286
   RNScreens: 2fe3d999c2dee6ef1d5e863fec0fb6f7de60c45a
   RNSVG: 0ae04349d6faa10b715ab2aaa12bd7aaf3d57850
