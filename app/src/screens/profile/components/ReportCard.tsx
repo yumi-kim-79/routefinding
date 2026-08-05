@@ -4,7 +4,8 @@
  * UI: 썸네일(imageUrls[0]) + '산 · 루트명' + 본인 프로필 + 상태 뱃지(+반려사유) + 액션 버튼.
  * 작성자 N+1 제거 가능: 이 탭은 authorUid==uid 필터라 항상 본인 → ProfileHeader의
  *   currentUserProfile 재사용. (v1도 same-uid 분기에선 currentUserProfile 사용)
- * onTap → RouteDetail({ reportId }) push (Phase 2-3까지 placeholder).
+ * onTap → RouteDetail({ reportId, collection }) push — 실제 제보 상세 화면
+ *   (2026-08-05까지 플레이스홀더라 눌러도 빈 화면이었다).
  */
 import React from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
@@ -49,7 +50,11 @@ export const ReportCard: React.FC<ReportCardProps> = ({
   return (
     <Pressable
       onPress={() =>
-        navigation.navigate('RouteDetail', { reportId: report.reportId })
+        navigation.navigate('RouteDetail', {
+          reportId: report.reportId,
+          // 컬렉션을 안 넘기면 상세가 두 컬렉션을 더듬어 찾는다 — 알고 있으니 알려준다
+          collection: report.collection,
+        })
       }
       style={({ pressed }) => [
         styles.card,

@@ -8,6 +8,7 @@
  */
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { ConceptSource } from '../types/concept';
+import type { ReportCollection } from '../types/report';
 
 /** 미인증 스택 (Splash는 RootNavigator가 isInitializing 중 직접 렌더) */
 export type AuthStackParamList = {
@@ -64,9 +65,13 @@ export type MainStackParamList = {
     };
   };
 
-  // 루트/리포트
-  RouteDetail: { reportId: string };
-  ReportDetail: { reportId: string };
+  /**
+   * 제보 상세 (관리자 제보관리 / 내 제보에서 진입).
+   * `collection`은 어느 컬렉션의 문서인지 힌트 — 목록에서 넘어올 땐 항상 채워진다.
+   * 없으면 화면이 두 컬렉션을 순서대로 시도한다(딥링크 대비).
+   */
+  RouteDetail: { reportId: string; collection?: ReportCollection };
+  ReportDetail: { reportId: string; collection?: ReportCollection };
   PitchDetail: { reportId: string; pitchId: string };
   ReportAdmin: undefined;
 

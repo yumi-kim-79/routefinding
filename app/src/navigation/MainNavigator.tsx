@@ -4,6 +4,9 @@
  *
  * 실화면 교체 이력:
  *   - ConceptDetail (개념도 상세) — 2026-08-03 리뉴얼 1단계에서 실구현으로 교체.
+ *   - RouteDetail / ReportDetail (제보 상세) — 2026-08-05 교체.
+ *     플레이스홀더로 남아 있어서 **제보관리에서 카드를 눌러도 빈 화면**이었다
+ *     (= 관리자가 내용을 못 보고 승인하던 상태).
  *
  * v2 리뉴얼 (2026-08-04): 게시판·크루 계열 라우트 등록 해제.
  *   화면 파일(BoardScreen/CrewMainScreen 등)은 보존 — 되돌리려면 아래 주석 복구.
@@ -16,6 +19,7 @@ import { PlaceholderScreen } from '../components/common/PlaceholderScreen';
 import { ConceptDetailScreen } from '../screens/route/ConceptDetailScreen';
 import { ConceptEditScreen } from '../screens/route/ConceptEditScreen';
 import { ClimbingLogEditScreen } from '../screens/profile/ClimbingLogEditScreen';
+import { ReportDetailScreen } from '../screens/report/ReportDetailScreen';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
@@ -53,8 +57,17 @@ export const MainNavigator: React.FC = () => (
     />
 
     {/* 루트/리포트 */}
-    <Stack.Screen name="RouteDetail" component={makePlaceholder('루트 상세')} />
-    <Stack.Screen name="ReportDetail" component={makePlaceholder('리포트 상세')} />
+    <Stack.Screen
+      name="RouteDetail"
+      component={ReportDetailScreen}
+      options={{ title: '제보 상세' }}
+    />
+    {/* 같은 화면 — 옛 라우트명으로 들어오는 경로도 살려둔다 */}
+    <Stack.Screen
+      name="ReportDetail"
+      component={ReportDetailScreen}
+      options={{ title: '제보 상세' }}
+    />
     <Stack.Screen name="PitchDetail" component={makePlaceholder('피치 상세')} />
     <Stack.Screen name="ReportAdmin" component={makePlaceholder('리포트 승인(관리자)')} />
 
