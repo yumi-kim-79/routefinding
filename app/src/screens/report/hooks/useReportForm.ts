@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, PermissionsAndroid, Platform } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { libraryOptions } from '../../../constants/image';
 import Geolocation, {
   type GeolocationResponse,
 } from '@react-native-community/geolocation';
@@ -141,7 +142,7 @@ export function useReportForm(edit?: ReportFormEditTarget): UseReportFormResult 
   }, []);
 
   const pickImages = useCallback(async (limit: number): Promise<LocalImage[]> => {
-    const res = await launchImageLibrary({ mediaType: 'photo', selectionLimit: limit });
+    const res = await launchImageLibrary(libraryOptions(limit));
     if (res.didCancel || !res.assets) {
       return [];
     }

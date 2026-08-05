@@ -14,12 +14,7 @@
  *    볼더링 조회가 permission-denied로 실패할 수 있다. 규칙 추가는 별도 PR + 사용자 승인 필요
  *    (CLAUDE.md: Firestore Rules 변경은 별도 PR). 그래서 여기서는 실패를 삼키고 경고만 남긴다.
  */
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-} from '@react-native-firebase/firestore';
+import { collection, getDocs, getDocsFromCache, query, where } from '@react-native-firebase/firestore';
 import { db } from './firebase';
 import type { Concept, ConceptSource, ConceptType } from '../types/concept';
 
@@ -69,46 +64,98 @@ function toConcept(
 async function fetchOne(
   source: ConceptSource,
   fallbackType: ConceptType,
+  fromCache = false,
 ): Promise<Concept[]> {
   const q = query(collection(db, source), where('status', '==', 'approved'));
-  const snap = await getDocs(q);
+  // fromCache=true면 **네트워크를 타지 않고** 로컬(오프라인) 캐시에서만 읽는다.
+  const snap = fromCache ? await getDocsFromCache(q) : await getDocs(q);
   return snap.docs.map((d) => toConcept(d.id, d.data() as RawDoc, source, fallbackType));
 }
 
+/** 백그라운드 갱신이 끝났을 때 화면에 알려주는 구독자들 */
+const listeners = new Set<(result: ConceptFetchResult) => void>();
+
 /**
- * 승인된 개념도 전체 조회 (두 컬렉션 병합).
- * @param refresh true면 캐시를 무시하고 다시 읽는다 (당겨서 새로고침).
+ * 캐시가 백그라운드에서 갱신되면 알려준다.
+ * 화면은 캐시본으로 **즉시** 그리고, 서버 응답이 오면 이 콜백으로 다시 그린다.
  */
-export async function fetchConcepts(refresh = false): Promise<ConceptFetchResult> {
-  if (!refresh && cache && Date.now() - cache.at < CACHE_TTL_MS) {
-    return cache.result;
-  }
+export function subscribeConceptsUpdate(
+  cb: (result: ConceptFetchResult) => void,
+): () => void {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
 
+async function loadAll(fromCache: boolean): Promise<ConceptFetchResult> {
   const settled = await Promise.allSettled(
-    SOURCES.map(({ source, fallback }) => fetchOne(source, fallback)),
+    SOURCES.map(({ source, fallback }) => fetchOne(source, fallback, fromCache)),
   );
-
   const items: Concept[] = [];
   const warnings: string[] = [];
-
   settled.forEach((r, i) => {
     const { source } = SOURCES[i];
     if (r.status === 'fulfilled') {
       items.push(...r.value);
     } else {
       const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
-      // eslint-disable-next-line no-console
-      console.warn(`[conceptService] ${source} 조회 실패:`, msg);
-      warnings.push(`${source} 조회 실패: ${msg}`);
+      if (!fromCache) {
+        // eslint-disable-next-line no-console
+        console.warn(`[conceptService] ${source} 조회 실패:`, msg);
+        warnings.push(`${source} 조회 실패: ${msg}`);
+      }
     }
   });
+  items.sort((a, b) => (b.timestamp?.toMillis() ?? 0) - (a.timestamp?.toMillis() ?? 0));
+  return { items, warnings };
+}
 
-  // 최신 작성순 (v1 실측 필드명 `timestamp`)
-  items.sort(
-    (a, b) => (b.timestamp?.toMillis() ?? 0) - (a.timestamp?.toMillis() ?? 0),
-  );
+/**
+ * 승인된 개념도 전체 조회 (두 컬렉션 병합).
+ * @param refresh true면 캐시를 무시하고 다시 읽는다 (당겨서 새로고침).
+ */
+/**
+ * 승인된 개념도 전체 조회 (두 컬렉션 병합).
+ *
+ * ⚡ 시작 속도 (2026-08-05):
+ *   승인 루트가 5,400건이 넘어 서버 조회는 산속 네트워크에서 수 초가 걸린다.
+ *   앱을 켤 때마다 그만큼 기다리게 하지 않으려고 **로컬 캐시를 먼저 보여주고,
+ *   서버 응답이 오면 조용히 갱신**한다(stale-while-revalidate).
+ *   두 번째 실행부터는 지도가 즉시 뜬다. 갱신은 `subscribeConceptsUpdate`로 화면에 전달된다.
+ *
+ * @param refresh true면 캐시를 무시하고 서버에서 다시 읽는다 (당겨서 새로고침)
+ */
+export async function fetchConcepts(refresh = false): Promise<ConceptFetchResult> {
+  if (!refresh && cache && Date.now() - cache.at < CACHE_TTL_MS) {
+    return cache.result;
+  }
 
-  const result: ConceptFetchResult = { items, warnings };
+  if (!refresh) {
+    try {
+      const cached = await loadAll(true);
+      if (cached.items.length > 0) {
+        cache = { at: Date.now(), result: cached };
+        // 서버 갱신은 기다리지 않는다. 끝나면 구독자에게 알린다.
+        void loadAll(false)
+          .then((fresh) => {
+            if (fresh.items.length === 0) {
+              return;
+            }
+            cache = { at: Date.now(), result: fresh };
+            listeners.forEach((cb) => cb(fresh));
+          })
+          .catch(() => {
+            /* 네트워크 실패 시 캐시본을 그대로 쓴다 */
+          });
+        return cached;
+      }
+    } catch {
+      /* 로컬 캐시가 비어 있으면 그냥 서버로 간다 */
+    }
+  }
+
+  const result = await loadAll(false);
   cache = { at: Date.now(), result };
   return result;
 }

@@ -6,12 +6,19 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!--
+      android:largeHeap — 사진 업로드 중 다른 탭으로 이동하면 메모리 부족으로
+      앱이 죽던 문제 완화 (2026-08-05 실측).
+      근본 대책은 사진 선택 단계에서 긴 변 2048px로 줄이는 것이고(constants/image.ts),
+      largeHeap은 그 위의 안전판이다.
+    -->
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
       android:icon="@mipmap/ic_launcher"
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
+      android:largeHeap="true"
       android:theme="@style/AppTheme"
       android:supportsRtl="true">
 

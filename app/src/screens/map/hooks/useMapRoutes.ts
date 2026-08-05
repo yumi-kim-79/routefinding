@@ -13,9 +13,12 @@
  * ────────────────────────────────────────────────────────────────────────
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchConcepts } from '../../../services/conceptService';
+import {
+  fetchConcepts,
+  subscribeConceptsUpdate,
+} from '../../../services/conceptService';
 import type { Concept, ConceptType } from '../../../types/concept';
-import { CLUSTER_PRECISION, MAX_MARKERS } from '../../../constants/map';
+import { CLUSTER_RADIUS_M, MAX_MARKERS } from '../../../constants/map';
 
 /** 같은 좌표에 모인 루트 묶음 (웹의 clusters 객체와 동일 개념) */
 export interface RouteCluster {
@@ -96,6 +99,19 @@ export function useMapRoutes(): UseMapRoutesResult {
       setItems([]);
     }
   }, []);
+
+  /**
+   * 로컬 캐시로 먼저 그린 뒤, 서버 갱신이 끝나면 조용히 반영한다
+   * (conceptService의 stale-while-revalidate — 시작 속도 개선, 2026-08-05).
+   */
+  useEffect(
+    () =>
+      subscribeConceptsUpdate((res) => {
+        setItems(res.items);
+        setWarnings(res.warnings);
+      }),
+    [],
+  );
 
   // 지도 탭은 열자마자 분포를 보여줘야 하므로 진입 시 1회 로드.
   // (개념도 탭과 달리 '검색 전 조회 0' 정책을 쓰지 않는다 — 캐시를 공유하므로
@@ -179,24 +195,71 @@ export function useMapRoutes(): UseMapRoutesResult {
     return data;
   }, [byType, mountain, zone, keyword]);
 
-  /** 같은 좌표끼리 묶기 — 반올림 자릿수를 웹과 같게 유지해야 결과가 일치한다 */
+  /**
+   * 가까운 루트끼리 묶기 (거리 기준).
+   *
+   * 격자 반올림(웹 방식)은 경계에 걸친 두 점이 갈라지는 문제가 있어 거리로 묶는다.
+   * 전량 비교는 O(n²)라 5,000건에서 버티지 못하므로,
+   * **성긴 격자로 후보를 좁힌 뒤 이웃 칸만 거리 비교**한다(격자 한 칸 ≈ 클러스터 반경).
+   */
   const allClusters = useMemo(() => {
-    const map = new Map<string, RouteCluster>();
+    // 위도 1도 ≈ 111km. 경도는 위도에 따라 줄지만 한국 위도(≈37°)에서 상수로 봐도 오차가 작다
+    const degLat = CLUSTER_RADIUS_M / 111_320;
+    const degLng = CLUSTER_RADIUS_M / (111_320 * Math.cos((37.5 * Math.PI) / 180));
+
+    const buckets = new Map<string, RouteCluster[]>();
+    const clusters: RouteCluster[] = [];
+
+    const bucketKey = (lat: number, lng: number): string =>
+      `${Math.floor(lat / degLat)}:${Math.floor(lng / degLng)}`;
+
     filtered.forEach((c) => {
       const lat = toCoord(c.latitude);
       const lng = toCoord(c.longitude);
       if (lat === null || lng === null) {
         return;
       }
-      const key = `${lat.toFixed(CLUSTER_PRECISION)},${lng.toFixed(CLUSTER_PRECISION)}`;
-      const found = map.get(key);
-      if (found) {
-        found.routes.push(c);
+
+      const bx = Math.floor(lat / degLat);
+      const by = Math.floor(lng / degLng);
+
+      // 자기 칸 + 인접 8칸에서만 후보를 찾는다 (경계에 걸쳐도 놓치지 않는다)
+      let target: RouteCluster | undefined;
+      for (let dx = -1; dx <= 1 && !target; dx += 1) {
+        for (let dy = -1; dy <= 1 && !target; dy += 1) {
+          const list = buckets.get(`${bx + dx}:${by + dy}`);
+          if (!list) {
+            continue;
+          }
+          target = list.find(
+            (cl) =>
+              Math.abs(cl.latitude - lat) <= degLat && Math.abs(cl.longitude - lng) <= degLng,
+          );
+        }
+      }
+
+      if (target) {
+        target.routes.push(c);
+        return;
+      }
+      const created: RouteCluster = {
+        // 첫 루트의 좌표를 대표로 쓴다 (평균을 내면 묶일수록 기준점이 흔들린다)
+        key: `${lat.toFixed(6)},${lng.toFixed(6)}`,
+        latitude: lat,
+        longitude: lng,
+        routes: [c],
+      };
+      clusters.push(created);
+      const k = bucketKey(lat, lng);
+      const list = buckets.get(k);
+      if (list) {
+        list.push(created);
       } else {
-        map.set(key, { key, latitude: lat, longitude: lng, routes: [c] });
+        buckets.set(k, [created]);
       }
     });
-    return Array.from(map.values());
+
+    return clusters;
   }, [filtered]);
 
   // 상한 적용: 루트가 많이 모인 곳부터 남긴다 (잘리더라도 중요한 군집이 보이도록)

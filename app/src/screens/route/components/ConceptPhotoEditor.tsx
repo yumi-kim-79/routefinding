@@ -30,6 +30,7 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { cameraOptions, libraryOptions } from '../../../constants/image';
 import { captureRef } from 'react-native-view-shot';
 import { Text } from '../../../components/common/Text';
 import { Input } from '../../../components/common/Input';
@@ -105,8 +106,8 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
     void (async () => {
       const res =
         from === 'camera'
-          ? await launchCamera({ mediaType: 'photo', saveToPhotos: false })
-          : await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
+          ? await launchCamera(cameraOptions())
+          : await launchImageLibrary(libraryOptions(1));
       if (res.didCancel || !res.assets?.[0]?.uri) {
         return;
       }

@@ -14,7 +14,10 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { fetchConcepts } from '../../../services/conceptService';
+import {
+  fetchConcepts,
+  subscribeConceptsUpdate,
+} from '../../../services/conceptService';
 import {
   conceptSearchIndex,
   type Concept,
@@ -71,6 +74,19 @@ export function useConcepts(): UseConceptsResult {
       setItems([]);
     }
   }, []);
+
+  /**
+   * 로컬 캐시로 먼저 그린 뒤, 서버 갱신이 끝나면 조용히 반영한다
+   * (conceptService의 stale-while-revalidate — 시작 속도 개선, 2026-08-05).
+   */
+  useEffect(
+    () =>
+      subscribeConceptsUpdate((res) => {
+        setItems(res.items);
+        setWarnings(res.warnings);
+      }),
+    [],
+  );
 
   const hasQuery = keyword.trim().length > 0;
 

@@ -96,6 +96,26 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
     }
     return null;
   };
+  /**
+   * 좌표 입력 정리 — 숫자·마이너스·점만, **소수점 이하 6자리까지**.
+   * 6자리면 약 11cm 해상도라 암장 좌표엔 차고 넘친다.
+   * 그 아래는 GPS 오차 범위라 의미가 없고, 자릿수만 늘면 클러스터링에서
+   * 같은 바위가 다른 좌표로 갈라진다.
+   */
+  const sanitizeCoord = (raw: string): string => {
+    let v = raw.replace(/[^0-9.-]/g, '');
+    // 마이너스는 맨 앞에만
+    v = (v.startsWith('-') ? '-' : '') + v.replace(/-/g, '');
+    // 점은 하나만
+    const firstDot = v.indexOf('.');
+    if (firstDot >= 0) {
+      v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
+      const [head, tail = ''] = v.split('.');
+      v = tail.length > 6 ? `${head}.${tail.slice(0, 6)}` : v;
+    }
+    return v;
+  };
+
   const latError = coordError(form.latitude, 90, '위도');
   const lngError = coordError(form.longitude, 180, '경도');
   const isLead = form.typeRoot === '리드';
@@ -258,7 +278,7 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
               label="위도"
               placeholder="37.123456"
               value={form.latitude}
-              onChangeText={(v) => f.setField('latitude', v)}
+              onChangeText={(v) => f.setField('latitude', sanitizeCoord(v))}
               keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
               autoCorrect={false}
               error={latError}
@@ -269,7 +289,7 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
               label="경도"
               placeholder="127.123456"
               value={form.longitude}
-              onChangeText={(v) => f.setField('longitude', v)}
+              onChangeText={(v) => f.setField('longitude', sanitizeCoord(v))}
               keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
               autoCorrect={false}
               error={lngError}
