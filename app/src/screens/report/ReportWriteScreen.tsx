@@ -37,6 +37,9 @@ import { useReportForm, type ReportFormEditTarget } from './hooks/useReportForm'
 import { ImageStrip } from './components/ImageStrip';
 import { PitchEditor } from './components/PitchEditor';
 import { CoordPickerModal } from './components/CoordPickerModal';
+import { StoredImagePicker } from './components/StoredImagePicker';
+import { useAuthStore } from '../../stores/authStore';
+import { isAdminEmail } from '../../constants/admin';
 
 const TYPES: readonly ConceptType[] = ['리드', '볼더링'];
 
@@ -56,6 +59,9 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
   const [showMap, setShowMap] = useState(false);
   const [customMountain, setCustomMountain] = useState(false);
   const [customZone, setCustomZone] = useState(false);
+  /** 기존 Storage 사진 붙이기 (관리자 복구용) */
+  const [showStored, setShowStored] = useState(false);
+  const isAdmin = isAdminEmail(useAuthStore((st) => st.user?.email));
 
   // 저장 성공 안내 (웹 alert('제보 저장 완료!') 대응)
   useEffect(() => {
@@ -177,6 +183,21 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
           onRemove={f.removeImage}
           onMove={f.moveImage}
         />
+
+        {/*
+          개념도를 지워도 Storage의 사진 파일은 남는다.
+          루트를 다시 만들 때 다시 올리지 않고 그대로 붙일 수 있게 한다 (관리자 전용).
+        */}
+        {isAdmin && form.mountain.trim() && form.routeName.trim() ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setShowStored(true)}
+            style={[styles.coordBtn, { borderColor: colors.border, borderRadius: radius.md }]}
+          >
+            <AppIcon name="download" size={17} color={colors.textSecondary} />
+            <Text color="textSecondary">이 루트에 올라가 있던 기존 사진 불러오기</Text>
+          </Pressable>
+        ) : null}
 
         {/* 4. 좌표 */}
         <Text variant="label" color="textSecondary" style={styles.label}>
@@ -370,6 +391,18 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
         onSelect={(v) => f.setField('zone', v)}
         onClose={() => setPicker(null)}
       />
+      <StoredImagePicker
+        visible={showStored}
+        mountain={form.mountain}
+        zone={form.zone}
+        routeName={form.routeName}
+        existingUrls={form.images.map((i) => i.remoteUrl ?? i.uri)}
+        onAdd={(imgs) =>
+          f.setField('images', [...form.images, ...imgs].slice(0, MAX_ROOT_IMAGES))
+        }
+        onClose={() => setShowStored(false)}
+      />
+
       <CoordPickerModal
         visible={showMap}
         initial={
