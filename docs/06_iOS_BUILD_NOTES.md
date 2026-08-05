@@ -248,6 +248,32 @@ CocoaPods에 올라오지 않는다** → 그 시점 이후의 RNFB/Firebase 업
 
 ---
 
+### 🕳️ 흔한 함정 — `pod install` 누락 (2026-08-05)
+
+증상: 앱은 뜨는데 **특정 기능만** 아래 오류로 죽거나 무한 로딩에 걸린다.
+```
+Invariant Violation: TurboModuleRegistry.getEnforcing(...): '<모듈명>' could not be found.
+Verify that a module by this name is registered in the native binary.
+```
+
+원인: `package.json`에 네이티브 패키지를 추가하고 **`pod install`을 하지 않았다.**
+JS는 번들에 들어가지만 네이티브 쪽이 비어 있어, 그 기능을 처음 쓰는 순간 터진다.
+안드로이드는 Gradle이 빌드할 때마다 자동 링크하므로 **iOS에서만** 이런 일이 생긴다.
+
+확인 방법 — 설치 여부를 `Podfile.lock`에서 직접 본다:
+```bash
+grep -c "react-native-view-shot" app/ios/Podfile.lock   # 0이면 미설치
+```
+
+해결:
+```bash
+cd app && corepack yarn install
+cd ios && pod install && cd ..
+# Xcode를 ⌘Q로 완전히 종료했다가 워크스페이스를 다시 열고 빌드
+```
+
+---
+
 #### RNFB 26으로 올리지 말 것
 v26부터 **New Architecture 필수**다. RN 0.76.9에서 켜려면 모든 네이티브 의존성이
 지원해야 하고 사실상 RN 업그레이드와 묶어야 한다. iOS 복구 목적이면 25로 충분하다.

@@ -402,7 +402,61 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
           // ⚠️ 확대 상태로 캡처하면 잘린 그림이 구워진다 → 반드시 원래 배율로 되돌린 뒤 캡처
           resetView();
           await new Promise((r) => setTimeout(r, 60));
-          flatUri = await captureRef(stageRef, { format: 'jpg', quality: 0.92 });
+          try {
+            flatUri = await captureRef(stageRef, { format: 'jpg', quality: 0.92 });
+          } catch (capErr) {
+            /*
+             * ⚠️ 실측 2026-08-05:
+             *   `react-native-view-shot`이 네이티브 바이너리에 없으면 여기서 터진다
+             *   (`TurboModuleRegistry.getEnforcing(...): 'RNViewShot' could not be found`).
+             *   package.json에만 추가하고 `pod install`을 안 했을 때 나는 증상이다.
+             *   예전에는 이 예외가 밖으로 새어 나가 **저장 버튼이 무한 로딩에 걸렸다.**
+             *   여기서 잡아 사용자에게 무슨 일인지 알리고, 그냥 끝내지 않고 선택지를 준다.
+             */
+            const msg = capErr instanceof Error ? capErr.message : String(capErr);
+            const missingModule = msg.includes('RNViewShot');
+            setSaving(false);
+            setProgress('');
+            Alert.alert(
+              '라인 합성 실패',
+              missingModule
+                ? '이 빌드에는 사진 합성 기능이 빠져 있습니다.\n' +
+                  '(개발자 참고: react-native-view-shot 미설치 — pod install 필요)\n\n' +
+                  '원본 사진과 선 좌표만 저장할 수도 있습니다. 앱에서는 선이 보이지만,\n' +
+                  '승인해서 개념도에 넣을 때는 선이 빠진 원본이 들어갑니다.'
+                : `${msg}\n\n원본 사진과 선 좌표만 저장할 수도 있습니다.`,
+              [
+                { text: '취소', style: 'cancel' },
+                {
+                  text: '원본만 저장',
+                  onPress: () => {
+                    setSaving(true);
+                    void submitConceptPhoto({
+                      concept,
+                      photoUri,
+                      flatUri: null,
+                      lines,
+                      texts,
+                      onProgress: setProgress,
+                    })
+                      .then(() => {
+                        Alert.alert('등록 완료', '관리자 승인 후 개념도에 반영됩니다.');
+                        onSaved?.();
+                        closeAll();
+                      })
+                      .catch((e2: unknown) =>
+                        Alert.alert('등록 실패', e2 instanceof Error ? e2.message : String(e2)),
+                      )
+                      .finally(() => {
+                        setSaving(false);
+                        setProgress('');
+                      });
+                  },
+                },
+              ],
+            );
+            return;
+          }
         }
         await submitConceptPhoto({
           concept,
