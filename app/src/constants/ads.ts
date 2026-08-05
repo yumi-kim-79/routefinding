@@ -31,9 +31,26 @@ const REAL_BANNER = Platform.select({
   default: '',
 });
 
+/**
+ * 🔧 **임시: 실광고 대신 테스트 광고를 강제한다** (2026-08-05).
+ *
+ * 왜: release 빌드에서 **양쪽 다 배너가 안 보였다.** 이때 원인이 두 가지인데
+ * 화면만 봐서는 구분이 안 된다:
+ *   (a) 연동이 잘못됐다 (ID·초기화·레이아웃)
+ *   (b) 연동은 맞는데 **새로 만든 광고 단위라 아직 재고가 안 붙었다**
+ *       — AdMob 신규 단위는 첫 노출까지 보통 몇 시간, 길면 24시간 걸린다.
+ *       특히 iOS 앱은 아직 App Store에 없어서 더 적게 채워진다.
+ *
+ * 구글 테스트 광고는 **항상 100% 채워진다.** 그래서 테스트로 한 번 띄워 보면
+ * (a)인지 (b)인지 바로 갈린다. 배너가 보이면 연동은 정상이고 기다리면 되는 것이다.
+ *
+ * ✅ 확인이 끝나면 **이 값을 `false`로 되돌린다** (그래야 수익이 잡힌다).
+ */
+export const FORCE_TEST_ADS = true;
+
 /** 화면에서 쓸 배너 단위 ID (개발 빌드거나 실제 ID가 없으면 테스트 광고) */
 export const BANNER_AD_UNIT_ID =
-  __DEV__ || !REAL_BANNER ? TestIds.BANNER : REAL_BANNER;
+  __DEV__ || FORCE_TEST_ADS || !REAL_BANNER ? TestIds.BANNER : REAL_BANNER;
 
 /** 실제 광고가 나가는 상태인지 (화면에 '테스트' 안내를 띄울지 판단용) */
 export const IS_TEST_AD = BANNER_AD_UNIT_ID === TestIds.BANNER;
