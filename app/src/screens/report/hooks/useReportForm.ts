@@ -39,6 +39,10 @@ export interface UseReportFormResult {
   zones: string[];
   loadingLists: boolean;
   addImages: () => void;
+  /** 편집기(라인 그리기)에서 만들어진 사진을 그대로 추가 */
+  addImageUri: (uri: string) => void;
+  /** 첨부한 사진을 편집 결과로 바꿔치기 */
+  replaceImageUri: (uid: string, uri: string) => void;
   removeImage: (uid: string) => void;
   moveImage: (uid: string, dir: -1 | 1) => void;
   addPitch: () => void;
@@ -190,6 +194,26 @@ export function useReportForm(
       }
     })();
   }, [form.images.length, pickImages]);
+
+  /**
+   * 편집기에서 돌아온 사진을 목록에 넣는다.
+   * 합성 결과는 **새 로컬 파일**이라 `remoteUrl`을 비워야 업로드 대상이 된다
+   * (수정 모드에서 원본을 편집한 경우도 새로 올려야 그린 선이 반영된다).
+   */
+  const addImageUri = useCallback((uri: string) => {
+    setForm((prev) =>
+      prev.images.length >= MAX_ROOT_IMAGES
+        ? prev
+        : { ...prev, images: [...prev.images, { uid: genUid(), uri }] },
+    );
+  }, []);
+
+  const replaceImageUri = useCallback((uid: string, uri: string) => {
+    setForm((prev) => ({
+      ...prev,
+      images: prev.images.map((i) => (i.uid === uid ? { uid: i.uid, uri } : i)),
+    }));
+  }, []);
 
   const removeImage = useCallback((uid: string) => {
     setForm((prev) => ({ ...prev, images: prev.images.filter((i) => i.uid !== uid) }));
@@ -358,6 +382,8 @@ export function useReportForm(
     zones,
     loadingLists,
     addImages,
+    addImageUri,
+    replaceImageUri,
     removeImage,
     moveImage,
     addPitch,

@@ -25,7 +25,6 @@ import { db } from '../../services/firebase';
 import { Text } from '../../components/common/Text';
 import { RemoteImage } from '../../components/common/RemoteImage';
 import { Button } from '../../components/common/Button';
-import { ConceptPhotoEditor } from './components/ConceptPhotoEditor';
 import { ConceptPhotoStrip } from './components/ConceptPhotoStrip';
 import { useFavorites } from './hooks/useFavorites';
 import { useTheme } from '../../theme';
@@ -82,8 +81,6 @@ export const ConceptDetailScreen: React.FC = () => {
     index: 0,
   });
   const [approachOpen, setApproachOpen] = useState(false);
-  /** 개념도 사진 등록 모달 (웹 상세의 '사진 등록' 버튼 대응) */
-  const [photoOpen, setPhotoOpen] = useState(false);
   const favorites = useFavorites();
   /**
    * 수정 화면에서 돌아오면 다시 읽는다.
@@ -227,13 +224,13 @@ export const ConceptDetailScreen: React.FC = () => {
         style={styles.logBtn}
       />
 
-      {/* 개념도 사진 등록 (사진 위에 등반 라인을 그려 제보) */}
-      <Button
-        title="사진 등록 · 라인 그리기"
-        variant="secondary"
-        onPress={() => setPhotoOpen(true)}
-        style={styles.logBtn}
-      />
+      {/*
+        ⚠️ '사진 등록 · 라인 그리기' 버튼을 **여기서 뺐다** (2026-08-05 요청).
+           아래 '이 구역에 루트 제보'와 나란히 있으니 무엇을 눌러야 할지 헷갈렸다.
+           사진에 라인을 그리는 일은 **루트제보 폼의 사진 첨부 자리**로 옮겼다
+           (`ReportWriteScreen` — 사진과 라인은 원래 한 작업이다).
+           기존 개념도에 사진만 더하는 흐름은 **개념도 목록 카드의 카메라 버튼**에 남아 있다.
+      */}
 
       {/* 등록된 사진 + 라인 오버레이 (승인 대기는 본인·관리자만 보인다) */}
       <ConceptPhotoStrip
@@ -432,12 +429,6 @@ export const ConceptDetailScreen: React.FC = () => {
         images={images}
         initialIndex={viewer.index}
         onClose={() => setViewer((v) => ({ ...v, open: false }))}
-      />
-
-      <ConceptPhotoEditor
-        visible={photoOpen}
-        concept={c}
-        onClose={() => setPhotoOpen(false)}
       />
 
       <ApproachMapModal

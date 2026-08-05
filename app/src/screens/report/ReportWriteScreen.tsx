@@ -39,6 +39,7 @@ import { ImageStrip } from './components/ImageStrip';
 import { PitchEditor } from './components/PitchEditor';
 import { CoordPickerModal } from './components/CoordPickerModal';
 import { StoredImagePicker } from './components/StoredImagePicker';
+import { ConceptPhotoEditor } from '../route/components/ConceptPhotoEditor';
 import { useAuthStore } from '../../stores/authStore';
 import { isAdminEmail } from '../../constants/admin';
 
@@ -71,6 +72,14 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({
   const [customZone, setCustomZone] = useState(false);
   /** 기존 Storage 사진 붙이기 (관리자 복구용) */
   const [showStored, setShowStored] = useState(false);
+  /**
+   * 사진 등록 · 라인 그리기 편집기.
+   * null=닫힘 / {uid:null}=새 사진 추가 / {uid,uri}=첨부한 사진 편집.
+   *
+   * 개념도 상세에도 같은 버튼이 있었는데 "이 구역에 루트 제보"와 나란히 놓이니 헷갈렸다
+   * (2026-08-05 요청) → **사진을 첨부하는 이 자리**로 옮겼다. 사진과 라인은 원래 한 작업이다.
+   */
+  const [editor, setEditor] = useState<{ uid: string | null; uri?: string } | null>(null);
   const isAdmin = isAdminEmail(useAuthStore((st) => st.user?.email));
 
   // 저장 성공 안내 (웹 alert('제보 저장 완료!') 대응)
@@ -235,7 +244,26 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({
           onAdd={f.addImages}
           onRemove={f.removeImage}
           onMove={f.moveImage}
+          onEdit={(uid) => {
+            const target = form.images.find((i) => i.uid === uid);
+            setEditor({ uid, uri: target?.remoteUrl ?? target?.uri });
+          }}
         />
+
+        {/* 사진 위에 등반 라인을 그려 첨부한다 (개념도는 결국 '선이 그려진 사진'이다) */}
+        {form.images.length < MAX_ROOT_IMAGES ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setEditor({ uid: null })}
+            style={[styles.coordBtn, { borderColor: colors.border, borderRadius: radius.md }]}
+          >
+            <AppIcon name="line" size={17} color={colors.primary} />
+            <Text color="primary">사진 등록 · 라인 그리기</Text>
+          </Pressable>
+        ) : null}
+        <Text variant="caption" color="textSecondary">
+          첨부한 사진의 연필 버튼을 누르면 그 사진에 라인을 그릴 수 있습니다.
+        </Text>
 
         {/*
           개념도를 지워도 Storage의 사진 파일은 남는다.
@@ -484,6 +512,21 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({
           f.setField('images', [...form.images, ...imgs].slice(0, MAX_ROOT_IMAGES))
         }
         onClose={() => setShowStored(false)}
+      />
+
+      {/* 사진 등록 · 라인 그리기 — 업로드는 안 하고 합성된 사진만 폼으로 돌려준다 */}
+      <ConceptPhotoEditor
+        visible={editor !== null}
+        initialUri={editor?.uri ?? null}
+        onPicked={(uri) => {
+          if (editor?.uid) {
+            f.replaceImageUri(editor.uid, uri);
+          } else {
+            f.addImageUri(uri);
+          }
+          setEditor(null);
+        }}
+        onClose={() => setEditor(null)}
       />
 
       <CoordPickerModal

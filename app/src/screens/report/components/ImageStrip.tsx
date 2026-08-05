@@ -19,6 +19,8 @@ interface ImageStripProps {
   onAdd: () => void;
   onRemove: (uid: string) => void;
   onMove: (uid: string, dir: -1 | 1) => void;
+  /** 있으면 썸네일에 연필 버튼 — 사진 위에 라인·글자를 그린다 (대표 사진에서만 쓴다) */
+  onEdit?: (uid: string) => void;
 }
 
 const THUMB = 80;
@@ -29,6 +31,7 @@ export const ImageStrip: React.FC<ImageStripProps> = ({
   onAdd,
   onRemove,
   onMove,
+  onEdit,
 }) => {
   const { colors, radius, spacing } = useTheme();
 
@@ -50,6 +53,18 @@ export const ImageStrip: React.FC<ImageStripProps> = ({
             >
               <AppIcon name="x" size={13} color={colors.error} />
             </Pressable>
+
+            {onEdit ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="라인 그리기"
+                onPress={() => onEdit(img.uid)}
+                hitSlop={6}
+                style={[styles.edit, { backgroundColor: colors.surface, borderColor: colors.divider }]}
+              >
+                <AppIcon name="pencil" size={13} color={colors.primary} />
+              </Pressable>
+            ) : null}
 
             <View style={styles.moveRow}>
               <Pressable
@@ -120,6 +135,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  edit: {
+    position: 'absolute',
+    top: -4,
+    left: -4,
     width: 22,
     height: 22,
     borderRadius: 11,

@@ -1,10 +1,15 @@
 /**
  * 개념도 사진 등록 + 라인/텍스트 그리기 (전체화면 편집기) — 웹 `ConceptPhotoEditor.vue` 이식.
  *
- * 흐름 (웹과 동일):
- *   1) 사진 촬영 또는 앨범에서 첨부
- *   2) 사진 위에 선을 긋거나 글자를 찍는다 (기본색 6종 · 되돌리기 · 전체 지우기)
- *   3) 등록 → 원본 + 합성본 업로드 + `concept_photos` 문서 생성 (status: 'pending')
+ * 두 가지 모드로 쓴다:
+ *   A) **개념도 등록 모드** (`concept` 전달) — 웹과 동일한 흐름
+ *      1) 사진 촬영/앨범 첨부 → 2) 선·글자 → 3) 등록 → 원본+합성본 업로드 +
+ *         `concept_photos` 문서 생성 (status: 'pending', 관리자 승인 대기)
+ *   B) **로컬 편집 모드** (`onPicked` 전달, 2026-08-05 추가) — 업로드하지 않는다.
+ *      루트제보 폼의 '사진 추가'에서 쓴다. 저장하면 **합성된 로컬 사진 uri**를 돌려주고,
+ *      그 사진은 제보와 함께 저장된다.
+ *      → 새 루트를 올릴 때 라인을 그리려고 "먼저 제보 → 승인 기다렸다가 → 사진 등록"을
+ *        거칠 필요가 없다.
  *
  * ── 화면 구성 (2026-08-05 전면 개편) ─────────────────────────────────────
  *  사진이 작아 라인을 정확히 긋기 어렵다는 피드백을 받아 **캔버스를 화면 전체로** 키웠다.
@@ -20,7 +25,7 @@
  *  ⚠️ 확대/이동 중에 찍힌 화면 좌표는 **역변환**해서 사진 좌표로 되돌린다.
  *     (아래 `toContent` — 변환식 s = c + (p - c)·k + t 의 역)
  */
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -55,7 +60,15 @@ import { conceptPhotoTitle, submitConceptPhoto } from '../../../services/concept
 
 interface ConceptPhotoEditorProps {
   visible: boolean;
-  concept: Concept | null;
+  /** 개념도 등록 모드의 대상. 로컬 편집 모드에서는 없다 */
+  concept?: Concept | null;
+  /**
+   * 로컬 편집 모드 — 넘기면 업로드하지 않고 합성된 사진 uri를 돌려준다.
+   * (루트제보 폼에서 사용)
+   */
+  onPicked?: (uri: string) => void;
+  /** 이미 고른 사진을 열어 바로 그리기 시작할 때 (첨부한 사진 편집) */
+  initialUri?: string | null;
   onClose: () => void;
   onSaved?: () => void;
 }
@@ -75,9 +88,13 @@ function touchCenter(t: { pageX: number; pageY: number }[]): { cx: number; cy: n
 export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   visible,
   concept,
+  onPicked,
+  initialUri,
   onClose,
   onSaved,
 }) => {
+  /** 업로드 없이 사진만 돌려주는 모드인가 */
+  const localMode = !!onPicked;
   const { colors, radius, spacing } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -350,6 +367,23 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
     [resetView],
   );
 
+  /**
+   * 이미 첨부한 사진을 편집하러 들어온 경우, 열릴 때 그 사진을 올린다.
+   * `visible`이 false→true로 바뀔 때만 해야 한다 — 편집 중에 다시 세팅하면 그린 게 날아간다.
+   */
+  useEffect(() => {
+    if (!visible || !initialUri) {
+      return;
+    }
+    setPhotoUri(initialUri);
+    Image.getSize(
+      initialUri,
+      (w, h) => setAspect(w / h),
+      () => setAspect(4 / 3),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
   const reset = useCallback(() => {
     setPhotoUri(null);
     setLines([]);
@@ -390,7 +424,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   }, []);
 
   const save = useCallback(() => {
-    if (!concept || !photoUri || saving) {
+    if (!photoUri || saving || (!concept && !localMode)) {
       return;
     }
     void (async () => {
@@ -417,6 +451,28 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
             const missingModule = msg.includes('RNViewShot');
             setSaving(false);
             setProgress('');
+            if (localMode) {
+              // 로컬 모드에는 업로드가 없다 — 선이 안 구워진 원본을 쓸지만 물어보면 된다
+              Alert.alert(
+                '라인 합성 실패',
+                missingModule
+                  ? '이 빌드에는 사진 합성 기능이 빠져 있습니다.\n' +
+                    '(개발자 참고: react-native-view-shot 미설치 — pod install 필요)\n\n' +
+                    '선이 빠진 원본 사진을 그대로 첨부할 수 있습니다.'
+                  : `${msg}\n\n선이 빠진 원본 사진을 그대로 첨부할 수 있습니다.`,
+                [
+                  { text: '취소', style: 'cancel' },
+                  {
+                    text: '원본 그대로 첨부',
+                    onPress: () => {
+                      onPicked?.(photoUri);
+                      closeAll();
+                    },
+                  },
+                ],
+              );
+              return;
+            }
             Alert.alert(
               '라인 합성 실패',
               missingModule
@@ -432,7 +488,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
                   onPress: () => {
                     setSaving(true);
                     void submitConceptPhoto({
-                      concept,
+                      concept: concept as Concept,
                       photoUri,
                       flatUri: null,
                       lines,
@@ -458,8 +514,15 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
             return;
           }
         }
+        if (localMode) {
+          // 업로드하지 않는다 — 합성본(없으면 원본)을 폼에 돌려주고 닫는다.
+          // 제보를 저장할 때 다른 첨부 사진과 함께 업로드된다.
+          onPicked?.(flatUri ?? photoUri);
+          closeAll();
+          return;
+        }
         await submitConceptPhoto({
-          concept,
+          concept: concept as Concept,
           photoUri,
           flatUri,
           lines,
@@ -476,9 +539,21 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
         setProgress('');
       }
     })();
-  }, [closeAll, concept, lines, onSaved, photoUri, resetView, saving, texts]);
+  }, [
+    closeAll,
+    concept,
+    lines,
+    localMode,
+    onPicked,
+    onSaved,
+    photoUri,
+    resetView,
+    saving,
+    texts,
+  ]);
 
-  if (!concept) {
+  // 개념도 등록 모드인데 대상이 없으면 그릴 것이 없다 (로컬 모드는 대상이 필요 없다)
+  if (!concept && !localMode) {
     return null;
   }
 
@@ -504,7 +579,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
           </Pressable>
           <View style={styles.flex}>
             <Text variant="label" numberOfLines={1}>
-              {conceptPhotoTitle(concept)}
+              {concept ? conceptPhotoTitle(concept) : '사진 · 라인 그리기'}
             </Text>
           </View>
           {photoUri ? (
@@ -531,7 +606,9 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
               size="lg"
             />
             <Text variant="caption" color="textSecondary">
-              개념도 사진을 올린 뒤, 사진 위에 등반 라인을 그릴 수 있습니다.
+              {localMode
+                ? '사진을 올린 뒤 등반 라인을 그리면, 그린 그대로 제보에 첨부됩니다.'
+                : '개념도 사진을 올린 뒤, 사진 위에 등반 라인을 그릴 수 있습니다.'}
             </Text>
           </View>
         ) : (
@@ -673,7 +750,13 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
               </Text>
 
               <Button
-                title={saving ? progress || '저장 중…' : '등록 (승인 요청)'}
+                title={
+                  saving
+                    ? progress || '저장 중…'
+                    : localMode
+                      ? '이 사진 사용'
+                      : '등록 (승인 요청)'
+                }
                 onPress={save}
                 disabled={saving}
                 loading={saving}
@@ -683,7 +766,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
                 <View style={styles.savingRow}>
                   <ActivityIndicator color={colors.primary} />
                   <Text variant="caption" color="textSecondary">
-                    업로드 중입니다. 화면을 벗어나지 마세요.
+                    {localMode ? '사진을 합성하는 중입니다…' : '업로드 중입니다. 화면을 벗어나지 마세요.'}
                   </Text>
                 </View>
               ) : null}
