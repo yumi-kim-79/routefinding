@@ -20,6 +20,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -77,6 +78,26 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
   }, [edit, f.savedAt, onSaved]);
 
   const hasCoord = !!form.latitude && !!form.longitude;
+
+  /**
+   * 직접 입력한 좌표 검증.
+   * 잘못된 값이 그대로 저장되면 지도에서 엉뚱한 곳(또는 아프리카 앞바다 0,0)에 찍힌다.
+   */
+  const coordError = (raw: string, max: number, label: string): string | null => {
+    if (!raw.trim()) {
+      return null;
+    }
+    const n = Number(raw);
+    if (!Number.isFinite(n)) {
+      return `${label}는 숫자로 입력해 주세요.`;
+    }
+    if (Math.abs(n) > max) {
+      return `${label} 범위를 벗어났습니다 (-${max} ~ ${max}).`;
+    }
+    return null;
+  };
+  const latError = coordError(form.latitude, 90, '위도');
+  const lngError = coordError(form.longitude, 180, '경도');
   const isLead = form.typeRoot === '리드';
 
   const selectRow = [
@@ -226,17 +247,47 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
           </Pressable>
         </View>
 
+        {/*
+          좌표 **직접 입력**도 허용한다 (2026-08-05 사용자 요청).
+          웹 수정 화면(ConceptEditView)도 위도/경도를 직접 치게 돼 있다.
+          현장에서 GPS가 안 잡히거나, 삭제된 루트를 예전 좌표로 되살릴 때 필요하다.
+        */}
+        <View style={styles.coordRow}>
+          <View style={styles.flex}>
+            <Input
+              label="위도"
+              placeholder="37.123456"
+              value={form.latitude}
+              onChangeText={(v) => f.setField('latitude', v)}
+              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+              autoCorrect={false}
+              error={latError}
+            />
+          </View>
+          <View style={styles.flex}>
+            <Input
+              label="경도"
+              placeholder="127.123456"
+              value={form.longitude}
+              onChangeText={(v) => f.setField('longitude', v)}
+              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+              autoCorrect={false}
+              error={lngError}
+            />
+          </View>
+        </View>
+
         {f.locError ? (
           <Text variant="caption" color="error">
             {f.locError}
           </Text>
-        ) : hasCoord ? (
+        ) : latError || lngError ? null : hasCoord ? (
           <Text variant="caption" color="success">
             좌표 지정됨 ({Number(form.latitude).toFixed(6)}, {Number(form.longitude).toFixed(6)})
           </Text>
         ) : (
           <Text variant="caption" color="error">
-            * [현재위치] 또는 [지도에서 선택]으로 좌표를 지정해 주세요.
+            * 직접 입력하거나 [현재위치] · [지도에서 선택]으로 지정해 주세요.
           </Text>
         )}
 
@@ -359,7 +410,7 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({ edit, onSa
           title={f.saving ? '저장 중…' : edit ? '수정 저장' : '루트 제보 저장'}
           onPress={f.submit}
           loading={f.saving}
-          disabled={f.saving}
+          disabled={f.saving || !!latError || !!lngError}
           size="lg"
           style={{ marginTop: spacing.lg }}
         />
