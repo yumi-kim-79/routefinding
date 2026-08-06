@@ -9,6 +9,41 @@
 
 ## [Unreleased] — v2.0 마이그레이션 진행 중
 
+### 📅 2026-08-06 (31차) — 🚨 신규 회원가입이 전면 차단돼 있었다
+
+> 심사용 계정을 만들려다 발견했다. **닉네임 중복 확인이 항상 실패**해서
+> 회원가입 버튼까지 갈 수가 없었다. 심사 계정만의 문제가 아니라 **모든 신규 가입**이 막혀 있었다.
+
+#### 원인
+```
+firestore.rules
+  match /users/{userId} { allow read: if isSignedIn(); }
+```
+회원가입은 **로그인 전**에 일어난다. 그런데 닉네임 확인은 `users` 컬렉션을 조회한다.
+2026-08-04 규칙을 조일 때 *"웹·앱 모두 로그인 후에만 프로필을 읽으므로 동작에 영향이 없다"* 고
+주석에 적어 뒀는데, **회원가입 경로를 빠뜨린 것이다.**
+
+#### Fixed
+- `functions/index.js` — **`checkNickname`** HTTP 함수 추가.
+  서버에서 조회하고 `{available: true|false}` **불리언만** 돌려준다
+- `userStore.isNicknameAvailable` — Firestore 직접 조회 → 함수 호출(`fetch`)
+- `constants/firebase.ts` — Functions 주소(프로젝트 ID + 리전)
+
+#### 왜 규칙을 되돌리지 않았나
+`users` 문서에는 **이메일**이 들어 있다. 비로그인 읽기를 허용하면 닉네임을 넣어 보며
+**이메일을 캐낼 수 있다.** 규칙은 그대로 두고 서버가 대신 확인하는 쪽이 맞다.
+
+#### 왜 `onCall` 이 아니라 `onRequest` 인가
+`onCall` 을 쓰려면 앱에 `@react-native-firebase/functions` **네이티브 모듈**을 새로 넣어야 한다
+(pod install + 재빌드). 출시 직전에 네이티브 의존성을 늘릴 이유가 없다 — `fetch` 한 번이면 된다.
+
+#### 배포 필요
+```bash
+cd functions && npm run deploy      # 또는 firebase deploy --only functions:checkNickname
+```
+앱도 다시 빌드해야 한다(클라이언트 코드가 바뀌었다).
+
+
 ### 📅 2026-08-06 (30차) — 🖼️ 앱 아이콘 (양쪽 다 없었다)
 
 > TestFlight 업로드가 **아이콘 없음**으로 거부되면서 드러났다.

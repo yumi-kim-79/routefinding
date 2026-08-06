@@ -8,6 +8,54 @@ admin.initializeApp({
 
 const _adminEmail = "yusung790926@gmail.com";
 
+/**
+ * 닉네임 중복 확인 (회원가입 화면용) — 2026-08-06
+ *
+ * ⚠️ 왜 함수가 필요한가:
+ *   회원가입은 **로그인 전**에 일어난다. 그런데 firestore.rules 의
+ *   `match /users/{userId} { allow read: if isSignedIn(); }` 때문에
+ *   클라이언트가 users 컬렉션을 조회할 수 없어 **닉네임 확인이 항상 실패했다**
+ *   (앱에 "닉네임 확인 중 오류가 발생했습니다"만 떴다 → 신규 가입 전면 차단).
+ *
+ *   규칙을 다시 열 수는 없다. users 문서에는 **이메일**이 들어 있어서
+ *   누구나 읽게 하면 이메일이 노출된다.
+ *   → 서버에서 확인하고 **불리언 하나만** 돌려준다.
+ *
+ * 응답: { "available": true | false }
+ *
+ * onCall 이 아니라 onRequest 인 이유: 앱에 `@react-native-firebase/functions`
+ * 네이티브 모듈을 새로 넣지 않으려고. fetch 한 번이면 된다.
+ */
+exports.checkNickname = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  const raw = (req.query.nickname || (req.body && req.body.nickname) || "");
+  const nickname = String(raw).trim();
+
+  if (!nickname || nickname.length > 30) {
+    res.status(400).json({error: "invalid_nickname"});
+    return;
+  }
+
+  try {
+    const snap = await admin.firestore()
+        .collection("users")
+        .where("nickname", "==", nickname)
+        .limit(1)
+        .get();
+    res.status(200).json({available: snap.empty});
+  } catch (e) {
+    console.error("checkNickname 실패:", e);
+    res.status(500).json({error: "internal"});
+  }
+});
+
 // 0) 게시글 생성 시 viewCount/likeCount 초기화
 exports.initPostCounters = functions.firestore
   .document("posts/{postId}")

@@ -25,7 +25,12 @@ service cloud.firestore {
     //
     // ⚠️ 변경: 기존 `allow read: if true` → 로그인 필요.
     //    이메일·FCM 토큰이 들어 있는 문서가 누구에게나 열려 있었다.
-    //    웹·앱 모두 로그인 후에만 프로필을 읽으므로 동작에는 영향이 없다.
+    //
+    // ⚠️⚠️ "동작에는 영향이 없다"고 적어 뒀던 것은 **틀렸다** (2026-08-06 실측).
+    //    **회원가입의 닉네임 중복 확인은 로그인 전에 일어난다.** 이 규칙 때문에
+    //    조회가 거부돼 "닉네임 확인 중 오류" 만 뜨고 **신규 가입이 전면 차단돼 있었다.**
+    //    → 규칙은 그대로 두고, 서버(Cloud Functions `checkNickname`)가 확인해
+    //      불리언만 돌려주도록 바꿨다. 여기를 다시 열지 말 것 — 이메일이 노출된다.
     match /users/{userId} {
       allow read:  if isSignedIn();
       allow write: if isOwner(userId) || isAdmin();

@@ -6,18 +6,14 @@
  */
 import { create } from 'zustand';
 import {
-  collection,
   doc,
   getDoc,
-  getDocs,
-  limit,
-  query,
   serverTimestamp,
   setDoc,
   updateDoc,
-  where,
 } from '@react-native-firebase/firestore';
 import { db } from '../services/firebase';
+import { FUNCTIONS_BASE_URL } from '../constants/firebase';
 import { COLLECTIONS } from '../constants/firestoreFields';
 import type { UserProfile, UserProfileUpdate } from '../types/user';
 
@@ -82,14 +78,29 @@ export const useUserStore = create<UserState>((set) => ({
     }
   },
 
+  /**
+   * 닉네임 중복 확인.
+   *
+   * ⚠️ **Firestore 를 직접 조회하면 안 된다** (2026-08-06 실측).
+   *    회원가입은 로그인 **전**에 일어나는데, firestore.rules 의
+   *    `match /users/{userId} { allow read: if isSignedIn(); }` 때문에
+   *    비로그인 조회가 거부돼 **신규 가입이 전면 차단돼 있었다.**
+   *    ('닉네임 확인 중 오류가 발생했습니다'만 떴다)
+   *
+   *    규칙을 되돌릴 수는 없다 — users 문서에 **이메일**이 들어 있다.
+   *    → Cloud Function 이 서버에서 확인하고 불리언만 돌려준다
+   *      (`functions/index.js` 의 `checkNickname`).
+   */
   isNicknameAvailable: async (nickname) => {
-    const q = query(
-      collection(db, COLLECTIONS.USERS),
-      where('nickname', '==', nickname.trim()),
-      limit(1),
+    const nick = nickname.trim();
+    const res = await fetch(
+      `${FUNCTIONS_BASE_URL}/checkNickname?nickname=${encodeURIComponent(nick)}`,
     );
-    const snap = await getDocs(q);
-    return snap.empty;
+    if (!res.ok) {
+      throw new Error(`닉네임 확인 실패 (HTTP ${res.status})`);
+    }
+    const json = (await res.json()) as { available?: boolean };
+    return json.available === true;
   },
 
   createProfile: async (uid, data) => {
