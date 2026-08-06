@@ -16,6 +16,22 @@
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<!--
+	  수출 규정 준수 (App Store Connect '앱 암호화 문서' 팝업) — 2026-08-06.
+
+	  이 앱이 쓰는 암호화는 **HTTPS/TLS 와 로그인 인증뿐**이다. 자체 암호 알고리즘을
+	  만들지 않았고, 애플 OS 의 암호화를 대체할 목적으로 넣은 것도 없다
+	  (Firebase 가 내부적으로 TLS 를 쓰지만 용도는 같은 '표준 보안 연결'이다).
+	  → 미국 수출 규정상 **면제 대상**이라 `false` 로 선언한다.
+
+	  이 키가 없으면 **업로드할 때마다** App Store Connect 가 팝업으로 묻고,
+	  답하기 전까지 빌드가 **TestFlight 에 나타나지 않는다.**
+	  (빌드 목록에 '규정 준수 문서 누락' 으로 표시된다)
+
+	  ⚠️ 앱에 자체 암호화를 넣게 되면 이 선언을 다시 검토할 것.
+	-->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
