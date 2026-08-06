@@ -18,11 +18,15 @@ export const APP_VERSION: string = pkg.version;
 export const ANDROID_PACKAGE = 'com.yusung.routefinding';
 
 /**
- * App Store 숫자 ID (App Store Connect → 앱 정보 → Apple ID).
- * 2026-08-06 등록 완료. 이 값이 있어야 iOS 업데이트 화면에서 App Store 로 이동한다.
- * (바꿔야 하면 Remote Config 의 `store_url_ios` 로 앱 재배포 없이 덮어쓸 수 있다)
+ * App Store 숫자 ID (= Apple ID). 이 값이 있어야 iOS 업데이트 화면에서 App Store 로 간다.
+ *
+ * ⚠️ 확인하는 법: App Store Connect 주소창의 `/apps/<숫자>/` 가 이 값이다.
+ *    (앱 정보 화면의 'Apple ID' 항목과 같다)
+ *    2026-08-06: 처음에 6764483929 로 잘못 넣었다가 콘솔 주소로 확인해 바로잡았다.
+ *
+ * 바꿔야 하면 Remote Config 의 `store_url_ios` 로 앱 재배포 없이 덮어쓸 수 있다.
  */
-export const APP_STORE_ID = '6764483929';
+export const APP_STORE_ID = '6798447337';
 
 /** 스토어로 보내는 기본 주소 (Remote Config 로 덮어쓸 수 있다) */
 export function defaultStoreUrl(): string {
