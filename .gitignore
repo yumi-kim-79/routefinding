@@ -146,3 +146,6 @@ flutter/
 
 # Apple DeviceCheck 개인키 — 저장소에 두지 말 것
 *.p8
+
+# 스크린샷 원본(리사이즈 전)은 보관용 — 저장소에는 최종본만 둔다
+store/appstore/screenshots-6.9-original/
