@@ -188,7 +188,44 @@ Play는 **2025-08-31부터 대상 API 35 이상**만 받는다. 34로는 업로�
 > 이건 "빌드가 깨지는" 종류가 아니라 **스토어에 올린 뒤에야 드러나는** 문제다.
 > 내부 테스트 트랙에 먼저 올려 지도와 로그인을 확인하고 프로덕션으로 승격하는 것을 권한다.
 
-### 2-6. ⏳ 대상 API 36 — **2026-08-31까지** (별도 작업)
+### 2-5-2. 🚨 16KB 메모리 페이지 크기 (2026-08-06 발견)
+
+프로덕션 버전 만들기에서 **오류**로 뜬다: `앱이 16KB 메모리 페이지 크기를 지원하지 않습니다`.
+
+**실측** — AAB 의 `arm64-v8a` 네이티브 라이브러리 15개 중 **14개가 4KB 정렬**이다:
+```
+libreactnative.so  libhermes.so  libjsi.so  libfbjni.so  libc++_shared.so
+libhermestooling.so  libimagepipeline.so  libnative-filters.so
+libnative-imagetranscoder.so  libappmodules.so  librnscreens.so
+libreact_codegen_{rnscreens,rnsvg,safeareacontext}.so
+```
+
+**우리 빌드 설정으로는 못 고친다.** 대부분 React Native 가 배포하는 **미리 빌드된 .so** 다
+(`com.facebook.react:react-android:0.76.9` AAR 안에 들어 있다).
+→ **React Native 0.77 부터 16KB 를 지원**한다.
+
+확인 방법(다음에 또 볼 때):
+```bash
+cd /tmp && rm -rf aabx && mkdir aabx && cd aabx
+unzip -q <경로>/app-release.aab 'base/lib/arm64-v8a/*'
+python3 - <<'EOF'
+import glob, struct, os
+def align(p):
+    d=open(p,'rb').read()
+    if d[:4]!=b'\x7fELF' or d[4]!=2: return None
+    off,sz,n=struct.unpack_from('<Q',d,0x20)[0],struct.unpack_from('<H',d,0x36)[0],struct.unpack_from('<H',d,0x38)[0]
+    return min(struct.unpack_from('<Q',d,off+i*sz+0x30)[0]
+               for i in range(n) if struct.unpack_from('<I',d,off+i*sz)[0]==1)
+for p in sorted(glob.glob('base/lib/arm64-v8a/*.so')):
+    a=align(p)
+    print(('✅' if a and a>=16384 else '❌'), os.path.basename(p), a)
+EOF
+```
+
+**당장은** 콘솔의 `무시하고 계속하기` 로 넘어간다(2026-08-06 기준 우회 버튼이 있다).
+**근본 해결은 아래 §2-6 과 같은 작업**이다 — RN 업그레이드 하나로 둘 다 풀린다.
+
+### 2-6. ⏳ 대상 API 36 + 16KB 페이지 — **2026-08-31까지** (별도 작업)
 
 그날 이후 업데이트를 내려면 **API 36**이 필요하다. 지금 못 올린 이유:
 
@@ -199,8 +236,16 @@ Play는 **2025-08-31부터 대상 API 35 이상**만 받는다. 34로는 업로�
 | compileSdk | 35 | 36 |
 | edge-to-edge | opt-out으로 회피 중 | **opt-out이 무시됨 → 정식 대응 필요** |
 
-RN 0.77+로 올리면 Gradle·AGP·Kotlin이 함께 올라가므로 **RN 업그레이드와 묶어서** 하는 편이
-낫다. 그때 `react-native-google-mobile-ads`도 15.x로 같이 올린다(docs/10_ADMOB.md §5).
+**RN 0.77+ 업그레이드 하나로 두 가지가 같이 풀린다:**
+- Gradle·AGP·Kotlin 이 함께 올라가 **compileSdk 36** 이 가능해진다
+- RN 0.77 부터 **16KB 페이지 크기**를 지원한다 (§2-5-2)
+
+그때 `react-native-google-mobile-ads` 도 15.x 로 같이 올린다(docs/10_ADMOB.md §5).
+Kotlin 2.x 가 기본이 되므로 광고 SDK 의 Kotlin 2.1 요구도 자연히 해소된다.
+
+⚠️ 이 저장소의 전례상 **네이티브 의존성 버전이 줄줄이 걸린다.**
+   react-native-maps / svg / screens / safe-area-context / view-shot / documents-picker /
+   google-mobile-ads 를 한 번에 올려야 할 가능성이 크다. 하루 이상 잡을 것.
 
 ### 2-7. Play Console 권장 조치 3건 — **v1 것이다**
 
