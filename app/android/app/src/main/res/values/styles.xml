@@ -6,17 +6,11 @@
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
 
         <!--
-          Android 15(API 35)부터 targetSdk 35 앱은 **화면 가장자리까지 그리기(edge-to-edge)가
-          강제**된다. 그대로 켜면 상태바·네비게이션바 아래로 내용이 들어가 헤더와 하단 탭이
-          가려질 수 있다.
-
-          이번 출시는 **대상 API를 34→35로 올리는 것이 목적**이므로(그래야 Play가 받아준다),
-          화면이 바뀌는 위험까지 한꺼번에 지지 않는다. 일단 강제를 끈다.
-
-          ⚠️ 이 플래그는 **API 36에서는 무시된다.** 2026-08-31 대상 API 36 전환 때
-             edge-to-edge를 제대로 대응해야 한다 (SafeAreaView 인셋 점검) — docs/08 §2-6.
+          ⚠️ `windowOptOutEdgeToEdgeEnforcement` 를 **뺐다** (2026-08-06, 대상 API 36 전환).
+             이 플래그는 **API 36 에서는 무시된다** — 남겨두면 "꺼져 있다"고 착각하게 된다.
+             대신 RN 0.81 의 `edgeToEdgeEnabled=true`(gradle.properties)로 인셋을 처리한다.
+             화면은 react-native-safe-area-context 의 SafeAreaProvider 를 이미 쓰고 있다.
         -->
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 
 </resources>
