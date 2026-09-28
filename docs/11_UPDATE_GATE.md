@@ -175,7 +175,7 @@ Play 스토어 ▸ 프로필 ▸ **앱 및 기기 관리** ▸ **업데이트 �
 
 ### 방법 A — 로컬 빌드로 (권장 · 실사용자 영향 0)
 ```bash
-cd ~/StudioProjects/routefinding/app
+cd /Volumes/Dev/StudioProjects/routefinding/app
 
 # 1) package.json 의 version 을 임시로 낮춘다  "2.0.8" → "2.0.0"
 #    ⚠️ -PROUTEFINDING_VERSION_NAME 으로는 안 된다. 그건 매니페스트만 바꾸고

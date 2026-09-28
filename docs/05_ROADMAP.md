@@ -392,7 +392,7 @@ adb uninstall com.yusung.routefinding 2>/dev/null
 watchman watch-del-all 2>/dev/null; rm -rf $TMPDIR/metro-* node_modules/.cache
 # 에뮬레이터 콜드부트(-no-snapshot-load) 권장
 export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; nvm use 20
-cd ~/StudioProjects/routefinding/app
+cd /Volumes/Dev/StudioProjects/routefinding/app
 corepack yarn start --reset-cache       # 터미널 A
 corepack yarn android                   # 터미널 B
 ```
@@ -484,7 +484,7 @@ adb uninstall com.yusung.routefinding 2>/dev/null
 watchman watch-del-all 2>/dev/null; rm -rf $TMPDIR/metro-* node_modules/.cache
 # 에뮬레이터 wipe(콜드부트) 권장 → 앱 실행
 export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; nvm use 20
-cd ~/StudioProjects/routefinding/app
+cd /Volumes/Dev/StudioProjects/routefinding/app
 corepack yarn start --reset-cache         # 터미널 A
 corepack yarn android                     # 터미널 B
 ```

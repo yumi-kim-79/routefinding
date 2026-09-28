@@ -87,9 +87,9 @@ DB에 저장된 이미지 주소가 `https://storage.googleapis.com/...` (GCS �
 
 ### ① 배포
 ```bash
-cd ~/StudioProjects/routefinding/functions
+cd /Volumes/Dev/StudioProjects/routefinding/functions
 npm install                     # sharp 설치
-cd ~/StudioProjects/routefinding
+cd /Volumes/Dev/StudioProjects/routefinding
 unset FIREBASE_TOKEN
 firebase deploy --only functions:generateThumbnail \
   --project routefinding09-4b597 \

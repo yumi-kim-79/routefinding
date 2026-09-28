@@ -10,7 +10,7 @@
 Firebase Hosting. 프로젝트 `routefinding09-4b597`, 산출물 `dist/`.
 
 ```bash
-cd ~/routefinding-web
+cd /Volumes/Dev/routefinding-web
 
 # 1) 배포 대상 프로젝트 확인 (프로젝트가 두 개라 반드시 확인)
 firebase use routefinding09-4b597
@@ -127,7 +127,7 @@ v1 긴급 패치를 낼 여지를 두려면 여유 있게 잡는 편이 낫다 (
 ### 2-4. 빌드 명령 (위 세 가지 해결 후)
 
 ```bash
-cd ~/StudioProjects/routefinding/app
+cd /Volumes/Dev/StudioProjects/routefinding/app
 yarn install
 cd android && ./gradlew clean bundleRelease   # AAB (Play Store 업로드용)
 # 산출물: android/app/build/outputs/bundle/release/app-release.aab
@@ -155,7 +155,7 @@ cd android && ./gradlew clean bundleRelease   # AAB (Play Store 업로드용)
 
 재개 순서:
 ```bash
-cd ~/StudioProjects/routefinding/app
+cd /Volumes/Dev/StudioProjects/routefinding/app
 corepack yarn up '@react-native-firebase/*'    # 24 → 26 (메이저 2단계, breaking change 확인 필수)
 # Podfile의 gRPC post_install 패치를 주석 처리한 뒤
 cd ios && pod install && cd ..

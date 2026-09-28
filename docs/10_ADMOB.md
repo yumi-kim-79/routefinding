@@ -84,7 +84,7 @@
 패키지는 `package.json`에 적혀 있지만 아직 내려받지는 않았다.
 
 ```bash
-cd ~/StudioProjects/routefinding/app
+cd /Volumes/Dev/StudioProjects/routefinding/app
 corepack yarn install          # react-native-google-mobile-ads 15.8.3 내려받기
 cd ios && pod install          # GoogleMobileAds + UMP pod 추가 (필수)
 ```
