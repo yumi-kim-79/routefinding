@@ -150,3 +150,41 @@ App Store Connect → 앱 심사 정보 → **로그인 필요** 체크 → 계�
 - **AdMob → 앱 → 앱 설정 → 스토어 앱과 연결**. 채움률이 크게 오른다
 - `FORCE_TEST_ADS` 가 `false` 인지 다시 확인 (지금 `false` ✅)
 - Remote Config `latest_version_ios` 를 출시 버전에 맞춰 관리 (`docs/11_UPDATE_GATE.md`)
+
+---
+
+## 9. 재심사 (2026-08-12 반려 → 재제출)
+
+첫 제출이 두 건으로 반려됐다. 둘 다 수정 완료 (CHANGELOG 32차).
+
+| 반려 | 대응 파일 |
+|---|---|
+| Guideline 4 (Design) — 네이티브 Apple 지도 선택지 없음 | `src/utils/openExternalMap.ts` + `Info.plist`의 `LSApplicationQueriesSchemes` |
+| Guideline 5.1.1(v) — 앱 내 계정 삭제 없음 | `src/services/accountDeletion.ts`, `screens/profile/components/DeleteAccountSection.tsx` |
+
+### 순서
+1. **빌드 번호 확인** — `CURRENT_PROJECT_VERSION` 은 현재 **4**.
+   App Store Connect → TestFlight 에 이미 4가 있으면 **5로 올린다.**
+   `MARKETING_VERSION` 은 **2.0.0 그대로 둔다** — 반려 상태의 버전에는
+   같은 버전 번호로 새 빌드를 올려 재제출하는 게 정상 흐름이다
+2. `cd ios && rm -rf Pods Podfile.lock build && pod install --repo-update`
+3. Xcode → **Any iOS Device (arm64)** → Product ▸ Archive ▸ Distribute App ▸ App Store Connect ▸ Upload
+4. 처리 완료 메일(10~30분) 후 App Store Connect → 해당 버전 → **빌드**에서 새 빌드 선택
+5. **앱 심사 정보**
+   - 로그인 필요 = 예, **데모 계정 2개**를 적는다 (아래 ⚠️)
+   - 메모(Notes)에 §9-1 영문 답변을 붙여넣는다
+   - 첨부에 **회원 탈퇴 시연 동영상**
+6. **Resolution Center 에도 같은 답변을 회신**한다 (제출만 하고 회신을 안 하면 리뷰어가 못 본다)
+7. 심사를 위해 제출
+
+### ⚠️ 데모 계정은 **반드시 2개**
+리뷰어가 탈퇴 기능을 시험하면 그 계정은 **진짜로 지워진다.**
+하나만 주면 그 뒤로 아무것도 확인할 수 없어 다시 반려된다.
+
+| 용도 | 비고 |
+|---|---|
+| 일반 확인용 | 지도·개념도·등반일지 확인. **지우지 말 것**이라고 메모에 명시 |
+| 탈퇴 시험용 | 일회용. 지워져도 무방 |
+
+### 9-1. App Review 회신 문안 (영문)
+`docs/` 에 두면 다음 반려 때도 재사용할 수 있다. 본문은 세션 답변 참조.

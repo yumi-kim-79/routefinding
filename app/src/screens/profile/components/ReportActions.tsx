@@ -4,8 +4,12 @@
  * 권한:
  *   - 삭제: 본인 || 관리자 → Alert confirm → deleteDoc({collection}/{id})
  *           (v1의 휴리스틱 대신 `report.collection` 태그로 안전 분기)
- *   - 승인: 관리자 && status==pending → {collection}.update({status:'approved'})
- *   - 반려: 관리자 && status==pending → 부모가 PromptModal 띄움(onRequestReject)
+ *   - 승인: 관리자 && status!=approved → {collection}.update({status:'approved'})
+ *   - 반려: 관리자 → 부모가 PromptModal 띄움(onRequestReject)
+ *
+ * ⚠️ 2026-09-07: 제보가 **승인 없이 바로 게시**되도록 바뀌었다(reportService 머리말).
+ *    그래서 `status === 'pending'` 으로 관리자 버튼을 가리면 **아무 버튼도 안 뜬다.**
+ *    관리자는 이미 공개된 제보도 **반려(숨김)·삭제**할 수 있어야 한다 — 그게 사후 관리의 전부다.
  *
  * 아이콘 라이브러리는 [TBD]라 텍스트 버튼으로 — 향후 IconButton로 교체 TODO.
  */
@@ -31,7 +35,10 @@ export const ReportActions: React.FC<ReportActionsProps> = ({
   onRequestReject,
 }) => {
   const canDelete = isMine || isAdmin;
-  const canAdmin = isAdmin && report.status === 'pending';
+  /** 관리자는 상태와 무관하게 조치할 수 있다 (위 머리말) */
+  const canAdmin = isAdmin;
+  /** 승인 버튼은 아직 공개되지 않은 건에만 의미가 있다 */
+  const canApprove = isAdmin && report.status !== 'approved';
 
   if (!canDelete && !canAdmin) {
     return null;
@@ -86,23 +93,23 @@ export const ReportActions: React.FC<ReportActionsProps> = ({
           style={styles.btn}
         />
       ) : null}
+      {canApprove ? (
+        <Button
+          title="승인"
+          size="sm"
+          variant="secondary"
+          onPress={onApprove}
+          style={styles.btn}
+        />
+      ) : null}
       {canAdmin ? (
-        <>
-          <Button
-            title="승인"
-            size="sm"
-            variant="secondary"
-            onPress={onApprove}
-            style={styles.btn}
-          />
-          <Button
-            title="반려"
-            size="sm"
-            variant="ghost"
-            onPress={() => onRequestReject(report)}
-            style={styles.btn}
-          />
-        </>
+        <Button
+          title={report.status === 'rejected' ? '반려됨' : '반려'}
+          size="sm"
+          variant="ghost"
+          onPress={() => onRequestReject(report)}
+          style={styles.btn}
+        />
       ) : null}
     </View>
   );

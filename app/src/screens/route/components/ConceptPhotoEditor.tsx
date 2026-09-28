@@ -14,8 +14,28 @@
  * ── 화면 구성 (2026-08-05 전면 개편) ─────────────────────────────────────
  *  사진이 작아 라인을 정확히 긋기 어렵다는 피드백을 받아 **캔버스를 화면 전체로** 키웠다.
  *   · 스크롤을 없앴다 — 스크롤과 그리기 제스처가 서로를 잡아먹는다
- *   · **두 손가락 = 확대·이동, 한 손가락 = 그리기**. 확대한 상태에서도 그릴 수 있다
  *   · 도구·색상 바는 항상 아래에 떠 있어 확대 중에도 바꿀 수 있다
+ *
+ * ── 2026-08-17 개편: **보기 / 선 / 텍스트 3모드** ───────────────────────
+ *  사용자 보고: "화면을 터치만 해도 그려지고 글자가 들어가서 불편하다.
+ *               확대나 위치 조정을 할 수가 없다."
+ *
+ *  이전에는 도구가 `line`/`text` 둘뿐이라 **한 손가락 터치는 언제나 그리기**였다.
+ *  확대하려면 두 손가락을 정확히 동시에 대야 했고, 한쪽이 조금 먼저 닿으면 선이 그어졌다.
+ *
+ *  → 기본값을 **`pan`(보기)** 으로 바꿨다.
+ *     · 보기: 두 번 탭 확대 · 핀치 확대/축소 · 한 손가락 이동. **절대 그려지지 않는다**
+ *     · 선 / 텍스트: 그 도구를 **눌러 선택했을 때만** 그리기·글자 입력이 된다
+ *       (선택 중에도 두 손가락 확대·이동은 그대로 된다)
+ *
+ * ── 2026-08-17 좌표 정정: `locationX` → `pageX` ─────────────────────────
+ *  사용자 보고: "손가락으로 그리면 조금 다른 포인트에 그려지는 느낌이 난다."
+ *
+ *  `locationX/locationY`는 **터치를 실제로 받은 자식 뷰 기준** 좌표다.
+ *  캔버스 안에는 `Animated.View`(확대/이동됨) → `Image` → SVG 오버레이가 겹쳐 있어서
+ *  어느 뷰가 터치를 받았느냐에 따라 기준이 달라지고, 확대 중에는 그 차이가 커진다.
+ *  → `pageX/pageY`(화면 절대 좌표)에서 **측정해 둔 캔버스 위치**를 빼서 계산한다.
+ *     캔버스 위치는 `measureInWindow`로 레이아웃 후 한 번 재고, 회전/리사이즈 때 갱신한다.
  *
  * ── 좌표 규약 (중요) ────────────────────────────────────────────────────
  *  좌표는 **사진 박스 기준 0~1 정규화**다(웹과 동일).
@@ -39,6 +59,7 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeyboardSpace } from '../../../hooks/useKeyboardSpace';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { captureRef } from 'react-native-view-shot';
 import { cameraOptions, libraryOptions } from '../../../constants/image';
@@ -73,7 +94,10 @@ interface ConceptPhotoEditorProps {
   onSaved?: () => void;
 }
 
-type Tool = 'line' | 'text';
+/** 캔버스 조작 모드. 기본은 `pan`(보기) — 실수로 그려지는 것을 막는다 */
+type Tool = 'pan' | 'line' | 'text';
+/** 되돌리기 기록에 남는 것 (보기 모드는 아무것도 만들지 않는다) */
+type DrawKind = 'line' | 'text';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 6;
@@ -97,17 +121,22 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   const localMode = !!onPicked;
   const { colors, radius, spacing } = useTheme();
   const insets = useSafeAreaInsets();
+  /*
+   * ⚠️ 도구 바에 글자 입력칸이 붙어 있다. edge-to-edge 라 키보드가 떠도 창이 안 줄어서
+   *    인셋만 주면 입력칸이 키보드 뒤로 숨는다 (hooks/useKeyboardSpace.ts 머리말).
+   */
+  const { space: barBottom } = useKeyboardSpace();
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   /** 사진 원본 종횡비 (가로/세로). 캔버스를 여기에 맞춰야 좌표가 웹과 일치한다 */
   const [aspect, setAspect] = useState(4 / 3);
-  const [tool, setTool] = useState<Tool>('line');
+  const [tool, setTool] = useState<Tool>('pan');
   const [color, setColor] = useState<string>(PHOTO_COLORS[0]);
   const [textValue, setTextValue] = useState('');
   const [lines, setLines] = useState<PhotoLine[]>([]);
   const [texts, setTexts] = useState<PhotoText[]>([]);
   const [drawing, setDrawing] = useState<PhotoLine | null>(null);
-  const [history, setHistory] = useState<Tool[]>([]);
+  const [history, setHistory] = useState<DrawKind[]>([]);
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState('');
 
@@ -126,8 +155,23 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   const txA = useRef(new Animated.Value(0)).current;
   const tyA = useRef(new Animated.Value(0)).current;
   const view = useRef({ k: 1, tx: 0, ty: 0 });
-  const gesture = useRef({ dist: 0, k: 1, tx: 0, ty: 0, cx: 0, cy: 0 });
+  /** 제스처 시작 시점 스냅샷. ux/uy = 캔버스 중심 기준 손가락 중점 오프셋 */
+  const gesture = useRef({ dist: 0, k: 1, tx: 0, ty: 0, ux: 0, uy: 0 });
+  const lastTap = useRef({ t: 0, x: 0, y: 0 });
+  /**
+   * ⚠️ 확대 중 **매 프레임 setState가 돌면 캔버스 전체가 다시 그려져** 버벅인다.
+   *    실제로 값이 바뀔 때만 렌더한다. (2026-08-17 버벅임 신고의 원인)
+   */
+  const zoomedRef = useRef(false);
   const [zoomed, setZoomed] = useState(false);
+
+  /** 캔버스의 화면상 좌상단 — pageX/Y를 캔버스 안 좌표로 바꿀 때 쓴다 */
+  const origin = useRef({ x: 0, y: 0 });
+  const measureStage = useCallback(() => {
+    stageRef.current?.measureInWindow((x, y) => {
+      origin.current = { x, y };
+    });
+  }, []);
 
   const applyView = useCallback(
     (k: number, tx: number, ty: number) => {
@@ -139,7 +183,12 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
       scaleA.setValue(k);
       txA.setValue(nx);
       tyA.setValue(ny);
-      setZoomed(k > 1.01);
+
+      const nowZoomed = k > 1.01;
+      if (nowZoomed !== zoomedRef.current) {
+        zoomedRef.current = nowZoomed;
+        setZoomed(nowZoomed);
+      }
     },
     [scaleA, stage.h, stage.w, txA, tyA],
   );
@@ -147,12 +196,18 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
   const resetView = useCallback(() => applyView(1, 0, 0), [applyView]);
 
   /**
-   * 캔버스 안의 화면 좌표 → 사진 좌표(0~1).
+   * 화면 절대 좌표(pageX/pageY) → 사진 좌표(0~1).
+   *
+   * ⚠️ `locationX`를 쓰면 안 된다 — 터치를 받은 **자식 뷰 기준**이라 기준이 흔들린다
+   *    (2026-08-17 "다른 포인트에 그려진다" 신고의 원인).
+   *
    * 변환은 `s = c + (p - c)·k + t` 이므로 역은 `p = c + (s - c - t)/k`.
    */
   const toContent = useCallback(
-    (sx: number, sy: number): NormPoint => {
+    (pageX: number, pageY: number): NormPoint => {
       const { k, tx, ty } = view.current;
+      const sx = pageX - origin.current.x;
+      const sy = pageY - origin.current.y;
       const cx = stage.w / 2;
       const cy = stage.h / 2;
       const px = cx + (sx - cx - tx) / k;
@@ -163,6 +218,25 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
       };
     },
     [stage.h, stage.w],
+  );
+
+  /** 캔버스 중심 기준 오프셋 (앵커 확대용) */
+  const toOffset = useCallback(
+    (pageX: number, pageY: number) => ({
+      x: pageX - origin.current.x - stage.w / 2,
+      y: pageY - origin.current.y - stage.h / 2,
+    }),
+    [stage.h, stage.w],
+  );
+
+  /** 지정한 화면 지점을 고정한 채 배율만 바꾼다 */
+  const zoomAt = useCallback(
+    (k: number, pageX: number, pageY: number) => {
+      const u = toOffset(pageX, pageY);
+      const { k: k0, tx, ty } = view.current;
+      applyView(k, u.x - ((u.x - tx) * k) / k0, u.y - ((u.y - ty) * k) / k0);
+    },
+    [applyView, toOffset],
   );
 
   // PanResponder 콜백은 생성 시점 값을 가둔다 → 변하는 값은 ref로 읽는다
@@ -216,17 +290,46 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
         onPanResponderGrant: (e) => {
           const touches = e.nativeEvent.touches;
           if (touches.length >= 2) {
+            const c = touchCenter(touches as never);
+            const u = toOffset(c.cx, c.cy);
             gesture.current = {
               dist: touchDistance(touches as never),
               k: view.current.k,
               tx: view.current.tx,
               ty: view.current.ty,
-              ...touchCenter(touches as never),
+              ux: u.x,
+              uy: u.y,
             };
             return;
           }
 
-          const p = toContent(e.nativeEvent.locationX, e.nativeEvent.locationY);
+          gesture.current.tx = view.current.tx;
+          gesture.current.ty = view.current.ty;
+
+          const t0 = touches[0];
+
+          /*
+           * 보기 모드 — 절대 그리지 않는다. 두 번 탭이면 그 지점을 확대한다.
+           * (2026-08-17: 기본 모드가 여기다. 그려지는 건 도구를 고른 뒤에만)
+           */
+          if (live.current.tool === 'pan') {
+            const now = Date.now();
+            const near =
+              Math.hypot(t0.pageX - lastTap.current.x, t0.pageY - lastTap.current.y) < 40;
+            if (now - lastTap.current.t < 280 && near) {
+              if (view.current.k > 1.01) {
+                resetView();
+              } else {
+                zoomAt(2.5, t0.pageX, t0.pageY);
+              }
+              lastTap.current = { t: 0, x: 0, y: 0 };
+            } else {
+              lastTap.current = { t: now, x: t0.pageX, y: t0.pageY };
+            }
+            return;
+          }
+
+          const p = toContent(t0.pageX, t0.pageY);
           if (live.current.tool === 'text') {
             // 이미 찍어둔 글자를 눌렀다면 **새로 만들지 않고 그 글자를 잡는다**
             // (잘못 찍었을 때 끌어서 옮길 수 있어야 한다 — 2026-08-05 요청)
@@ -260,31 +363,45 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
             }
             const d = touchDistance(touches as never);
             if (gesture.current.dist === 0) {
+              const c0 = touchCenter(touches as never);
+              const u0 = toOffset(c0.cx, c0.cy);
               gesture.current = {
                 dist: d,
                 k: view.current.k,
                 tx: view.current.tx,
                 ty: view.current.ty,
-                ...touchCenter(touches as never),
+                ux: u0.x,
+                uy: u0.y,
               };
               return;
             }
             const c = touchCenter(touches as never);
+            const u = toOffset(c.cx, c.cy);
             const k = Math.min(
               MAX_SCALE,
               Math.max(MIN_SCALE, (gesture.current.k * d) / gesture.current.dist),
             );
+            // 손가락 중점을 고정한 채 확대 + 두 손가락 이동을 한 수식으로
+            const ratio = k / gesture.current.k;
             applyView(
               k,
-              gesture.current.tx + (c.cx - gesture.current.cx),
-              gesture.current.ty + (c.cy - gesture.current.cy),
+              u.x - (gesture.current.ux - gesture.current.tx) * ratio,
+              u.y - (gesture.current.uy - gesture.current.ty) * ratio,
             );
+            return;
+          }
+
+          // 보기 모드에서 한 손가락 — 확대돼 있으면 이동만 한다
+          if (live.current.tool === 'pan') {
+            if (view.current.k > 1.01) {
+              applyView(view.current.k, gesture.current.tx + g.dx, gesture.current.ty + g.dy);
+            }
             return;
           }
 
           // 잡고 있는 글자가 있으면 손가락을 따라 옮긴다
           if (dragTextRef.current !== null) {
-            const p = toContent(e.nativeEvent.locationX, e.nativeEvent.locationY);
+            const p = toContent(e.nativeEvent.pageX, e.nativeEvent.pageY);
             const idx = dragTextRef.current;
             setTexts((prev) =>
               prev.map((t, i) => (i === idx ? { ...t, x: p.x, y: p.y } : t)),
@@ -296,7 +413,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
             return;
           }
           // 한 손가락 → 그리기 (확대 상태에서도 사진 좌표로 정확히 되돌려 기록한다)
-          const p = toContent(e.nativeEvent.locationX, e.nativeEvent.locationY);
+          const p = toContent(e.nativeEvent.pageX, e.nativeEvent.pageY);
           const last = strokeRef.current[strokeRef.current.length - 1];
           // 같은 자리 반복만 걸러낸다. 임계값이 크면 곡선이 각진다 (웹과 같은 0.0015)
           if (Math.hypot(p.x - last.x, p.y - last.y) < 0.0015 / view.current.k) {
@@ -330,7 +447,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
           setDrawing(null);
         },
       }),
-    [applyView, hitTestText, toContent],
+    [applyView, hitTestText, resetView, toContent, toOffset, zoomAt],
   );
 
   // ── 사진 선택 ─────────────────────────────────────────────────────────
@@ -435,8 +552,16 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
           setProgress('라인 합성 중…');
           // ⚠️ 확대 상태로 캡처하면 잘린 그림이 구워진다 → 반드시 원래 배율로 되돌린 뒤 캡처
           resetView();
-          await new Promise((r) => setTimeout(r, 60));
+          await new Promise((r) => setTimeout(r, 150));
           try {
+            /*
+             * ⚠️ 실측 2026-08-09 (RN 0.81 / 신아키텍처):
+             *   `react-native-view-shot@4.0.3`으로 캐프처하면 **배경 사진이 검게** 나오고
+             *   라인·글자(SVG)만 보였다. 4.0.3은 2024-12 버전이라
+             *   Fabric 런타임에서 <Image>를 못 그린다.
+             *   → 5.1.1로 올리면서 해결(Android ViewShot.java가 639→1047줄로 재작성됨).
+             *   다시 검게 나오면 view-shot 버전부터 의심할 것.
+             */
             flatUri = await captureRef(stageRef, { format: 'jpg', quality: 0.92 });
           } catch (capErr) {
             /*
@@ -632,6 +757,11 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
                 <View
                   ref={stageRef}
                   collapsable={false}
+                  /*
+                   * ⚠️ 캔버스의 화면상 위치를 재둬야 pageX/pageY 를 사진 좌표로 되돌릴 수 있다.
+                   *    (measureInWindow 는 레이아웃이 끝난 뒤에야 정확하다)
+                   */
+                  onLayout={measureStage}
                   style={[styles.stageBox, { width: stage.w, height: stage.h }]}
                 >
                   <Animated.View
@@ -680,7 +810,7 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
             </View>
 
             {/* 도구 바 — 확대 중에도 언제든 바꿀 수 있게 항상 떠 있다 */}
-            <View style={[styles.bar, { backgroundColor: colors.surface, paddingBottom: insets.bottom }]}>
+            <View style={[styles.bar, { backgroundColor: colors.surface, paddingBottom: barBottom }]}>
               {tool === 'text' ? (
                 <View style={styles.textRow}>
                   <Input
@@ -693,6 +823,18 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
               ) : null}
 
               <View style={styles.toolRow}>
+                {/*
+                  ⚠️ '보기'가 기본이다 (2026-08-17).
+                     예전에는 line/text 뿐이라 한 손가락이 닿기만 해도 그려졌고,
+                     그래서 확대·위치 조정을 할 수가 없었다.
+                */}
+                <Pressable accessibilityRole="button" onPress={() => setTool('pan')} style={toolBtn(tool === 'pan')}>
+                  <AppIcon name="search" size={16} color={tool === 'pan' ? colors.onPrimary : colors.textSecondary} />
+                  <Text variant="caption" color={tool === 'pan' ? 'onPrimary' : 'textSecondary'}>
+                    보기
+                  </Text>
+                </Pressable>
+
                 <Pressable accessibilityRole="button" onPress={() => setTool('line')} style={toolBtn(tool === 'line')}>
                   <AppIcon name="line" size={16} color={tool === 'line' ? colors.onPrimary : colors.textSecondary} />
                   <Text variant="caption" color={tool === 'line' ? 'onPrimary' : 'textSecondary'}>
@@ -744,9 +886,11 @@ export const ConceptPhotoEditor: React.FC<ConceptPhotoEditorProps> = ({
               </View>
 
               <Text variant="caption" color="textSecondary" style={styles.hint}>
-                {tool === 'line'
-                  ? '한 손가락으로 끌면 선이 그려집니다 · 두 손가락으로 확대·이동'
-                  : '글자를 입력한 뒤 위치를 누르세요 · 찍은 글자는 끌어서 옮길 수 있습니다'}
+                {tool === 'pan'
+                  ? '두 번 탭하거나 두 손가락으로 확대 · 끌어서 이동 · 그리려면 선/텍스트를 누르세요'
+                  : tool === 'line'
+                    ? '한 손가락으로 끌면 선이 그려집니다 · 두 손가락으로 확대·이동'
+                    : '글자를 입력한 뒤 위치를 누르세요 · 찍은 글자는 끌어서 옮길 수 있습니다'}
               </Text>
 
               <Button

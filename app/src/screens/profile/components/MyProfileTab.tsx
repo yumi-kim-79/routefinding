@@ -13,10 +13,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -24,6 +21,9 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { Text } from '../../../components/common/Text';
 import { Input } from '../../../components/common/Input';
 import { Button } from '../../../components/common/Button';
+import { KeyboardAwareScroll } from '../../../components/common/KeyboardAwareScroll';
+import { DeleteAccountSection } from './DeleteAccountSection';
+import { BlockedUsersSection } from './BlockedUsersSection';
 import { Avatar } from '../../../components/common/Avatar';
 import { useTheme } from '../../../theme';
 import { useAuthStore } from '../../../stores/authStore';
@@ -114,14 +114,9 @@ export const MyProfileTab: React.FC = () => {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.flex}
-    >
-      <ScrollView
-        contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xl }}
-        keyboardShouldPersistTaps="handled"
-      >
+    // ⚠️ KeyboardAvoidingView 는 edge-to-edge 에서 계산이 0이라 아무 일도 안 한다
+    //    (components/common/KeyboardAwareScroll.tsx 머리말)
+    <KeyboardAwareScroll contentContainerStyle={{ padding: spacing.md }}>
         {/* 아바타 + 사진 변경 */}
         <View style={styles.avatarWrap}>
           <Pressable
@@ -180,8 +175,15 @@ export const MyProfileTab: React.FC = () => {
         <Text variant="caption" color="textSecondary" style={styles.centerText}>
           닉네임·이메일은 변경할 수 없습니다.
         </Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        {/*
+          회원 탈퇴 — App Store 심사 필수 (Guideline 5.1.1(v), 2026-08-12 반려).
+          계정 생성이 있는 앱은 앱 안에서 계정 삭제를 끝까지 제공해야 한다.
+        */}
+        <BlockedUsersSection />
+
+        <DeleteAccountSection />
+    </KeyboardAwareScroll>
   );
 };
 

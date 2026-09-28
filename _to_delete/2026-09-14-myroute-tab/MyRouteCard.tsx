@@ -10,11 +10,12 @@
  *  6) onTap → RouteDetail({ reportId: routeRef.id ?? myRouteId }) (Phase 2-3 placeholder)
  */
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { deleteDoc, doc, getDoc } from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Text } from '../../../components/common/Text';
+import { RemoteImage } from '../../../components/common/RemoteImage';
 import { Button } from '../../../components/common/Button';
 import { useTheme } from '../../../theme';
 import { db } from '../../../services/firebase';
@@ -167,9 +168,14 @@ export const MyRouteCard: React.FC<MyRouteCardProps> = ({
     >
       <View style={styles.row}>
         {imageUrl ? (
-          <Image
-            source={{ uri: imageUrl }}
+          /*
+           * ⚠️ 2026-08-28 수정 — `<Image source={{ uri: imageUrl }} />` 였다.
+           *    `storage.googleapis.com` 원본 주소는 GCS IAM을 타서 **403**이다.
+           */
+          <RemoteImage
+            uri={imageUrl}
             style={[styles.thumb, { borderRadius: radius.sm }]}
+            variant="thumb"
           />
         ) : (
           <View

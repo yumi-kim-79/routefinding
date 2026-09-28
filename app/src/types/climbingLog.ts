@@ -34,6 +34,23 @@ export interface ClimbingLog {
   /** 등반내용 및 특이사항 */
   notes?: string;
 
+  /**
+   * 공개 여부 — v2.1.0 (2026-09-07). **기본은 비공개**다.
+   *
+   * true 로 바꾸면 Cloud Function `syncPublicLog` 이 커뮤니티 `log` 게시판에
+   * 글을 만들어 준다. false 로 되돌리거나 일지를 지우면 그 글도 사라진다.
+   *
+   * ⚠️ 앱에서 두 곳(일지·게시판)에 직접 쓰지 말 것. 한쪽만 성공하는 날이 반드시 온다.
+   *    일지 문서 하나만 고치고 나머지는 서버가 맞춘다.
+   */
+  isPublic?: boolean;
+
+  /**
+   * 사진 (0~5장) — Storage `log_images/{uid}/{logId}/{n}.jpg`.
+   * 비공개 일지에도 쓸모가 있어 공개 여부와 무관하게 넣는다.
+   */
+  photoUrls?: string[];
+
   /** 개념도에서 작성한 경우 원본 루트 연결 (선택) */
   conceptId?: string;
   conceptSource?: ConceptSource | '';
@@ -52,9 +69,15 @@ export interface ClimbingLogInput {
   duration?: string;
   partners?: string;
   notes?: string;
+  isPublic?: boolean;
+  /** 로컬 파일 URI 또는 이미 올라간 https URL 이 섞여 들어온다 (수정 시) */
+  photos?: string[];
   conceptId?: string;
   conceptSource?: ConceptSource | '';
 }
+
+/** 일지 1건에 붙일 수 있는 사진 수 */
+export const MAX_LOG_PHOTOS = 5;
 
 /** "2018.04.28" 또는 여러 날이면 "2018.05.05~06" */
 export function logDateLabel(log: ClimbingLog): string {

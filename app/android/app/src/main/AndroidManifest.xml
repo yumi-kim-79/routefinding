@@ -7,6 +7,28 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <!--
+      ⚠️ 큰 화면 기기에서 앱이 **검색조차 되지 않던** 문제 (Play Console 권장 조치, 2026-08-29)
+
+      위치 권한을 선언하면 안드로이드가 `android.hardware.location.gps` 를
+      **required="true" 로 암묵 추가**한다. 그러면 GPS 가 없는 기기 —
+      Wi-Fi 전용 태블릿, 크롬북 — 에서 Play 가 이 앱을 걸러낸다.
+      터치스크린도 마찬가지로 기본이 required="true" 라 크롬북이 제외된다.
+
+      이 앱에서 위치는 지도의 '내 위치' 표시에만 쓰는 **보조 기능**이다.
+      GPS 가 없어도 개념도를 보고 검색하는 본래 용도는 그대로 된다
+      → 전부 required="false" 로 명시해 큰 화면 기기에서도 설치할 수 있게 한다.
+      (지우면 다시 걸러진다 — 지우지 말 것)
+    -->
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <!-- 사진 첨부는 카메라 대신 앨범만 써도 된다 -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <!--
       android:largeHeap — 사진 업로드 중 다른 탭으로 이동하면 메모리 부족으로
       앱이 죽던 문제 완화 (2026-08-05 실측).
       근본 대책은 사진 선택 단계에서 긴 변 2048px로 줄이는 것이고(constants/image.ts),

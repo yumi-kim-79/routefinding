@@ -68,12 +68,36 @@ async function upload(path: string, localUri: string): Promise<string> {
 }
 
 /**
+ * 업로드 진행 알림.
+ *
+ * 대표 사진 상한이 30장이 되면서(2026-09-14) 저장이 몇 분씩 걸린다.
+ * 아무 표시 없는 스피너는 **멈춘 것과 구분이 안 되고**, 사용자는 앱을 강제 종료한다.
+ * 그러면 사진은 절반만 올라간 채 Firestore 문서가 안 만들어진다.
+ */
+export type UploadProgress = (done: number, total: number) => void;
+
+/** 새로 올려야 하는 장수 (이미 URL 인 것은 빼고) — 진행 표시의 분모 */
+function countNewUploads(form: ReportForm): number {
+  const root = form.images.filter((i) => !i.remoteUrl).length;
+  const pitch = form.pitches.reduce(
+    (n, p) => n + p.images.filter((i) => !i.remoteUrl).length,
+    0,
+  );
+  return root + pitch + (form.gpxUri ? 1 : 0);
+}
+
+/**
  * 이미 올라간 이미지는 URL을 그대로 재사용하고, 새로 고른 것만 업로드한다
  * (웹 submit의 `!file && previewUrl.startsWith('http')` 분기와 동일).
+ *
+ * ⚠️ **순차 업로드를 병렬로 바꾸지 말 것.** 30장을 한 번에 올리면 RN 쪽에서
+ *    메모리가 튀고, 산에서 흔한 약한 회선에서는 전부 같이 실패한다.
+ *    느린 대신 예측 가능하고, 진행 표시가 실제 진행을 나타낸다.
  */
 async function uploadImages(
   images: LocalImage[],
   pathAt: (index: number) => string,
+  tick?: () => void,
 ): Promise<string[]> {
   const urls: string[] = [];
   for (let i = 0; i < images.length; i += 1) {
@@ -82,6 +106,7 @@ async function uploadImages(
       urls.push(img.remoteUrl);
     } else {
       urls.push(await upload(pathAt(i), img.uri));
+      tick?.();
     }
   }
   return urls;
@@ -93,10 +118,22 @@ export interface SubmitResult {
 }
 
 /**
- * 제보 저장. 이미지·GPX 업로드 후 Firestore에 `status: 'pending'`으로 추가한다.
+ * 제보 저장. 이미지·GPX 업로드 후 Firestore에 **`status: 'approved'` 로 바로 올라간다.**
+ *
+ * ⚠️ 2026-09-07 정책 변경 (사용자 결정): **관리자 승인을 기다리지 않는다.**
+ *    승인 대기 방식은 데이터가 쌓이는 속도를 크게 늦춘다 (경쟁 분석 3순위).
+ *    대신 **사후 관리**로 바꿨다 — 마이페이지 ▸ 제보 관리에서 관리자가
+ *    최근 제보를 보고 **수정·반려(숨김)·삭제**할 수 있다.
+ *    오자료는 지우면 되지만, 아무도 못 올리면 데이터 자체가 안 생긴다.
+ *
+ * ⚠️ 개념도 **사진**(`concept_photos`)은 여전히 승인제다. 사진은 부적절한 이미지가
+ *    바로 공개될 위험이 있어 성격이 다르다 (Apple 심사지침 1.2).
  * @throws 검증 실패 / 업로드 실패 메시지
  */
-export async function submitReport(form: ReportForm): Promise<SubmitResult> {
+export async function submitReport(
+  form: ReportForm,
+  onProgress?: UploadProgress,
+): Promise<SubmitResult> {
   const user = auth.currentUser;
   if (!user) {
     throw new Error('로그인이 필요합니다.');
@@ -117,10 +154,19 @@ export async function submitReport(form: ReportForm): Promise<SubmitResult> {
   const safeR = safe(routeName);
   const zoneSeg = form.zone.trim() ? safe(form.zone.trim()) : '미지정';
 
+  const total = countNewUploads(form);
+  let done = 0;
+  const tick = () => {
+    done += 1;
+    onProgress?.(done, total);
+  };
+  onProgress?.(0, total);
+
   // 대표 이미지
   const imageUrls = await uploadImages(
     form.images,
     (i) => `route_images/${safeM}/${zoneSeg}/${safeR}/root_${i + 1}.jpg`,
+    tick,
   );
 
   // 피치 이미지 (리드만 실제로 값이 있다)
@@ -130,6 +176,7 @@ export async function submitReport(form: ReportForm): Promise<SubmitResult> {
     const urls = await uploadImages(
       p.images,
       (j) => `pitch_images/${safeM}/${safeR}/pitch${i + 1}_${j + 1}.jpg`,
+      tick,
     );
     pitches.push({
       name: p.name,
@@ -145,6 +192,7 @@ export async function submitReport(form: ReportForm): Promise<SubmitResult> {
   let gpxUrl = '';
   if (form.gpxUri) {
     gpxUrl = await upload(`route_gpx/${safeM}/${safeR}/approach_${Date.now()}.gpx`, form.gpxUri);
+    tick();
   }
 
   const payload = {
@@ -168,7 +216,8 @@ export async function submitReport(form: ReportForm): Promise<SubmitResult> {
     // 필드 자체는 빈 배열로 유지한다 (웹과 동일)
     trackingPath: [],
     gpxUrl,
-    status: 'pending' as const,
+    // ⚠️ 승인 대기 없이 바로 공개된다 (위 머리말). 되돌리려면 'pending' 으로만 바꾸면 된다
+    status: 'approved' as const,
     timestamp: new Date(),
     authorUid: user.uid,
     nickname: user.displayName ?? '',
@@ -238,6 +287,7 @@ export async function updateReport(
   source: ConceptSource,
   conceptId: string,
   form: ReportForm,
+  onProgress?: UploadProgress,
 ): Promise<void> {
   const mountain = form.mountain.trim();
   const routeName = form.routeName.trim();
@@ -252,9 +302,18 @@ export async function updateReport(
   const safeR = safe(routeName);
   const zoneSeg = form.zone.trim() ? safe(form.zone.trim()) : '미지정';
 
+  const total = countNewUploads(form);
+  let done = 0;
+  const tick = () => {
+    done += 1;
+    onProgress?.(done, total);
+  };
+  onProgress?.(0, total);
+
   const imageUrls = await uploadImages(
     form.images,
     (i) => `route_images/${safeM}/${zoneSeg}/${safeR}/root_${i + 1}.jpg`,
+    tick,
   );
 
   const pitches = [];
@@ -263,6 +322,7 @@ export async function updateReport(
     const urls = await uploadImages(
       p.images,
       (j) => `pitch_images/${safeM}/${safeR}/pitch${i + 1}_${j + 1}.jpg`,
+      tick,
     );
     pitches.push({
       name: p.name,
@@ -280,6 +340,7 @@ export async function updateReport(
       `route_gpx/${safeM}/${safeR}/approach_${Date.now()}.gpx`,
       form.gpxUri,
     );
+    tick();
     gpxPatch = { gpxUrl };
   }
 

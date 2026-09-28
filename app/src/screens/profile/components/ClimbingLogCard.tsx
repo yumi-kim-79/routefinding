@@ -61,6 +61,22 @@ export const ClimbingLogCard: React.FC<ClimbingLogCardProps> = ({
         <Text variant="title" numberOfLines={1} style={styles.place}>
           {log.place}
         </Text>
+        {/* 공개 여부를 목록에서 바로 알 수 있어야 한다 — 어떤 일지가 커뮤니티에 나가 있는지 */}
+        {log.isPublic ? (
+          <View style={[styles.badge, { backgroundColor: colors.primary, borderRadius: radius.full }]}>
+            <Text variant="caption" color="onPrimary">
+              공개
+            </Text>
+          </View>
+        ) : null}
+        {log.photoUrls && log.photoUrls.length > 0 ? (
+          <View style={styles.metaItem}>
+            <AppIcon name="camera" size={14} color={colors.textSecondary} />
+            <Text variant="caption" color="textSecondary">
+              {log.photoUrls.length}
+            </Text>
+          </View>
+        ) : null}
         <Pressable onPress={confirmDelete} hitSlop={8}>
           <Text variant="label" color="error">
             삭제
@@ -104,6 +120,7 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, marginBottom: 10 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   place: { flex: 1 },
+  badge: { paddingHorizontal: 8, paddingVertical: 2 },
   route: { marginTop: 6 },
   meta: { marginTop: 6 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 4 },

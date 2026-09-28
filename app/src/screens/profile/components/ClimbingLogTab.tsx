@@ -101,6 +101,8 @@ export const ClimbingLogTab: React.FC = () => {
         duration: log.duration,
         partners: log.partners,
         notes: log.notes,
+        isPublic: log.isPublic,
+        photoUrls: log.photoUrls,
       },
     });
   };

@@ -18,6 +18,7 @@ import {
   subscribeConceptsUpdate,
 } from '../../../services/conceptService';
 import type { Concept, ConceptType } from '../../../types/concept';
+import { useFavorites } from '../../route/hooks/useFavorites';
 import { CLUSTER_RADIUS_M, MAX_MARKERS } from '../../../constants/map';
 
 /** 같은 좌표에 모인 루트 묶음 (웹의 clusters 객체와 동일 개념) */
@@ -38,6 +39,11 @@ export interface UseMapRoutesResult {
   setZone: (z: string) => void;
   keyword: string;
   setKeyword: (k: string) => void;
+  /** 즐겨찾기만 보기 (2026-09-14) */
+  onlyFavorites: boolean;
+  setOnlyFavorites: (v: boolean) => void;
+  /** 즐겨찾기 개수 — 0 이면 화면에서 토글을 숨긴다 */
+  favoriteCount: number;
 
   /** 선택된 타입에 존재하는 등반지 목록 */
   mountainList: string[];
@@ -83,6 +89,12 @@ export function useMapRoutes(): UseMapRoutesResult {
   const [mountain, setMountainState] = useState('');
   const [zone, setZone] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
+  /*
+   * 별 채우기용 id 집합을 그대로 쓴다 (목록용 `useFavoriteList` 가 아니다).
+   * 지도는 이미 개념도 전량을 캐시에서 들고 있으므로, 즐겨찾기는 **거르기만** 하면 된다.
+   */
+  const { favoriteIds } = useFavorites();
 
   const load = useCallback(async (forceRefresh: boolean) => {
     try {
@@ -177,6 +189,13 @@ export function useMapRoutes(): UseMapRoutesResult {
   /** 등반지 → 구역 → 검색어 순서로 좁힌다 (웹 filterRoutes와 동일) */
   const filtered = useMemo(() => {
     let data = byType;
+    /*
+     * ⚠️ 즐겨찾기를 **타입 필터 뒤에** 적용한다.
+     *    앞에 두면 '리드/볼더링' 칩을 바꿀 때마다 즐겨찾기가 사라진 것처럼 보인다.
+     */
+    if (onlyFavorites) {
+      data = data.filter((c) => favoriteIds.has(c.id));
+    }
     if (mountain) {
       data = data.filter((c) => c.mountain === mountain);
       if (zone) {
@@ -193,7 +212,7 @@ export function useMapRoutes(): UseMapRoutesResult {
       );
     }
     return data;
-  }, [byType, mountain, zone, keyword]);
+  }, [byType, onlyFavorites, favoriteIds, mountain, zone, keyword]);
 
   /**
    * 가까운 루트끼리 묶기 (거리 기준).
@@ -286,6 +305,9 @@ export function useMapRoutes(): UseMapRoutesResult {
     setZone,
     keyword,
     setKeyword,
+    onlyFavorites,
+    setOnlyFavorites,
+    favoriteCount: favoriteIds.size,
     mountainList,
     zoneList,
     clusters,

@@ -129,7 +129,7 @@ export const StoredImagePicker: React.FC<StoredImagePickerProps> = ({
                       },
                     ]}
                   >
-                    <RemoteImage uri={it.url} style={styles.thumb} />
+                    <RemoteImage uri={it.url} style={styles.thumb} variant="thumb" />
                     <Text variant="caption" color="textSecondary" numberOfLines={1}>
                       {already ? '이미 추가됨' : it.name}
                     </Text>

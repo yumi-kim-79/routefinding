@@ -64,6 +64,16 @@ export const CoordPickerModal: React.FC<CoordPickerModalProps> = ({
         <View style={styles.flex}>
           <MapView
             provider={MAP_PROVIDER}
+            /*
+              ⚠️ 구글 지도 SDK가 안드로이드에서 그리는 자체 툴바를 끈다.
+                 마커 선택 시 우하단에 뜨는 '길찾기/열기' 버튼인데, 구글 지도 앱이
+                 stopped 상태(설치 후 미실행·강제종료)면 인텐트가 전달되지 않아
+                 "구글지도가 설치되어 있지 않거나 중지되었습니다"로 막다른 길이 된다
+                 (2026-08-12 사용자 실기기 확인).
+                 길찾기는 우리 버튼(utils/openExternalMap.ts)으로 일원화한다 —
+                 앱이 없으면 웹 지도로 폴백하므로 실패하지 않는다.
+            */
+            toolbarEnabled={false}
             style={StyleSheet.absoluteFill}
             initialRegion={start}
             showsUserLocation

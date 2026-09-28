@@ -32,12 +32,21 @@ interface UpdateGateProps {
   info: UpdateInfo;
   /** optional 단계에서 '나중에' 를 눌렀을 때 */
   onDismiss: () => void;
+  /**
+   * 스토어를 연 직후 알린다 — 훅이 **돌아왔을 때 자동으로 닫기** 위해 쓴다.
+   * (2026-08-31 '무한 루프' 신고 대응 — useUpdateGate.ts 머리말 참조)
+   */
+  onSentToStore?: () => void;
 }
 
 const KNOB = 56;
 const TRACK_PADDING = 4;
 
-export const UpdateGate: React.FC<UpdateGateProps> = ({ info, onDismiss }) => {
+export const UpdateGate: React.FC<UpdateGateProps> = ({
+  info,
+  onDismiss,
+  onSentToStore,
+}) => {
   const { colors, radius, spacing } = useTheme();
   const { width } = useWindowDimensions();
 
@@ -49,6 +58,7 @@ export const UpdateGate: React.FC<UpdateGateProps> = ({ info, onDismiss }) => {
 
   const openStore = () => {
     setDone(true);
+    onSentToStore?.();
     void (async () => {
       try {
         // market:// 나 itms-apps:// 는 스토어 앱을 바로 연다.
@@ -173,11 +183,33 @@ export const UpdateGate: React.FC<UpdateGateProps> = ({ info, onDismiss }) => {
       </View>
 
       {info.level === 'optional' ? (
-        <Pressable accessibilityRole="button" onPress={onDismiss} hitSlop={10} style={styles.later}>
-          <Text variant="label" color="textSecondary">
-            나중에
+        <>
+          {/*
+            ⚠️ 스토어에 아직 새 버전이 안 올라와 있을 수 있다 (단계적 출시·심사 대기).
+               그때 스토어는 '업데이트' 가 아니라 '열기' 로 보이고, 사용자는 할 수 있는 게 없다.
+               그 상황을 **화면에서 말해 주고** 빠져나갈 길을 분명히 둔다 (2026-08-31 신고).
+          */}
+          <Text variant="caption" color="textSecondary" style={styles.storeNote}>
+            스토어에 &apos;열기&apos;로 보이면 아직 배포 중입니다. 그대로 사용하셔도 됩니다.
           </Text>
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onDismiss}
+            hitSlop={12}
+            style={({ pressed }) => [
+              styles.laterBtn,
+              {
+                borderColor: colors.divider,
+                borderRadius: radius.md,
+                backgroundColor: pressed ? colors.surfaceVariant : 'transparent',
+              },
+            ]}
+          >
+            <Text variant="label" color="primary">
+              나중에 · 계속 사용하기
+            </Text>
+          </Pressable>
+        </>
       ) : (
         <Text variant="caption" color="textSecondary" style={styles.later}>
           이 버전은 더 이상 사용할 수 없습니다
@@ -200,4 +232,6 @@ const styles = StyleSheet.create({
   knobIcon: { transform: [{ scaleX: -1 }] },
   hintWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', zIndex: -1 },
   later: { marginTop: 24 },
+  storeNote: { marginTop: 20, textAlign: 'center', paddingHorizontal: 16 },
+  laterBtn: { marginTop: 12, borderWidth: 1, paddingVertical: 12, paddingHorizontal: 22 },
 });

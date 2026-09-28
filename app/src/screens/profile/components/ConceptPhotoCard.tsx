@@ -76,6 +76,7 @@ export const ConceptPhotoCard: React.FC<ConceptPhotoCardProps> = ({
           uri={thumb}
           style={[styles.thumb, { borderRadius: radius.sm }]}
           emptyLabel="사진 없음"
+          variant="thumb"
         />
 
         <View style={styles.body}>

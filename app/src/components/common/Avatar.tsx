@@ -12,8 +12,9 @@
  * (스타일 prop을 Image에 직접 넘기면 ViewStyle ↔ ImageStyle 타입이 충돌한다)
  */
 import React from 'react';
-import { Image, StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { Text } from './Text';
+import { RemoteImage } from './RemoteImage';
 import { useTheme } from '../../theme';
 
 interface AvatarProps {
@@ -48,10 +49,21 @@ export const Avatar: React.FC<AvatarProps> = ({
       ]}
     >
       {photoUrl ? (
-        <Image
-          source={{ uri: photoUrl }}
+        /*
+         * ⚠️ 2026-08-28 — `<Image source={{ uri: photoUrl }} />` 였다.
+         *    v2 는 업로드 후 `getDownloadURL()` 결과를 저장하지만,
+         *    **v1(Flutter) 시절 가입자는 `storage.googleapis.com` 원본 주소**가
+         *    users/{uid}.photoUrl 에 그대로 남아 있다 → 그 계정은 프로필 사진이 403 이었다.
+         *    RemoteImage 가 두 형식을 모두 흡수한다.
+         *
+         * ⚠️ variant="thumb" 는 쓰지 않는다. 프로필 사진은 route_images 밖(profile_photos)이라
+         *    썸네일 생성 함수의 대상이 아니다 — 헛조회만 늘어난다.
+         */
+        <RemoteImage
+          uri={photoUrl}
           style={styles.image}
           resizeMode="cover"
+          emptyLabel=""
         />
       ) : (
         <Text

@@ -21,6 +21,9 @@ import { AppIcon } from '../../../components/common/AppIcon';
 import { useTheme } from '../../../theme';
 import { DEFAULT_REGION, MAP_PROVIDER } from '../../../constants/map';
 import { fetchGpxTrack, trackLengthLabel, type TrackPoint } from '../../../services/gpxService';
+import { Button } from '../../../components/common/Button';
+import { toMapTarget } from '../../../utils/openExternalMap';
+import { useDirections } from '../../../hooks/useDirections';
 
 interface ApproachMapModalProps {
   visible: boolean;
@@ -64,6 +67,7 @@ export const ApproachMapModal: React.FC<ApproachMapModalProps> = ({
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView | null>(null);
   const [load, setLoad] = useState<State>({ state: 'loading' });
+  const { busy: dirBusy, go: goDirections } = useDirections();
 
   useEffect(() => {
     if (!visible) {
@@ -149,6 +153,16 @@ export const ApproachMapModal: React.FC<ApproachMapModalProps> = ({
             <MapView
               ref={mapRef}
               provider={MAP_PROVIDER}
+              /*
+                ⚠️ 구글 지도 SDK가 안드로이드에서 그리는 자체 툴바를 끈다.
+                   마커 선택 시 우하단에 뜨는 '길찾기/열기' 버튼인데, 구글 지도 앱이
+                   stopped 상태(설치 후 미실행·강제종료)면 인텐트가 전달되지 않아
+                   "구글지도가 설치되어 있지 않거나 중지되었습니다"로 막다른 길이 된다
+                   (2026-08-12 사용자 실기기 확인).
+                   길찾기는 우리 버튼(utils/openExternalMap.ts)으로 일원화한다 —
+                   앱이 없으면 웹 지도로 폴백하므로 실패하지 않는다.
+              */
+              toolbarEnabled={false}
               style={StyleSheet.absoluteFill}
               initialRegion={
                 start
@@ -218,6 +232,28 @@ export const ApproachMapModal: React.FC<ApproachMapModalProps> = ({
             <Text variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
               초록 = 출발, 빨강 = 도착. 실제 등반 접근로는 현장 상황에 따라 다를 수 있습니다.
             </Text>
+
+            {/*
+              구글 Map Toolbar를 끄면서(toolbarEnabled={false}) 이 화면에도
+              외부 지도로 나가는 길이 없어졌다. 접근로 **출발지점까지는 차로 가는** 경우가
+              대부분이라 그 구간만 외부 지도에 넘긴다. GPX 트랙 자체는 앱 안에서 본다.
+            */}
+            {start && toMapTarget(start.latitude, start.longitude) ? (
+              <Button
+                title="출발지점까지 길찾기"
+                variant="secondary"
+                size="sm"
+                loading={dirBusy}
+                onPress={() =>
+                  goDirections({
+                    latitude: start.latitude,
+                    longitude: start.longitude,
+                    label: title ? `${title} 접근로 출발지점` : '접근로 출발지점',
+                  })
+                }
+                style={styles.footerBtn}
+              />
+            ) : null}
           </View>
         ) : null}
       </View>
@@ -247,4 +283,5 @@ const styles = StyleSheet.create({
   },
   routeDot: { width: 18, height: 18, borderRadius: 9 },
   footer: { borderTopWidth: StyleSheet.hairlineWidth },
+  footerBtn: { marginTop: 10 },
 });

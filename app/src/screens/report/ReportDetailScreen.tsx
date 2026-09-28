@@ -97,10 +97,16 @@ export const ReportDetailScreen: React.FC = () => {
   const isAdmin = isAdminEmail(authUser?.email);
 
   const [load, setLoad] = useState<LoadState>({ state: 'loading' });
-  const [viewer, setViewer] = useState<{ open: boolean; index: number }>({
-    open: false,
-    index: 0,
-  });
+  /**
+   * 전체화면 뷰어 상태.
+   * ⚠️ 개념도 상세와 같은 이유로 **목록을 함께 담는다** — 루트 대표 사진 목록에 없는 것을
+   *    누르면(피치 사진) `indexOf`가 -1이 되어 엉뚱한 사진이 열렸다 (2026-08-29).
+   */
+  const [viewer, setViewer] = useState<{
+    open: boolean;
+    images: string[];
+    index: number;
+  }>({ open: false, images: [], index: 0 });
   const [approachOpen, setApproachOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -342,7 +348,7 @@ export const ReportDetailScreen: React.FC = () => {
               <Pressable
                 key={`${i}-${uri}`}
                 accessibilityRole="imagebutton"
-                onPress={() => setViewer({ open: true, index: i })}
+                onPress={() => setViewer({ open: true, images, index: i })}
                 style={{
                   width: imageWidth,
                   marginRight: i === images.length - 1 ? 0 : spacing.sm,
@@ -359,6 +365,10 @@ export const ReportDetailScreen: React.FC = () => {
                     },
                   ]}
                   resizeMode="cover"
+                  // 지금 보고 있는 사진 — 목록 썸네일보다 먼저 처리한다
+                  priority="high"
+                  // 40KB 축소본을 먼저 띄워 빈 화면을 없앤다
+                  progressive
                 />
               </Pressable>
             ))}
@@ -424,30 +434,41 @@ export const ReportDetailScreen: React.FC = () => {
           <Text variant="title" style={styles.sectionTitle}>
             피치 ({c.pitches.length})
           </Text>
+          {/* ⚠️ 줄 전체가 피치 상세로 가는 버튼 — 개념도 상세와 같다 (2026-08-29) */}
           {c.pitches.map((p, i) => {
             const thumb = p.imageUrls?.[0];
+            const shots = (p.imageUrls ?? []).filter(Boolean).length;
             const meta = [
-              typeof p.length === 'number' || typeof p.length === 'string'
-                ? `${p.length}m`
-                : null,
+              p.length === undefined || p.length === null || p.length === ''
+                ? null
+                : `${p.length}m`,
               p.style,
               p.difficulty,
               p.gear,
+              shots > 1 ? `사진 ${shots}장` : null,
             ]
               .filter(Boolean)
               .join(' · ');
             return (
-              <View key={`pitch-${i}`} style={styles.pitchRow}>
+              <Pressable
+                key={`pitch-${i}`}
+                accessibilityRole="button"
+                accessibilityLabel={`${p.name || `${i + 1}피치`} 상세 보기`}
+                style={styles.pitchRow}
+                onPress={() =>
+                  navigation.navigate('PitchDetail', {
+                    pitchNumber: i + 1,
+                    pitch: p,
+                    routeTitle: conceptTitle(c),
+                  })
+                }
+              >
                 {thumb ? (
-                  <Pressable
-                    accessibilityRole="imagebutton"
-                    onPress={() => {
-                      const idx = images.indexOf(thumb);
-                      setViewer({ open: true, index: idx >= 0 ? idx : 0 });
-                    }}
-                  >
-                    <RemoteImage uri={thumb} style={[styles.pitchThumb, { borderRadius: radius.sm }]} />
-                  </Pressable>
+                  <RemoteImage
+                    uri={thumb}
+                    style={[styles.pitchThumb, { borderRadius: radius.sm }]}
+                    variant="thumb"
+                  />
                 ) : (
                   <View
                     style={[
@@ -469,7 +490,10 @@ export const ReportDetailScreen: React.FC = () => {
                     </Text>
                   ) : null}
                 </View>
-              </View>
+                <Text variant="body" color="disabled" style={styles.pitchChevron}>
+                  ›
+                </Text>
+              </Pressable>
             );
           })}
         </View>
@@ -507,7 +531,7 @@ export const ReportDetailScreen: React.FC = () => {
 
       <ConceptImageViewer
         visible={viewer.open}
-        images={images}
+        images={viewer.images}
         initialIndex={viewer.index}
         onClose={() => setViewer((v) => ({ ...v, open: false }))}
       />
@@ -563,4 +587,5 @@ const styles = StyleSheet.create({
   pitchThumb: { width: 72, height: 56 },
   pitchThumbEmpty: { alignItems: 'center', justifyContent: 'center' },
   pitchBody: { flex: 1, marginLeft: 12 },
+  pitchChevron: { marginLeft: 8 },
 });

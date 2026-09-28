@@ -349,3 +349,62 @@ $FirebaseSDKVersion = '<검증된 버전>'
 ---
 
 *이 문서는 iOS 빌드 재시도마다 갱신한다. 시도/에러/환경을 반드시 누적 기록.*
+
+---
+
+## §5. 🚨 2026-08-14 — 빌드 4가 **실행 즉시 크래시**로 반려 (Guideline 2.1(a))
+
+> Review Device: iPad Air 11-inch (M3) / iPhone 17 Pro Max, iPadOS·iOS 26.6
+> Version reviewed: 2.0.0 (4)
+> "We were unable to review the app because it crashed on launch."
+
+### 가장 중요한 사실
+**빌드 3은 실행됐다.** 8/12 반려 사유가 Guideline 4·5.1.1(v)라는 건 리뷰어가 앱을 **켜서 써 봤다**는 뜻이다.
+→ 원인은 **빌드 3 → 4 사이의 변경분**에 있다. JS 로직이 아니라 네이티브 쪽일 가능성이 높다.
+
+| 3 → 4 사이 바뀐 것 | 위험도 |
+|---|---|
+| RN 0.76.9 → **0.81.6** (+ `RCTNewArchEnabled = true`) | 높음 |
+| RNFB 24.0.0 → **25.1.0** + Podfile을 `use_frameworks! :linkage => :static` 으로 전환 | 높음 |
+| Google-Mobile-Ads-SDK 11 → **12** (`react-native-google-mobile-ads` 15.8.3) | 중간 |
+| `react-native-maps/Google` + static framework 링크 | 중간 |
+
+### 코드에서 확인한 것 (여기는 원인이 아니다)
+- `AppDelegate.mm` 은 `RCTAppDelegate` 상속 — RN 0.81 에서 **deprecated 이지만 여전히 존재**한다.
+  `bundleURL` 을 올바르게 재정의하고 있다
+- `GADApplicationIdentifier` 는 Info.plist 에 없지만 정상이다 —
+  `[CP-User] [RNGoogleMobileAds] Configuration` 빌드 스크립트가 `app.json` 의
+  `ios_app_id` 를 읽어 **빌드 산출물의 Info.plist 에 심는다**
+- `Bundle React Native code and images` 빌드 페이즈 정상
+
+### ⚠️ 왜 놓쳤나 — **Xcode Run(Release) ≠ TestFlight 빌드**
+Xcode 에서 Release 로 실행한 것과 아카이브해서 올린 것은 **서명·최적화·번들 구성이 다르다.**
+App Store 빌드에서만 나는 크래시(번들 누락, 심볼 누락, App Check/DeviceCheck 동작 차이)는
+Xcode Run 으로는 절대 안 잡힌다.
+
+**앞으로 규칙: 제출 전 반드시 TestFlight 로 설치해 한 번 실행한다.**
+
+### ✅ 원인 확정 (2026-08-14) — `dependencyProvider` 누락
+크래시 로그를 기다릴 필요가 없었다. RN 소스에 명시적 예외가 있다.
+
+```
+react-native/Libraries/AppDelegate/RCTReactNativeFactory.mm:194
+  if (self.delegate.dependencyProvider == nil) {
+    [NSException raise:@"ReactNativeFactoryDelegate dependencyProvider is nil" ...
+```
+
+RN **0.77 부터** `AppDelegate` 는 `self.dependencyProvider = [RCTAppDependencyProvider new];`
+를 설정해야 한다. 0.76.9 에는 없던 요구사항이라 업그레이드 때 누락됐다.
+프로퍼티가 프로토콜에 선언돼 있어 **컴파일은 통과하고 런타임에만 죽는다.**
+
+수정: `ios/RouteFinding/AppDelegate.mm` — import 추가 + `[super application:...]` **앞에서** 대입.
+
+### (참고) 크래시 로그를 직접 봐야 할 때
+1. App Store Connect → 앱 심사 → Apple 메시지의 **크래시 로그 첨부 다운로드**
+2. **빌드 4의 `.xcarchive` 를 지우지 말 것** — 없으면 심볼화가 불가능하다
+   (`~/Library/Developer/Xcode/Archives/`)
+3. Xcode → Window → Devices and Simulators → **View Device Logs** 에 `.crash`/`.ips` 를 끌어다 놓으면
+   맞는 아카이브가 있을 때 자동 심볼화된다
+4. 동시에 **TestFlight 로 빌드 4를 본인 아이폰에 설치** → 같은 크래시를 재현하고
+   Devices and Simulators 에서 로그를 직접 수집한다 (이쪽이 보통 더 빠르다)
+5. 원인 확정 후 수정 → 빌드 5 업로드 → **TestFlight 실행 확인** → 재제출

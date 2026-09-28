@@ -57,6 +57,8 @@ export interface UseReportFormResult {
   locating: boolean;
   locError: string | null;
   saving: boolean;
+  /** 사진 업로드 진행 (없으면 null) */
+  progress: { done: number; total: number } | null;
   submit: () => void;
   /** 저장 성공 시각 (화면이 안내를 띄운다) */
   savedAt: number | null;
@@ -114,6 +116,12 @@ export function useReportForm(
   const [zones, setZones] = useState<string[]>([]);
   const [loadingLists, setLoadingLists] = useState(true);
   const [saving, setSaving] = useState(false);
+  /**
+   * 사진 업로드 진행 — `null` 이면 표시하지 않는다.
+   * 대표 사진이 30장까지 늘어나(2026-09-14) 저장이 몇 분씩 걸린다.
+   * 진행을 안 보여주면 사용자가 멈춘 줄 알고 앱을 강제 종료한다.
+   */
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -356,11 +364,15 @@ export function useReportForm(
     }
     void (async () => {
       setSaving(true);
+      setProgress(null);
+      // 올릴 사진이 없으면(전부 기존 URL) 분모가 0 이라 표시하지 않는다
+      const onProgress = (done: number, total: number) =>
+        setProgress(total > 0 ? { done, total } : null);
       try {
         if (edit) {
-          await updateReport(edit.source, edit.conceptId, form);
+          await updateReport(edit.source, edit.conceptId, form, onProgress);
         } else {
-          await submitReport(form);
+          await submitReport(form, onProgress);
           // 수정은 폼을 비우지 않는다 (화면이 곧 닫히고, 비우면 되돌릴 수 없다)
           setForm(emptyReportForm(form.typeRoot));
         }
@@ -369,6 +381,7 @@ export function useReportForm(
         Alert.alert('저장 실패', e instanceof Error ? e.message : String(e));
       } finally {
         setSaving(false);
+        setProgress(null);
       }
     })();
   }, [edit, form, saving]);
@@ -398,6 +411,7 @@ export function useReportForm(
     locating,
     locError,
     saving,
+    progress,
     submit,
     savedAt,
   };

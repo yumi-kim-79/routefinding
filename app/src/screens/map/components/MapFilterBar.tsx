@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Text } from '../../../components/common/Text';
 import { useTheme } from '../../../theme';
+import { AppIcon } from '../../../components/common/AppIcon';
 import type { ConceptType } from '../../../types/concept';
 import { PickerModal } from '../../../components/common/PickerModal';
 
@@ -21,6 +22,11 @@ interface MapFilterBarProps {
   onZoneChange: (z: string) => void;
   keyword: string;
   onKeywordChange: (k: string) => void;
+  /** 즐겨찾기만 보기 (2026-09-14) */
+  onlyFavorites: boolean;
+  onOnlyFavoritesChange: (v: boolean) => void;
+  /** 0 이면 칩 자체를 숨긴다 — 누를 게 없는 버튼은 두지 않는다 */
+  favoriteCount: number;
   mountainList: string[];
   zoneList: string[];
   onMyLocation: () => void;
@@ -38,6 +44,9 @@ export const MapFilterBar: React.FC<MapFilterBarProps> = ({
   mountainList,
   zoneList,
   onMyLocation,
+  onlyFavorites,
+  onOnlyFavoritesChange,
+  favoriteCount,
 }) => {
   const { colors, radius, spacing } = useTheme();
   const [picker, setPicker] = useState<'mountain' | 'zone' | null>(null);
@@ -75,6 +84,38 @@ export const MapFilterBar: React.FC<MapFilterBarProps> = ({
             </Pressable>
           );
         })}
+
+        {/*
+          ★ 즐겨찾기만 — 즐겨찾기가 하나도 없으면 숨긴다.
+          ⚠️ 이 칩은 타입(리드/볼더링) 칩과 **함께** 걸린다. 겹치는 게 없으면
+             "즐겨찾기가 사라졌다"로 보이므로, 결과가 0이면 화면 아래 안내가 이유를 말한다.
+        */}
+        {favoriteCount > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="즐겨찾기만 보기"
+            onPress={() => onOnlyFavoritesChange(!onlyFavorites)}
+            style={[
+              styles.chip,
+              styles.favChip,
+              {
+                borderRadius: radius.full,
+                backgroundColor: onlyFavorites ? colors.primary : colors.surfaceVariant,
+                borderColor: onlyFavorites ? colors.primary : colors.border,
+              },
+            ]}
+          >
+            <AppIcon
+              name="star"
+              size={14}
+              filled
+              color={onlyFavorites ? colors.onPrimary : colors.textSecondary}
+            />
+            <Text color={onlyFavorites ? 'onPrimary' : 'textSecondary'}>
+              즐겨찾기 {favoriteCount}
+            </Text>
+          </Pressable>
+        ) : null}
 
         <Pressable accessibilityRole="button" onPress={() => setPicker('mountain')} style={selectStyle}>
           <Text color={mountain ? 'textPrimary' : 'textSecondary'}>{mountain || '전체 산'} ▾</Text>
@@ -138,6 +179,7 @@ export const MapFilterBar: React.FC<MapFilterBarProps> = ({
 };
 
 const styles = StyleSheet.create({
+  favChip: { flexDirection: 'row', alignItems: 'center', columnGap: 4 },
   bar: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   chip: { paddingHorizontal: 16, paddingVertical: 7, borderWidth: 1 },
   select: { paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1 },

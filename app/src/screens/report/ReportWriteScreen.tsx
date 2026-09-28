@@ -477,8 +477,15 @@ export const ReportWriteScreen: React.FC<ReportWriteScreenProps> = ({
         {f.saving ? (
           <View style={styles.savingRow}>
             <ActivityIndicator color={colors.primary} />
-            <Text variant="caption" color="textSecondary">
-              사진을 업로드하는 중입니다. 화면을 벗어나지 마세요.
+            {/*
+              ⚠️ 장수를 반드시 보여준다. 대표 사진이 30장까지 가능해져(2026-09-14)
+                 회선이 느리면 몇 분이 걸린다. "업로드 중" 한 줄만 있으면 멈춘 것과
+                 구분이 안 되고, 사용자가 앱을 끄면 사진만 절반 올라간 채 문서가 안 만들어진다.
+            */}
+            <Text variant="caption" color="textSecondary" style={styles.savingText}>
+              {f.progress
+                ? `사진 올리는 중 ${f.progress.done}/${f.progress.total}장 — 화면을 벗어나지 마세요.`
+                : '저장하는 중입니다. 화면을 벗어나지 마세요.'}
             </Text>
           </View>
         ) : null}
@@ -565,4 +572,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   savingRow: { flexDirection: 'row', alignItems: 'center', columnGap: 8, marginTop: 8 },
+  savingText: { flex: 1 },
 });

@@ -8,11 +8,12 @@
  *   (2026-08-05까지 플레이스홀더라 눌러도 빈 화면이었다).
  */
 import React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Text } from '../../../components/common/Text';
 import { Avatar } from '../../../components/common/Avatar';
+import { RemoteImage } from '../../../components/common/RemoteImage';
 import { useTheme } from '../../../theme';
 import { formatDate } from '../../../utils/date';
 import { type Report, statusToKorean } from '../../../types/report';
@@ -69,9 +70,15 @@ export const ReportCard: React.FC<ReportCardProps> = ({
     >
       <View style={styles.row}>
         {imageUrl ? (
-          <Image
-            source={{ uri: imageUrl }}
+          /*
+           * ⚠️ 2026-08-28 수정 — `<Image source={{ uri: imageUrl }} />` 였다.
+           *    개념도 사진 주소는 `storage.googleapis.com` 원본이라 **그냥 넣으면 403**이다
+           *    (GCS IAM을 타므로 Storage 규칙으로 열리지 않는다).
+           */
+          <RemoteImage
+            uri={imageUrl}
             style={[styles.thumb, { borderRadius: radius.sm }]}
+            variant="thumb"
           />
         ) : (
           <View

@@ -10,6 +10,7 @@ import { Alert, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Screen } from '../../components/common/Screen';
+import { KeyboardAwareScroll } from '../../components/common/KeyboardAwareScroll';
 import { Text } from '../../components/common/Text';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
@@ -106,68 +107,72 @@ export const SignUpScreen: React.FC = () => {
   };
 
   return (
-    <Screen>
-      <View style={styles.row}>
-        <View style={styles.flex}>
-          <Input
-            label="닉네임"
-            value={nickname}
-            onChangeText={(t) => {
-              setNickname(t);
-              setNickChecked(false);
-            }}
-            placeholder="닉네임"
-            error={nickError}
+    <Screen padded={false}>
+      {/* ⚠️ 키보드가 입력칸을 덮지 않게 — components/common/KeyboardAwareScroll.tsx 머리말 */}
+      <KeyboardAwareScroll contentContainerStyle={styles.form}>
+        <View style={styles.row}>
+          <View style={styles.flex}>
+            <Input
+              label="닉네임"
+              value={nickname}
+              onChangeText={(t) => {
+                setNickname(t);
+                setNickChecked(false);
+              }}
+              placeholder="닉네임"
+              error={nickError}
+            />
+          </View>
+          <Button
+            title="중복 확인"
+            size="sm"
+            variant="secondary"
+            loading={checking}
+            onPress={onCheckNickname}
+            style={styles.checkBtn}
           />
         </View>
-        <Button
-          title="중복 확인"
-          size="sm"
-          variant="secondary"
-          loading={checking}
-          onPress={onCheckNickname}
-          style={styles.checkBtn}
+        {nickChecked ? (
+          <Text variant="caption" color="success" style={styles.ok}>
+            사용 가능한 닉네임입니다.
+          </Text>
+        ) : null}
+
+        <Input
+          label="이메일"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="email@example.com"
+          keyboardType="email-address"
+          autoComplete="email"
         />
-      </View>
-      {nickChecked ? (
-        <Text variant="caption" color="success" style={styles.ok}>
-          사용 가능한 닉네임입니다.
-        </Text>
-      ) : null}
+        <Input
+          label="비밀번호"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="비밀번호"
+          password
+        />
 
-      <Input
-        label="이메일"
-        value={email}
-        onChangeText={setEmail}
-        placeholder="email@example.com"
-        keyboardType="email-address"
-        autoComplete="email"
-      />
-      <Input
-        label="비밀번호"
-        value={password}
-        onChangeText={setPassword}
-        placeholder="비밀번호"
-        password
-      />
+        {formError ? (
+          <Text variant="caption" color="error" style={styles.error}>
+            {formError}
+          </Text>
+        ) : null}
 
-      {formError ? (
-        <Text variant="caption" color="error" style={styles.error}>
-          {formError}
-        </Text>
-      ) : null}
-
-      <Button
-        title="회원가입"
-        onPress={onSignUp}
-        loading={loading}
-        style={styles.submit}
-      />
+        <Button
+          title="회원가입"
+          onPress={onSignUp}
+          loading={loading}
+          style={styles.submit}
+        />
+      </KeyboardAwareScroll>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
+  form: { padding: 16 },
   row: { flexDirection: 'row', alignItems: 'flex-start' },
   flex: { flex: 1 },
   checkBtn: { marginTop: 26, marginLeft: 8 },

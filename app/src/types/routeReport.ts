@@ -74,8 +74,21 @@ export interface ReportPrefill {
   longitude?: string;
 }
 
-/** 사진 최대 장수 — 웹과 동일 */
-export const MAX_ROOT_IMAGES = 8;
+/**
+ * 사진 최대 장수.
+ *
+ * 2026-09-14 대표 사진 8 → 30 (사용자 요청).
+ *   "10피치가 넘는 구간도 있고 20피치짜리 루트도 있다."
+ *   멀티피치 루트는 루트 하나를 설명하는 데 필요한 사진 수가 단일 피치와 자릿수가 다르다.
+ *
+ * ⚠️ 웹(routefinding-web)은 아직 8장이다. **두 쪽 값이 다르다는 걸 알고 두는 것**이다 —
+ *    웹에서 30장짜리 제보를 열면 사진은 다 보이지만 수정하면 8장으로 잘린다.
+ *    웹을 손볼 때 `ConceptEditView.vue` 의 상한도 같이 올릴 것.
+ * ⚠️ 업로드는 순차(`reportService.uploadImages`)라 30장이면 몇 분이 걸린다.
+ *    그래서 진행 상황을 화면에 보여준다(`onProgress`). 지우지 말 것 —
+ *    말 없이 멈춰 있는 저장 버튼은 사용자가 앱을 강제 종료하게 만든다.
+ */
+export const MAX_ROOT_IMAGES = 30;
 export const MAX_PITCH_IMAGES = 4;
 
 /** 목록·순서 관리를 위한 고유 id (웹 genUid 대응) */

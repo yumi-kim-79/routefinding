@@ -7,9 +7,10 @@
  * → **좌/우 이동 버튼**으로 대체한다. 순서 개념과 결과는 동일하다.
  */
 import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../../../components/common/Text';
 import { AppIcon } from '../../../components/common/AppIcon';
+import { RemoteImage } from '../../../components/common/RemoteImage';
 import { useTheme } from '../../../theme';
 import type { LocalImage } from '../../../types/routeReport';
 
@@ -40,9 +41,16 @@ export const ImageStrip: React.FC<ImageStripProps> = ({
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {images.map((img, index) => (
           <View key={img.uid} style={styles.item}>
-            <Image
-              source={{ uri: img.remoteUrl ?? img.uri }}
+            {/*
+              ⚠️ 2026-08-28 — `<Image source={{ uri: img.remoteUrl ?? img.uri }} />` 였다.
+                 `remoteUrl` 은 이미 올라간 사진의 **`storage.googleapis.com` 원본 주소**라
+                 그냥 넣으면 403 이다(수정 화면에서 기존 사진이 안 보였다).
+                 새로 고른 사진의 `file://` 경로는 RemoteImage 가 그대로 통과시킨다.
+            */}
+            <RemoteImage
+              uri={img.remoteUrl ?? img.uri}
               style={[styles.thumb, { borderRadius: radius.md, backgroundColor: colors.surfaceVariant }]}
+              variant="thumb"
             />
             <Pressable
               accessibilityRole="button"

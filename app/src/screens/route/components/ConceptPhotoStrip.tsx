@@ -103,7 +103,12 @@ export const ConceptPhotoStrip: React.FC<ConceptPhotoStripProps> = ({ conceptId,
               onLayout={onLayout}
               style={[styles.stage, { borderRadius: radius.md, height: box.h }]}
             >
-              <RemoteImage uri={p.imageUrl} style={StyleSheet.absoluteFill} resizeMode="contain" />
+              <RemoteImage
+                uri={p.imageUrl}
+                style={StyleSheet.absoluteFill}
+                resizeMode="contain"
+                variant="thumb"
+              />
               {/* 좌표로 저장된 선/글자를 원본 위에 겹쳐 그린다 (합성본이 아니라 원본 + 오버레이) */}
               <ConceptPhotoOverlay
                 lines={p.lines ?? []}

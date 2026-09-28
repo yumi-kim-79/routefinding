@@ -19,6 +19,7 @@ import {
   onAuthStateChanged,
   reload,
   sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as fbSignOut,
   updateProfile as fbUpdateProfile,
@@ -53,6 +54,8 @@ interface AuthState {
     nickname: string,
   ) => Promise<void>;
   signOut: () => Promise<void>;
+  /** 비밀번호 재설정 메일 발송 (로그인 화면 '비밀번호 찾기') */
+  sendPasswordReset: (email: string) => Promise<void>;
 }
 
 let unsubscribe: (() => void) | null = null;
@@ -150,6 +153,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     } finally {
       signingIn = false;
     }
+  },
+
+  /**
+   * 비밀번호 재설정 메일 발송.
+   *
+   * ⚠️ 계정 존재 여부를 화면에 드러내지 않는다. Firebase가 `auth/user-not-found`를
+   *    돌려주더라도 호출부에서 성공과 같은 문구를 보여준다(계정 열거 방지).
+   */
+  sendPasswordReset: async (email) => {
+    set({ error: null });
+    await sendPasswordResetEmail(auth, email.trim());
   },
 
   signOut: async () => {

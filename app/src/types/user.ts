@@ -34,6 +34,17 @@ export interface UserProfile {
   commentCount?: number;
   reportCount?: number;
 
+  /**
+   * 커뮤니티 이용규칙 동의 시각 — v2.1.0 (2026-09-07).
+   *
+   * ⚠️ Apple 심사지침 1.2 는 UGC 앱에 "불쾌한 콘텐츠·이용자에 무관용" 이용약관과
+   *    **게시 전 동의**를 요구한다. 이 값이 없으면 글쓰기 화면에서 동의를 먼저 받는다
+   *    (screens/community/CommunityRulesGate.tsx).
+   * ⚠️ 기기가 아니라 **계정**에 저장한다. 앱을 지웠다 깔아도 다시 묻지 않고,
+   *    "동의한 적 없다"는 분쟁에도 기록이 남는다.
+   */
+  communityAgreedAt?: FirebaseFirestoreTypes.Timestamp;
+
   // 메타
   createdAt?: FirebaseFirestoreTypes.Timestamp;
   updatedAt?: FirebaseFirestoreTypes.Timestamp;

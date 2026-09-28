@@ -2,9 +2,16 @@
  * 내 제보 관리 탭 — v1 mypage_screen.dart::_buildMyReportsTab 1:1.
  *
  * 쿼리: 두 컬렉션 동시 구독
- *   - 본인:   route_reports / bouldering_reports where authorUid == uid
- *   - 관리자: 위에 더해 where status in ['draft','pending','rejected'] (남의 제보까지)
- * 머지 후 status != 'approved' 필터 + timestamp desc 정렬 (v1 보존).
+ *   - 본인:   route_reports / bouldering_reports where authorUid == uid  (**전 상태**)
+ *   - 관리자: 위에 더해 **최근 제보 50건** (남의 것 포함)
+ *
+ * ⚠️ 2026-09-07 정책 변경: 제보가 **승인 없이 바로 게시**된다 (reportService 머리말).
+ *    그 전에는 관리자 목록이 `status in ['draft','pending']` 이었고 머지 후
+ *    `!== 'approved'` 로 걸렀는데, 이제 그러면 **목록이 통째로 비어** 관리자가
+ *    오자료를 찾을 방법이 없어진다.
+ *    → 관리자는 `orderBy(timestamp desc) + limit` 으로 **최근 제보**를 보고,
+ *      본인은 자기 제보를 상태와 무관하게 전부 본다.
+ *    ⚠️ 전체를 구독하면 안 된다 — 승인 문서가 5천 건이 넘는다. 반드시 limit 을 건다.
  *
  * ⚠️ 웹은 `where(status in ...) + orderBy(timestamp)`를 쓰지만 그 조합은 **복합 색인**이 필요하다.
  *    앱은 단일 where만 쓰고 정렬은 클라이언트에서 한다 (conceptService와 같은 방침 —
@@ -14,11 +21,15 @@
  * 액션 다이얼로그: 삭제=Alert.alert(confirm) / 승인=직접 update / 반려=PromptModal(공용).
  */
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from 'react-native';
 import {
   collection,
   doc,
+  limit,
   onSnapshot,
+  orderBy,
   query,
   updateDoc,
   where,
@@ -26,8 +37,10 @@ import {
 import { db } from '../../../services/firebase';
 import { Text } from '../../../components/common/Text';
 import { PromptModal } from '../../../components/common/PromptModal';
+import { Button } from '../../../components/common/Button';
 import { useTheme } from '../../../theme';
 import { useAuthStore } from '../../../stores/authStore';
+import type { MainStackParamList } from '../../../navigation/types';
 import { useMyPage } from '../hooks/useMyPage';
 import { isAdminEmail } from '../../../constants/admin';
 import { type Report, type ReportCollection } from '../../../types/report';
@@ -69,12 +82,16 @@ function subscribeReports(
   );
 }
 
+/** 관리자 목록에 담을 최근 제보 수 (컬렉션당) */
+const ADMIN_RECENT_LIMIT = 50;
+
 /**
- * 관리자용: **아직 처리하지 않은** 제보만 (작성자 무관).
+ * 관리자용: **최근 제보**(작성자 무관, 상태 무관).
  *
- * 승인·반려하면 status가 바뀌어 이 쿼리에서 빠지므로 **목록에서 자동으로 사라진다**
- * (사용자 요청 2026-08-05 — 처리한 건이 계속 쌓여 보이던 문제).
- * 반려된 건은 **올린 사람 본인**의 구독에는 계속 잡혀 사유를 확인할 수 있다.
+ * ⚠️ 제보가 바로 게시되므로 '처리 대기'라는 상태가 사실상 없다.
+ *    관리자가 할 일은 **최근에 올라온 것을 훑어보고 이상한 것을 지우는 것**이다.
+ * ⚠️ `orderBy` 단독이라 복합 색인이 필요 없다. `where` 를 같이 걸면 색인이 필요해지고,
+ *    색인이 없으면 목록이 조용히 빈 화면이 된다 (커뮤니티에서 겪은 것과 같은 함정).
  */
 function subscribeAdminReports(
   coll: ReportCollection,
@@ -83,7 +100,8 @@ function subscribeAdminReports(
 ): () => void {
   const q = query(
     collection(db, coll),
-    where('status', 'in', ['draft', 'pending']),
+    orderBy('timestamp', 'desc'),
+    limit(ADMIN_RECENT_LIMIT),
   );
   return onSnapshot(
     q,
@@ -100,6 +118,7 @@ function subscribeAdminReports(
 }
 
 export const MyReportsTab: React.FC = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const { colors, spacing } = useTheme();
   const { uid, profile } = useMyPage();
   const email = useAuthStore((s) => s.user?.email);
@@ -179,7 +198,7 @@ export const MyReportsTab: React.FC = () => {
     ].forEach((r) => map.set(`${r.collection}/${r.reportId}`, r));
 
     return Array.from(map.values())
-      .filter((r) => (r.status ?? 'draft') !== 'approved') // v1: approved 제외
+      // ⚠️ 예전엔 여기서 approved 를 걸렀다. 이제 대부분이 approved 라 거르면 빈 목록이 된다
       .sort(
         (a, b) =>
           (b.timestamp?.toMillis() ?? 0) - (a.timestamp?.toMillis() ?? 0),
@@ -256,7 +275,19 @@ export const MyReportsTab: React.FC = () => {
         keyExtractor={(r) => `${r.collection}/${r.reportId}`}
         contentContainerStyle={{ padding: spacing.md }}
         ListHeaderComponent={
-          photos.length > 0 ? (
+          <View>
+            {/*
+              ⚠️ 루트제보로 들어가는 **주 진입점** (2026-09-07).
+                 원래 하단 탭에 '루트제보'가 있었는데 커뮤니티 탭에 자리를 내줬다.
+                 이 버튼을 지우면 마이페이지에서 제보할 방법이 사라진다.
+                 (다른 경로: 개념도 상세 ▸ '이 구역에 루트 제보' — 등반지·좌표가 자동으로 채워진다)
+            */}
+            <Button
+              title="루트 제보하기"
+              onPress={() => navigation.navigate('ReportWrite', undefined)}
+              style={{ marginBottom: spacing.md }}
+            />
+            {photos.length > 0 ? (
             <View style={{ marginBottom: spacing.md }}>
               <Text variant="title" style={{ marginBottom: spacing.sm }}>
                 개념도 사진 {isAdmin ? '승인 대기' : '등록 현황'} ({photos.length})
@@ -274,7 +305,8 @@ export const MyReportsTab: React.FC = () => {
                 />
               ))}
             </View>
-          ) : null
+            ) : null}
+          </View>
         }
         ListEmptyComponent={
           <View style={styles.center}>

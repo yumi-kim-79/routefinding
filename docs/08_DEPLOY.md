@@ -79,7 +79,13 @@ firebase hosting:rollback               # 직전 버전으로
 2-1의 빈 화면들은 모두 채워졌다 — 지도 · 루트제보 작성 · 개념도 사진/라인 · 관리자 승인 흐름 · GPX 접근로 · AdMob 배너.
 남은 배포 차단 요소는 **서명 키(2-2)와 versionCode(2-3)** 둘뿐이다.
 
-### 2-2. 🚨 서명 키가 없다 — **가장 위험한 항목**
+### 2-2. ~~서명 키가 없다~~ → **해결됨 (2026-08-12 확인)**
+
+> ⚠️ 2026-08-04 작성 당시의 오판이다. `android/gradle.properties`만 보고 판단했으나,
+> 서명 속성은 `~/.gradle/gradle.properties`(홈)에 있었다.
+> 빌드된 AAB 인증서 확인 결과 `META-INF/UPLOAD.RSA` / 주체 `yusung yun` — 정식 업로드 키다.
+> 아래 내용은 이력으로만 남긴다.
+
 
 현재 `android/app/build.gradle`:
 ```gradle
