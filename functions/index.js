@@ -629,3 +629,95 @@ exports.countSend = functions.firestore
       }
       return null;
     });
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 실시간 접속 통계 — 2026-09-30
+ *
+ * ⚠️ **집계를 클라이언트에 맡기지 않는다.** 앱이 직접 `stats_daily` 를 increment 하면
+ *    규칙으로 "1씩만 올려라"를 강제할 방법이 사실상 없어, 누구나 숫자를 조작할 수 있다.
+ *    RTDB `/presence/{uid}` 가 **생길 때** 이 함수가 대신 센다.
+ *
+ * ⚠️ **개인별 접속 로그는 남기지 않는다** (사용자 결정 2026-09-30).
+ *    남기는 것은 날짜별 숫자뿐이다. 그래서 개인정보 부담이 작고, 방침에도
+ *    "접속 현황 통계"로 한 줄이면 된다.
+ *    · `users`  그날 처음 들어온 사람 수 (DAU)
+ *    · `opens`  앱을 연 횟수 (재접속 포함)
+ *    · `hours`  시간대별 접속 횟수 (0~23)
+ *
+ *    DAU 를 정확히 세려고 `users/{uid}.lastSeenDate` 에 **날짜 하나만** 둔다.
+ *    시각이 아니라 날짜다 — "오늘 왔다" 이상은 남지 않는다.
+ *
+ * ⚠️ 시간대는 **한국 시간** 기준이다. UTC 로 세면 그래프가 9시간 밀려
+ *    "새벽 3시에 제일 많이 쓴다" 같은 엉뚱한 결론이 나온다.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/** UTC Date → 한국 시간의 'YYYY-MM-DD' 와 시(0~23) */
+function seoulParts(d) {
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  const yyyy = kst.getUTCFullYear();
+  const mm = String(kst.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(kst.getUTCDate()).padStart(2, "0");
+  return {date: `${yyyy}-${mm}-${dd}`, hour: kst.getUTCHours()};
+}
+
+/*
+ * ⚠️ **v2 트리거를 쓴다 (v1 아님).**
+ *    이 프로젝트의 RTDB 는 `asia-southeast1` 에 있다. v1 `functions.database.ref()` 는
+ *    us-central1 을 전제로 해서 **다른 리전 인스턴스에는 붙지 않거나 조용히 안 돈다.**
+ *    v2 는 `instance` 와 `region` 을 명시하므로 이런 사고가 없다.
+ *    (같은 이유로 generateThumbnail 도 v2 를 쓴다)
+ *
+ * ⚠️ `instance` 는 콘솔의 DB URL 앞부분이다 —
+ *    https://**routefinding09-4b597-default-rtdb**.asia-southeast1.firebasedatabase.app
+ *    DB 를 새로 만들거나 옮기면 이 값도 같이 고쳐야 한다.
+ */
+const {onValueCreated} = require("firebase-functions/v2/database");
+
+exports.countPresence = onValueCreated(
+    {
+      ref: "/presence/{uid}",
+      instance: "routefinding09-4b597-default-rtdb",
+      region: "asia-southeast1",
+    },
+    async (event) => {
+      const uid = event.params.uid;
+      const {date, hour} = seoulParts(new Date());
+      const db = admin.firestore();
+      const inc = admin.firestore.FieldValue.increment(1);
+
+      // 앱을 연 횟수 · 시간대는 매번 센다
+      const statRef = db.collection("stats_daily").doc(date);
+      const patch = {
+        date,
+        opens: inc,
+        [`hours.${hour}`]: inc,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      /*
+       * 그날 **처음**인지 확인해 DAU 를 센다.
+       * ⚠️ 트랜잭션으로 묶는다. 앱을 빠르게 두 번 켜면 둘 다 "처음"으로 읽어
+       *    한 사람이 2로 세어진다.
+       */
+      const userRef = db.collection("users").doc(uid);
+      let firstToday = false;
+      try {
+        await db.runTransaction(async (tx) => {
+          const u = await tx.get(userRef);
+          const last = u.exists ? u.data().lastSeenDate : null;
+          if (last !== date) {
+            firstToday = true;
+            tx.set(userRef, {lastSeenDate: date}, {merge: true});
+          }
+        });
+      } catch (e) {
+        // DAU 를 못 세더라도 opens 는 남긴다 — 통계가 통째로 비는 것보다 낫다
+        console.warn("[countPresence] DAU 트랜잭션 실패:", e);
+      }
+
+      if (firstToday) {
+        patch.users = inc;
+      }
+      await statRef.set(patch, {merge: true});
+    },
+);

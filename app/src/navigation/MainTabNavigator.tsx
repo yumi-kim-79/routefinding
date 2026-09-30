@@ -24,6 +24,7 @@ import { MyPageScreen } from '../screens/profile/MyPageScreen';
 import { AppIcon, type AppIconName } from '../components/common/AppIcon';
 import { useTheme } from '../theme';
 import { useEnsureProfile } from '../hooks/useEnsureProfile';
+import { usePresence } from '../hooks/usePresence';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -52,6 +53,11 @@ export const MainTabNavigator: React.FC = () => {
    *    ⚠️ 이미 있으면 다시 읽지 않는다 (hooks/useEnsureProfile.ts).
    */
   useEnsureProfile();
+  /*
+   * 실시간 접속 표시 — 여기서 **한 번만** 건다 (2026-09-30).
+   * ⚠️ 화면마다 붙이는 방식은 쓰지 않는다. 프로필 버그가 그렇게 두 번 재발했다(65차).
+   */
+  usePresence();
 
   return (
     <Tab.Navigator

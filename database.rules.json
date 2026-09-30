@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "presence": {
+      ".read": "auth != null && auth.token.email === 'yusung790926@gmail.com'",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".read": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['nickname', 'platform', 'since'])",
+        "nickname": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "photoUrl": { ".validate": "newData.isString() && newData.val().length <= 500" },
+        "platform": { ".validate": "newData.isString() && newData.val().length <= 16" },
+        "since":    { ".validate": "newData.isNumber()" },
+        "$other":   { ".validate": false }
+      }
+    },
+    "$rest": { ".read": false, ".write": false }
+  }
+}

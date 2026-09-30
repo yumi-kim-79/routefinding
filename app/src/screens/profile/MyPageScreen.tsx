@@ -24,6 +24,7 @@ import { ProfileHeader } from './components/ProfileHeader';
 import { MyReportsTab } from './components/MyReportsTab';
 import { ClimbingLogTab } from './components/ClimbingLogTab';
 import { FavoriteList } from '../../components/favorites/FavoriteList';
+import { LiveStatsTab } from './components/LiveStatsTab';
 import { MySendsTab } from './components/MySendsTab';
 import { MyProjectsTab } from './components/MyProjectsTab';
 import { MyProfileTab } from './components/MyProfileTab';
@@ -88,6 +89,8 @@ const BASE_TABS: TabDef[] = [
  *    **24시간 내 처리 창구**다 (AbuseReportsTab 머리말). 빼면 심사에서 반려된다.
  */
 const ADMIN_TABS: TabDef[] = [
+  /* 실시간 접속 — 관리자 탭 맨 앞. 들어오자마자 보는 값이다 (2026-09-30) */
+  { key: 'live', label: '실시간 접속', Comp: LiveStatsTab, group: 'admin' },
   { key: 'reportsAdmin', label: '신고 관리', Comp: AbuseReportsTab, group: 'admin' },
   { key: 'suggestions', label: '수정 제안', Comp: EditSuggestionsTab, group: 'admin' },
   // ⚠️ 리드 루트의 97%에 난이도가 없다 (2026-09-07 실측). 채우는 전용 화면이 필요하다

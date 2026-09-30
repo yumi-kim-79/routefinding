@@ -107,7 +107,7 @@ android {
          *    문자열이 그대로 들어가고 `Value is null` 로 터진다 (2026-08-05 실측).
          *    반드시 값을 **먼저** 정수로 만든 뒤 넘긴다.
          */
-        versionCode Integer.parseInt(project.findProperty('ROUTEFINDING_VERSION_CODE') ?: '116')
+        versionCode Integer.parseInt(project.findProperty('ROUTEFINDING_VERSION_CODE') ?: '117')
         /*
          * versionName 의 **단일 소스는 `app/package.json` 의 version** 이다.
          * 앱 안에서 업데이트 여부를 판단할 때도 같은 값을 쓴다(src/constants/version.ts).
