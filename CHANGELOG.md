@@ -56,6 +56,19 @@ Function 이 대신 센다. Firestore 규칙은 `allow write: if false` 다.
 **Realtime Database 가 아직 없다.** `google-services.json` · `GoogleService-Info.plist`
 어디에도 URL 이 없다(2026-09-30 확인). 만들고 두 파일을 다시 받기 전까지 이 기능은 동작하지 않는다.
 
+#### 🚨 Fixed — 통계가 **2배로** 세어지던 것 (배포 전 발견)
+`usePresence` 의 의존성을 `[uid, nickname, photoUrl]` 로 뒀더니 앱을 켤 때마다
+  ① 프로필이 아직 없는 상태로 한 번 쓰고(닉네임 빈칸)
+  ② 프로필이 도착하면 지웠다가 다시 쓴다
+가 되어 presence 노드가 **두 번 생성**됐다. 집계가 `onValueCreated` 라
+**접속 횟수와 시간대 통계가 그대로 2배**가 된다 — 정작 이 기능이 보려던 숫자가 틀어진다.
+
+→ 연결은 `uid` 에만 매달고, 표시값이 바뀌면 지우지 말고 `touchIdentity()` 로
+  **덮어쓰기만** 한다. 덮어쓰기는 생성이 아니라 집계를 건드리지 않는다.
+
+덤으로 앱 전환으로 60초 안에 돌아오는 것은 같은 접속으로 본다.
+카톡 확인하고 돌아올 때마다 '접속 1회'가 쌓이면 시간대 그래프가 의미를 잃는다.
+
 #### Changed
 - `@react-native-firebase/database` 25.1.0 추가 (다른 모듈과 같은 버전으로 고정)
 - 2.5.0 / Android versionCode **117** / iOS build **18**

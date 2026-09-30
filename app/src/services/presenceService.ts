@@ -25,6 +25,7 @@ import {
   remove,
   serverTimestamp,
   set,
+  update,
 } from '@react-native-firebase/database';
 
 export interface PresenceUser {
@@ -38,12 +39,6 @@ export interface PresenceUser {
 
 const PATH = 'presence';
 
-export interface PresenceIdentity {
-  uid: string;
-  nickname: string;
-  photoUrl?: string;
-}
-
 /**
  * 접속 표시 시작. 반환값을 호출하면 표시를 지운다.
  *
@@ -51,15 +46,19 @@ export interface PresenceIdentity {
  * true 로 바뀌므로, **재연결될 때마다 onDisconnect 를 다시 걸어야 한다** —
  * 한 번 실행된 예약은 사라지기 때문이다.
  */
-export function goOnline(me: PresenceIdentity): () => void {
+export function goOnline(
+  uid: string,
+  getIdentity: () => { nickname: string; photoUrl?: string },
+): () => void {
   const db = getDatabase();
-  const myRef = ref(db, `${PATH}/${me.uid}`);
+  const myRef = ref(db, `${PATH}/${uid}`);
   const connectedRef = ref(db, '.info/connected');
 
   const unsub = onValue(connectedRef, (snap) => {
     if (snap.val() !== true) {
       return;
     }
+    const me = getIdentity();
     // ① 먼저 "끊기면 지워라"를 예약하고 ② 그 다음에 쓴다
     onDisconnect(myRef)
       .remove()
@@ -80,6 +79,23 @@ export function goOnline(me: PresenceIdentity): () => void {
     unsub();
     void remove(myRef).catch(() => undefined);
   };
+}
+
+/**
+ * 닉네임·사진만 덮어쓴다.
+ *
+ * 🚨 **지우고 다시 쓰지 않는다.** 집계 함수가 `onValueCreated` 라, 다시 만들면
+ *    접속 횟수가 한 번 더 세어진다. 덮어쓰기는 생성이 아니라 집계를 건드리지 않는다.
+ */
+export function touchIdentity(
+  uid: string,
+  me: { nickname: string; photoUrl?: string },
+): void {
+  const db = getDatabase();
+  void update(ref(db, `${PATH}/${uid}`), {
+    nickname: me.nickname || '이름 없음',
+    ...(me.photoUrl ? { photoUrl: me.photoUrl } : {}),
+  }).catch(() => undefined);
 }
 
 /** 지금 접속 중인 사람들 (관리자 대시보드) */
