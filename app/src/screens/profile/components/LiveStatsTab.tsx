@@ -15,6 +15,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { Text } from '../../../components/common/Text';
+import { Button } from '../../../components/common/Button';
 import { RemoteImage } from '../../../components/common/RemoteImage';
 import { useTheme } from '../../../theme';
 import {
@@ -22,9 +23,12 @@ import {
   type PresenceUser,
 } from '../../../services/presenceService';
 import {
+  fetchMemberCount,
+  fetchMembers,
   seoulToday,
   subscribeRecentStats,
   type DailyStat,
+  type Member,
 } from '../../../services/adminStatsService';
 
 /** 접속 후 얼마나 됐는지 — '방금', '12분', '1시간 20분' */
@@ -82,6 +86,12 @@ const HERO: React.FC<{ label: string; value: string; hint?: string }> = ({
 export const LiveStatsTab: React.FC = () => {
   const { colors, radius, spacing } = useTheme();
   const [online, setOnline] = useState<PresenceUser[] | null>(null);
+  /** 전체 회원 수 — 집계 쿼리라 읽기 1건이다 */
+  const [memberCount, setMemberCount] = useState<number | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [cursor, setCursor] = useState<Awaited<ReturnType<typeof fetchMembers>>['cursor']>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [firstPageDone, setFirstPageDone] = useState(false);
   const [stats, setStats] = useState<DailyStat[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** 접속 경과 시간을 1분마다 다시 그린다 */
@@ -103,6 +113,45 @@ export const LiveStatsTab: React.FC = () => {
     [],
   );
 
+  /** 회원 수 + 첫 페이지 */
+  useEffect(() => {
+    let cancelled = false;
+    void fetchMemberCount()
+      .then((n) => !cancelled && setMemberCount(n))
+      .catch(() => !cancelled && setMemberCount(null));
+    void fetchMembers()
+      .then((p) => {
+        if (cancelled) {
+          return;
+        }
+        setMembers(p.items);
+        setCursor(p.cursor);
+        setFirstPageDone(true);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setFirstPageDone(true);
+          setError((prev) => prev ?? `회원 목록을 읽지 못했습니다. (${String(e)})`);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const loadMore = () => {
+    if (!cursor || loadingMore) {
+      return;
+    }
+    setLoadingMore(true);
+    void fetchMembers(cursor)
+      .then((p) => {
+        setMembers((prev) => [...prev, ...p.items]);
+        setCursor(p.cursor);
+      })
+      .finally(() => setLoadingMore(false));
+  };
+
   useEffect(
     () =>
       subscribeRecentStats(7, setStats, (m) => {
@@ -110,6 +159,12 @@ export const LiveStatsTab: React.FC = () => {
         setError((prev) => prev ?? `통계를 읽지 못했습니다. (${m})`);
       }),
     [],
+  );
+
+  /** 목록에서 '지금 접속 중'을 빠르게 판별하려고 */
+  const onlineUids = useMemo(
+    () => new Set((online ?? []).map((u) => u.uid)),
+    [online],
   );
 
   const today = seoulToday();
@@ -161,6 +216,10 @@ export const LiveStatsTab: React.FC = () => {
           <View style={styles.heroRow}>
             <HERO label="지금 접속 중" value={`${online.length}`} />
             <HERO
+              label="전체 회원"
+              value={memberCount === null ? '—' : `${memberCount}`}
+            />
+            <HERO
               label="오늘"
               value={`${todayStat?.users ?? 0}`}
               hint={
@@ -171,7 +230,19 @@ export const LiveStatsTab: React.FC = () => {
                     : `어제보다 ${diff > 0 ? '+' : ''}${diff}`
               }
             />
+          </View>
+          <View style={[styles.heroRow, styles.heroRow2]}>
             <HERO label="어제" value={`${ydayStat?.users ?? 0}`} />
+            <HERO
+              label="오늘 앱 실행"
+              value={`${todayStat?.opens ?? 0}`}
+              hint="재접속 포함"
+            />
+            <HERO
+              label="최근 7일 합"
+              value={`${week.reduce((n, s2) => n + s2.users, 0)}`}
+              hint="중복 포함"
+            />
           </View>
 
           {/* ── 최근 7일 ─────────────────────────────── */}
@@ -270,6 +341,91 @@ export const LiveStatsTab: React.FC = () => {
           ) : null}
         </View>
       }
+      ListFooterComponent={
+        <View>
+          <Text variant="title" style={styles.h}>
+            전체 회원 {memberCount !== null ? memberCount : ''}
+          </Text>
+
+          {/*
+            🚨 `orderBy('createdAt')` 는 **그 필드가 없는 문서를 통째로 제외한다.**
+               v1 시절 회원 중에 가입일이 없는 사람이 있으면 목록이 총원보다 적어진다.
+               조용히 적게 보여주면 "회원이 줄었나?" 로 읽히므로 차이를 밝힌다.
+          */}
+          {firstPageDone &&
+          memberCount !== null &&
+          !cursor &&
+          members.length < memberCount ? (
+            <Text variant="caption" color="warning" style={styles.note}>
+              {memberCount - members.length}명은 가입일 정보가 없어 목록에 나오지 않습니다.
+              (총원 {memberCount}명은 정확합니다)
+            </Text>
+          ) : null}
+
+          {!firstPageDone ? (
+            <ActivityIndicator color={colors.primary} style={styles.note} />
+          ) : members.length === 0 ? (
+            <Text variant="caption" color="textSecondary">
+              회원이 없습니다.
+            </Text>
+          ) : (
+            members.map((m) => {
+              const isOn = onlineUids.has(m.uid);
+              return (
+                <View
+                  key={m.uid}
+                  style={[styles.person, { borderBottomColor: colors.divider }]}
+                >
+                  <RemoteImage
+                    uri={m.photoUrl}
+                    variant="thumb"
+                    emptyLabel=""
+                    style={[
+                      styles.avatar,
+                      { borderRadius: radius.full, backgroundColor: colors.surfaceVariant },
+                    ]}
+                  />
+                  <View style={styles.personText}>
+                    <View style={styles.nameRow}>
+                      {/* 접속 중은 점 하나로. 글자를 계열색으로 물들이지 않는다 */}
+                      {isOn ? (
+                        <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+                      ) : null}
+                      <Text variant="body" numberOfLines={1} style={styles.flex}>
+                        {m.nickname}
+                      </Text>
+                    </View>
+                    <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                      {m.emailMasked ?? '이메일 없음'}
+                      {m.joinedAt
+                        ? ` · 가입 ${m.joinedAt.toISOString().slice(0, 10)}`
+                        : ''}
+                    </Text>
+                    <Text variant="caption" color="disabled">
+                      {isOn
+                        ? '지금 접속 중'
+                        : m.lastSeenDate
+                          ? `마지막 접속 ${m.lastSeenDate}`
+                          : '접속 기록 없음'}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
+
+          {cursor ? (
+            <Button
+              title={loadingMore ? '불러오는 중…' : '더 보기'}
+              variant="secondary"
+              onPress={loadMore}
+              loading={loadingMore}
+              disabled={loadingMore}
+              style={{ marginTop: spacing.md }}
+            />
+          ) : null}
+        </View>
+      }
       renderItem={({ item }) => (
         <View style={[styles.person, { borderBottomColor: colors.divider }]}>
           <RemoteImage
@@ -300,6 +456,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   err: { marginBottom: 12, lineHeight: 18 },
   heroRow: { flexDirection: 'row', columnGap: 8 },
+  heroRow2: { marginTop: 8 },
   hero: { flex: 1 },
   heroValue: { marginVertical: 2 },
   h: { marginTop: 28, marginBottom: 10 },
@@ -327,4 +484,8 @@ const styles = StyleSheet.create({
   },
   avatar: { width: 36, height: 36 },
   personText: { flex: 1, rowGap: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', columnGap: 6 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  flex: { flex: 1 },
+  note: { marginBottom: 8, lineHeight: 18 },
 });

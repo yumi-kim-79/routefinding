@@ -37,7 +37,6 @@ import { EditSuggestionsTab } from './components/EditSuggestionsTab';
 import { AdBanner } from '../../components/common/AdBanner';
 import { useAuthStore } from '../../stores/authStore';
 import { isAdminEmail } from '../../constants/admin';
-import { APP_VERSION } from '../../constants/version';
 
 /**
  * 탭 묶음 (2026-09-08 정리).
@@ -122,7 +121,18 @@ export const MyPageScreen: React.FC = () => {
   const Active = tabs[safeIndex].Comp;
 
   return (
-    <Screen padded={false}>
+    <Screen
+      padded={false}
+      /*
+       * 🚨 `edges` 에서 'bottom' 을 뺀다 (2026-09-30).
+       *    `Screen` 의 기본값은 `['top','bottom']` 이라 **하단 safe-area 만큼 패딩**이 들어간다.
+       *    이 화면은 **하단 탭 네비게이터 안**이고 탭 바가 이미 그 영역을 먹고 있어,
+       *    여기서 또 넣으면 **인셋이 두 번** 들어간다 → 광고 배너와 내용이 그만큼 위로 밀린다.
+       *    지도·개념도 탭은 `Screen` 을 쓰지 않아 멀쩡했고, 이 두 탭만 배너가 높았다
+       *    (사용자 보고: "커뮤니티·마이페이지만 배너가 위로 올라와 화면을 가린다").
+       */
+      edges={['top']}
+    >
       <ProfileHeader profile={profile} isLoading={isLoading} />
 
       <View
@@ -168,24 +178,6 @@ export const MyPageScreen: React.FC = () => {
         <Active />
       </View>
 
-      {/*
-        설치된 버전 (2026-09-02 요청).
-        문의가 들어왔을 때 **"어느 버전 쓰세요?" 를 물어볼 필요가 없게** 한다 —
-        업데이트 안내가 제대로 갔는지 확인할 때도 이 값이 기준이다.
-
-        ⚠️ 탭과 무관하게 **항상 보이는 자리**에 둔다. 특정 탭 안에 넣으면
-           정작 문의하는 사람이 못 찾는다.
-        ⚠️ 값은 `package.json` 의 version 이다 — 업데이트 안내가 쓰는 `APP_VERSION` 과 같다
-           (constants/version.ts). 화면에 보이는 값과 판단 기준이 어긋나지 않는다.
-        ⚠️ 빌드 번호(versionCode / CURRENT_PROJECT_VERSION)는 JS 에서 읽을 수 없다.
-           보여주려면 네이티브 의존성(react-native-device-info 등)이 필요하다 — 지금은 넣지 않는다.
-      */}
-      <View style={styles.versionRow}>
-        <Text variant="caption" color="disabled">
-          버전 {APP_VERSION}
-        </Text>
-      </View>
-
       <AdBanner />
     </Screen>
   );
@@ -202,5 +194,4 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   body: { flex: 1 },
-  versionRow: { alignItems: 'center', paddingVertical: 8 },
 });

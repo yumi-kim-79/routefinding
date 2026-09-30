@@ -1,3 +1,127 @@
+# 출시 노트 (v2.5.0) — 2026-09-30
+
+| | 값 |
+|---|---|
+| versionName / MARKETING_VERSION | **2.5.0** |
+| Android versionCode | **117** (build.gradle 기본값 — `-P` 불필요) |
+| iOS CURRENT_PROJECT_VERSION | **18** |
+
+직전 공개: 양 스토어 **2.4.0**(폐쇄 안내).
+
+⚠️ **이번 변경의 대부분은 관리자 전용**이다(실시간 접속 대시보드·회원 목록).
+   일반 사용자에게 보이는 것은 광고 위치 수정과 개인정보 보호 강화뿐이므로
+   출시 노트를 그 기준으로 짧게 쓴다. **관리자 기능은 적지 않는다** —
+   사용자에게 의미가 없고, 심사자에게는 불필요한 질문거리만 만든다.
+
+## ✅ 배포 전에 끝나 있어야 하는 것
+- [x] Realtime Database 생성 (asia-southeast1) + 설정 파일 2개 교체
+- [x] `database` · `firestore:rules` · `functions` 배포
+- [x] `countPresence` 가 **asia-southeast1** 에 올라감
+- [x] `tsc` · `eslint` 0 errors, 실기기 검증 완료
+- [ ] 🚨 **웹 개인정보처리방침 배포** — 시행일이 **10월 1일**이다. 앱보다 먼저 올라가야 한다
+- [ ] 🚨 **App Store 앱 개인정보 설문 수정** — 아래 참고
+- [ ] Play 데이터 보안 양식
+
+### 🚨 App Store 앱 개인정보 설문 — 반드시 고칠 것
+접속 현황을 uid 에 묶어 보게 됐으므로,
+**「사용 데이터 ▸ 제품 상호 작용」을 '사용자에게 연결되지 않음' → '연결됨' 으로 바꾼다.**
+안 바꾸면 신고 내용과 실제가 달라 다음 심사에서 문제가 된다.
+나머지 7개 항목과 '추적 = 아니요' 는 그대로 둔다.
+
+---
+
+## 배포
+
+```bash
+# ── ① 웹 개인정보처리방침 (앱보다 먼저) ──────────
+cd /Users/yusungyun/routefinding-web
+unset FIREBASE_TOKEN
+firebase deploy --only hosting \
+  --account routefinding2025@gmail.com \
+  --project routefinding09-4b597
+# 확인: https://routefinding09-4b597.web.app/privacy 에 '시행일: 2026년 10월 1일'
+
+# ── ② Android (AAB) ─────────────────────────────
+cd /Users/yusungyun/StudioProjects/routefinding/app/android
+./gradlew bundleRelease
+open app/build/outputs/bundle/release/
+
+# ── ③ iOS ───────────────────────────────────────
+cd /Users/yusungyun/StudioProjects/routefinding/app/ios
+pod install
+open RouteFinding.xcworkspace
+# 'Any iOS Device' ▸ Product ▸ Archive ▸ Distribute App ▸ App Store Connect
+```
+
+⚠️ `./gradlew clean` 금지 (fbjni prefab 경로가 깨진다).
+⚠️ versionCode 117 은 build.gradle 기본값이라 `-P` 를 붙이지 않는다.
+⚠️ **App Store Connect 에서 2.5.0 버전을 새로 만들고**(배포 ▸ iOS 앱 옆 [+]) build 18 을 붙인다.
+   「버전 출시」는 **"수동으로 이 버전 출시"** 로 둔다.
+⚠️ iOS 는 **네이티브 모듈(@react-native-firebase/database)이 늘었으므로 `pod install` 필수**다.
+
+---
+
+## Play 스토어 — "이 업데이트의 새로운 기능" (302자 / 500자 제한)
+
+```
+광고가 화면을 가리던 문제를 고쳤습니다.
+
+■ 고친 것
+커뮤니티와 마이페이지에서 하단 광고가 다른 화면보다 위로 올라와 내용을 가리던 문제를 고쳤습니다.
+
+■ 개인정보 보호 강화
+회원 정보를 조회할 수 있는 범위를 좁혔습니다. 다른 이용자의 이메일 주소는 조회할 수 없습니다.
+
+■ 개인정보처리방침 개정 (10월 1일 시행)
+서비스 운영을 위해 접속 현황을 확인하는 기능이 추가되었습니다. 누가 언제 접속했는지에 대한 개인별 기록은 남기지 않습니다.
+
+■ 그 밖에
+앱 버전이 마이페이지 프로필 아래에 표시됩니다. 문의하실 때 확인해 주세요.
+```
+
+## App Store — "새로운 기능"
+
+```
+광고가 화면을 가리던 문제를 고쳤습니다.
+
+■ 고친 것
+커뮤니티와 마이페이지에서 하단 광고가 다른 화면보다 위로 올라와 내용을 가리던 문제를
+고쳤습니다. 이제 모든 화면에서 같은 위치에 표시됩니다.
+
+■ 개인정보 보호 강화
+회원 정보를 조회할 수 있는 범위를 좁혔습니다. 다른 이용자의 이메일 주소는 조회할 수 없습니다.
+
+■ 개인정보처리방침 개정 (10월 1일 시행)
+서비스 운영과 장애 대응을 위해 접속 현황을 확인하는 기능이 추가되었습니다.
+앱을 사용하는 동안에만 접속 중으로 표시되며, 앱을 닫으면 즉시 사라집니다.
+누가 언제 접속해서 언제까지 있었는지에 대한 개인별 접속 기록은 남기지 않습니다.
+보관되는 것은 날짜별 접속자 수뿐입니다.
+자세한 내용은 개인정보처리방침을 확인해 주세요.
+
+■ 그 밖에
+앱 버전이 마이페이지 프로필 아래에 표시됩니다. 문의하실 때 확인해 주세요.
+
+안전한 등반 되세요.
+```
+
+## 심사 메모에 덧붙일 것 (App Store)
+
+```
+== What changed in 2.5.0 ==
+· Fixed the bottom ad banner position on two tabs, where a duplicated safe-area
+  inset pushed it over the content.
+· Tightened Firestore rules: the user collection can no longer be listed by
+  ordinary signed-in users, only fetched one document at a time. This prevents
+  enumeration of other members' email addresses.
+· Added an administrator-only view of current sign-in activity, used for
+  operations and outage response. It shows who is using the app right now and
+  daily totals. No per-user session history is stored - only daily counts and a
+  "last seen date" per user. The privacy policy was updated accordingly
+  (effective 2026-10-01).
+```
+
+---
+
 # 출시 노트 (v2.4.0) — 2026-09-15
 
 | | 값 |

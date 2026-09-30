@@ -264,7 +264,18 @@ export const CommunityScreen: React.FC = () => {
   }
 
   return (
-    <Screen padded={false}>
+    <Screen
+      padded={false}
+      /*
+       * 🚨 `edges` 에서 'bottom' 을 뺀다 (2026-09-30).
+       *    `Screen` 의 기본값은 `['top','bottom']` 이라 **하단 safe-area 만큼 패딩**이 들어간다.
+       *    이 화면은 **하단 탭 네비게이터 안**이고 탭 바가 이미 그 영역을 먹고 있어,
+       *    여기서 또 넣으면 **인셋이 두 번** 들어간다 → 광고 배너와 내용이 그만큼 위로 밀린다.
+       *    지도·개념도 탭은 `Screen` 을 쓰지 않아 멀쩡했고, 이 두 탭만 배너가 높았다
+       *    (사용자 보고: "커뮤니티·마이페이지만 배너가 위로 올라와 화면을 가린다").
+       */
+      edges={['top']}
+    >
       {/* 게시판 탭 — boards 문서에서 그린다 */}
       <View style={[styles.tabBarWrap, { borderBottomColor: colors.divider }]}>
         <ScrollView

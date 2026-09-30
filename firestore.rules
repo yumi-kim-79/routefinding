@@ -32,7 +32,26 @@ service cloud.firestore {
     //    → 규칙은 그대로 두고, 서버(Cloud Functions `checkNickname`)가 확인해
     //      불리언만 돌려주도록 바꿨다. 여기를 다시 열지 말 것 — 이메일이 노출된다.
     match /users/{userId} {
-      allow read:  if isSignedIn();
+      /*
+       * 문서 하나 읽기 — 로그인한 사용자면 누구나.
+       * 커뮤니티가 글쓴이의 닉네임·프로필 사진을 읽어야 하므로 막을 수 없다.
+       */
+      allow get: if isSignedIn();
+
+      /*
+       * 🚨 **목록 조회는 관리자만.** (2026-09-30)
+       *    전에는 `allow read: if isSignedIn()` 이라 **로그인한 누구나 users 컬렉션을
+       *    통째로 쿼리해 전체 회원의 이메일을 긁어갈 수 있었다.**
+       *    개인정보처리방침 3항은 "이메일 주소는 다른 이용자에게 공개되지 않습니다"라고
+       *    적어 놨는데 규칙이 그것을 막고 있지 않았다 — 실제 유출 경로였다.
+       *
+       * ⚠️ 앱에는 `users` 최상위 컬렉션을 목록으로 읽는 코드가 **한 군데도 없다**
+       *    (전부 문서 단건이거나 `users/{uid}/...` 서브컬렉션). 확인하고 좁혔다.
+       *    새로 목록이 필요해지면 이 줄을 푸는 게 아니라 필요한 필드만 담은
+       *    공개용 컬렉션을 따로 두는 쪽을 먼저 검토할 것.
+       */
+      allow list: if isAdmin();
+
       allow write: if isOwner(userId) || isAdmin();
     }
 

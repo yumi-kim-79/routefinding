@@ -6,6 +6,7 @@
  */
 import React from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
+import { APP_VERSION } from '../../../constants/version';
 import { Avatar } from '../../../components/common/Avatar';
 import { Text } from '../../../components/common/Text';
 import { Button } from '../../../components/common/Button';
@@ -62,6 +63,19 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               {profile.intro}
             </Text>
           ) : null}
+          {/*
+            설치된 버전 (2026-09-02 요청 → 2026-09-30 여기로 이동).
+            문의가 들어왔을 때 "어느 버전 쓰세요?" 를 물어볼 필요가 없게 한다.
+
+            ⚠️ 전에는 화면 **맨 아래 별도 줄**이었는데, 그 줄 높이만큼 광고 배너가
+               위로 올라와 탭 내용을 가렸다. 헤더의 기존 텍스트 블록에 얹으면
+               세로 공간이 늘지 않으면서 '항상 보이는 자리' 라는 조건도 그대로다.
+            ⚠️ 값은 `package.json` 의 version — 업데이트 안내가 쓰는 `APP_VERSION` 과 같다.
+               화면에 보이는 값과 판단 기준이 어긋나지 않는다.
+          */}
+          <Text variant="caption" color="disabled">
+            v{APP_VERSION}
+          </Text>
         </View>
       </View>
       <Button title="로그아웃" variant="ghost" size="sm" onPress={onLogout} />
