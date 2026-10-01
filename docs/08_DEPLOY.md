@@ -10,7 +10,7 @@
 Firebase Hosting. 프로젝트 `routefinding09-4b597`, 산출물 `dist/`.
 
 ```bash
-cd /Volumes/Dev/routefinding-web
+cd /Users/yusungyun/routefinding-web
 
 # 0) ⚠️ 계정 함정 — 셸에 FIREBASE_TOKEN이 설정돼 있으면 로그인 계정을 덮어써서
 #    "프로젝트 없음" 에러가 난다. CLI 기본 로그인(gangtalk815@)이 아니라
@@ -268,7 +268,7 @@ Kotlin 2.x 가 기본이 되므로 광고 SDK 의 Kotlin 2.1 요구도 자연히
 ### 2-4. 빌드 명령
 
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app
+cd /Users/yusungyun/StudioProjects/routefinding/app
 corepack yarn install
 
 cd android
@@ -350,7 +350,7 @@ unzip -l app/build/outputs/apk/release/app-release.apk | grep "lib/" | awk '{pri
 ### 3-1. 빌드 방법 (재현용)
 
 ```bash
-open /Volumes/Dev/StudioProjects/routefinding/app/ios/RouteFinding.xcworkspace
+open /Users/yusungyun/StudioProjects/routefinding/app/ios/RouteFinding.xcworkspace
 ```
 - ⚠️ `.xcodeproj`가 아니라 **`.xcworkspace`** (CocoaPods 프로젝트)
 - Signing & Capabilities → Automatically manage signing → **Team 선택**

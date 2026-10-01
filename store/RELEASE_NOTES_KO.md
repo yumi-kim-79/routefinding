@@ -149,7 +149,7 @@ open RouteFinding.xcworkspace
 루트 작성자가 자기 루트의 폐쇄를 스스로 풀 수 있던 구멍을 닫았다.
 
 ```bash
-cd ~/StudioProjects/routefinding
+cd /Users/yusungyun/StudioProjects/routefinding
 unset FIREBASE_TOKEN
 firebase deploy --only firestore:rules \
   --account routefinding2025@gmail.com \
@@ -160,12 +160,12 @@ firebase deploy --only firestore:rules \
 
 ```bash
 # ── Android (AAB) ─────────────────────────────
-cd ~/StudioProjects/routefinding/app/android
+cd /Users/yusungyun/StudioProjects/routefinding/app/android
 ./gradlew bundleRelease
 open app/build/outputs/bundle/release/
 
 # ── iOS ───────────────────────────────────────
-cd ~/StudioProjects/routefinding/app/ios
+cd /Users/yusungyun/StudioProjects/routefinding/app/ios
 pod install
 open RouteFinding.xcworkspace
 # 'Any iOS Device' ▸ Product ▸ Archive ▸ Distribute App ▸ App Store Connect
@@ -418,13 +418,13 @@ App Store 2.2.0 은 심사 대기 중 **취소**했으므로 애플 쪽에는 2.
 
 ```bash
 # ── Android (AAB) ─────────────────────────────
-cd ~/StudioProjects/routefinding/app/android
+cd /Users/yusungyun/StudioProjects/routefinding/app/android
 ./gradlew bundleRelease
 # → app/build/outputs/bundle/release/app-release.aab
 open app/build/outputs/bundle/release/
 
 # ── iOS ───────────────────────────────────────
-cd ~/StudioProjects/routefinding/app/ios
+cd /Users/yusungyun/StudioProjects/routefinding/app/ios
 pod install
 open RouteFinding.xcworkspace
 # Xcode ▸ 기기 대상을 'Any iOS Device' ▸ Product ▸ Archive ▸ Distribute App
@@ -518,7 +518,7 @@ Contact for content issues: yusung790926@gmail.com
 # 0) ⚠️ 이 셸에 CI 토큰이 남아 있으면 계정이 조용히 바뀐다
 unset FIREBASE_TOKEN
 
-cd ~/StudioProjects/routefinding
+cd /Users/yusungyun/StudioProjects/routefinding
 
 # 1) 보안 규칙 + 복합 색인
 firebase deploy --only firestore:rules,firestore:indexes \
@@ -555,7 +555,7 @@ match /log_images/{uid}/{logId}/{file} {
 ## 빌드
 
 ```bash
-cd ~/StudioProjects/routefinding/app
+cd /Users/yusungyun/StudioProjects/routefinding/app
 
 # Android (AAB) — versionCode 112 는 build.gradle 기본값이라 -P 가 필요 없다
 cd android && ./gradlew bundleRelease && cd ..

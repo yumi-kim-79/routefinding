@@ -7,18 +7,20 @@
 
 ## 📁 저장소 경로 규칙 (★)
 
-| 저장소 | 실경로 |
+| 저장소 | 경로 |
 |---|---|
-| RN 앱 | `/Volumes/Dev/StudioProjects/routefinding` |
-| Vue 웹 | `/Volumes/Dev/routefinding-web` (⚠️ git 저장소 아님) |
+| RN 앱 | `/Users/yusungyun/StudioProjects/routefinding` |
+| Vue 웹 | `/Users/yusungyun/routefinding-web` (⚠️ git 저장소 아님) |
 
-- 둘 다 **외장 볼륨 `/Volumes/Dev`** 에 있다. `~/StudioProjects/routefinding` 과
-  `~/routefinding-web` 은 여기로 가는 **심볼릭 링크**일 뿐이다.
-- 문서·안내·명령어에는 **항상 `/Volumes/Dev/...` 절대경로**를 쓴다. `~/` 로 쓰지 않는다.
-- 셸 명령어는 **`cd /Volumes/Dev/...` 를 포함해서** 그대로 복붙되게 준다.
-- 이유: 외장 볼륨이라 마운트가 안 돼 있을 수 있다. 절대경로면 그 자리에서 실패해 바로 드러나지만,
-  `~/` 링크만 믿으면 링크가 깨진 채 엉뚱한 위치에서 실행될 수 있다.
-  (도구에 따라 심볼릭 링크 경로로는 하위 폴더를 아예 못 읽는 경우도 있다 — 2026-09-28 실측)
+- 둘 다 **맥북 내장 홈 폴더의 실제 폴더**다. 심볼릭 링크가 아니다.
+- 문서·안내·명령어에는 **항상 `/Users/yusungyun/...` 절대경로**를 쓴다.
+- 셸 명령어는 **`cd /Users/yusungyun/...` 를 포함해서** 그대로 복붙되게 준다.
+
+> ⚠️ **`/Volumes/Dev/...` 경로는 쓰지 않는다.**
+> 2026-08~09에 외장 디스크 이미지(`Dev.sparsebundle` → `/Volumes/Dev`)를 개발 루트로 쓰고
+> 홈 폴더에 심볼릭 링크를 걸어 뒀던 시기가 있다. 9/28 장애 이후 **그 방식은 폐기**하고
+> 9/30에 홈 폴더 실폴더로 복구했다. 외장에는 개발 파일을 두지 않고,
+> 홈 폴더에 `/Volumes/...` 로 가는 심볼릭 링크도 만들지 않는다.
 
 ---
 

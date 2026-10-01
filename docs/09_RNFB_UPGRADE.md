@@ -82,7 +82,7 @@ await initializeAppCheck(app, { provider, isTokenAutoRefreshEnabled: true });
 ## 3. 실행 순서
 
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app
+cd /Users/yusungyun/StudioProjects/routefinding/app
 
 # 0) 되돌릴 수 있게 먼저 커밋 (앱 저장소는 git이 있다)
 git add -A && git commit -m "chore: RNFB 업그레이드 전 스냅샷"

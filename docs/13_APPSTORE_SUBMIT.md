@@ -31,7 +31,7 @@
 
 ### 찍는 법 (시뮬레이터가 제일 편하다)
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app
+cd /Users/yusungyun/StudioProjects/routefinding/app
 npx react-native run-ios --simulator="iPhone 17 Pro Max"
 ```
 시뮬레이터에서 `⌘S` → 바탕화면에 저장된다. (기기 프레임 없이 화면만 저장된다 — 그게 맞는 형식이다)

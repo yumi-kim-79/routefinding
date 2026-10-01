@@ -1,7 +1,7 @@
 # 🔨 10_BUILD_COMMANDS.md — 빌드 명령 모음
 
 > 수정 작업이 끝날 때마다 이 명령들로 빌드한다.
-> 경로 기준: `/Volumes/Dev/StudioProjects/routefinding/app`
+> 경로 기준: `/Users/yusungyun/StudioProjects/routefinding/app`
 
 ---
 
@@ -41,7 +41,7 @@ App Store는 `CURRENT_PROJECT_VERSION`, Play는 `versionCode`를 본다. 한 번
 ## 1. 개발 중 실기기 확인
 
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app
+cd /Users/yusungyun/StudioProjects/routefinding/app
 
 # 터미널 A — Metro (코드 고친 뒤엔 --reset-cache 권장)
 yarn start --reset-cache
@@ -64,7 +64,7 @@ lsof -ti:8081 | xargs kill -9 2>/dev/null
 JS 번들이 안에 포함돼 **Metro 없이 단독 실행**된다.
 
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app/android
+cd /Users/yusungyun/StudioProjects/routefinding/app/android
 ./gradlew assembleRelease
 # → app/build/outputs/apk/release/app-release.apk
 
@@ -83,7 +83,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 ## 3. 안드로이드 — AAB (Play Console 업로드)
 
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app/android
+cd /Users/yusungyun/StudioProjects/routefinding/app/android
 ./gradlew bundleRelease \
   -PROUTEFINDING_VERSION_CODE=102 \
   -PROUTEFINDING_VERSION_NAME=2.0.1
@@ -101,7 +101,7 @@ cd /Volumes/Dev/StudioProjects/routefinding/app/android
 
 서명 상태를 확인하려면 산출물을 직접 뜯어본다:
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app/android
+cd /Users/yusungyun/StudioProjects/routefinding/app/android
 unzip -p app/build/outputs/bundle/release/app-release.aab META-INF/UPLOAD.RSA \
   | strings | head
 # 'Android Debug' 가 보이면 debug 서명, 이름이 보이면 정식 업로드 키
@@ -112,7 +112,7 @@ unzip -p app/build/outputs/bundle/release/app-release.aab META-INF/UPLOAD.RSA \
 ## 4. iOS — Xcode (실기기 / App Store 제출)
 
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app/ios && pod install && cd ..
+cd /Users/yusungyun/StudioProjects/routefinding/app/ios && pod install && cd ..
 open ios/RouteFinding.xcworkspace
 ```
 ⚠️ `.xcodeproj`가 아니라 **`.xcworkspace`**.
@@ -135,7 +135,7 @@ open ios/RouteFinding.xcworkspace
 ## 5. iOS — CLI 아카이브 (선택)
 
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app/ios
+cd /Users/yusungyun/StudioProjects/routefinding/app/ios
 
 xcodebuild -workspace RouteFinding.xcworkspace \
   -scheme RouteFinding \
@@ -156,7 +156,7 @@ xcodebuild -exportArchive \
 ## 6. 클린 빌드 (이상 동작 시)
 
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app
+cd /Users/yusungyun/StudioProjects/routefinding/app
 
 # 안드로이드
 cd android && ./gradlew clean && cd ..
@@ -174,7 +174,7 @@ yarn start --reset-cache
 ## 7. 웹 (참고)
 
 ```bash
-cd /Volumes/Dev/routefinding-web
+cd /Users/yusungyun/routefinding-web
 unset FIREBASE_TOKEN
 npm run build
 firebase deploy --only hosting \

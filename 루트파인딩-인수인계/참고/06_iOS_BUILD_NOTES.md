@@ -24,7 +24,7 @@
 
 **재개 시 첫 명령**
 ```bash
-cd /Volumes/Dev/StudioProjects/routefinding/app
+cd /Users/yusungyun/StudioProjects/routefinding/app
 corepack yarn up '@react-native-firebase/*'          # 24 → 26
 # Podfile의 gRPC post_install 패치를 먼저 제거(주석 처리)한 뒤
 cd ios && pod install && cd ..
